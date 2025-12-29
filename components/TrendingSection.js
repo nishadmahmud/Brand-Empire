@@ -72,8 +72,8 @@ const dummyProducts = [
 
 const TrendingSection = () => {
     return (
-        <section className="section-content py-16">
-            <h2 className="text-2xl font-bold mb-8 uppercase tracking-widest text-gray-900 relative">
+        <section className="section-content py-12 md:py-16">
+            <h2 className="text-lg md:text-2xl font-bold mb-6 md:mb-8 uppercase tracking-widest text-gray-900 relative">
                 Trending Now
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">

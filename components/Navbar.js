@@ -1,14 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 
 const Navbar = () => {
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
     return (
-        <nav className="fixed top-0 left-0 w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)] z-50 h-20 flex items-center justify-between px-12 min-w-[1200px] font-sans">
+        <nav className="fixed top-0 left-0 w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)] z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-12 font-sans">
             {/* Logo Section */}
             <div className="flex items-center">
-                <div className="relative h-16 w-44">
+                <div className="relative h-12 md:h-16 w-32 md:w-44">
                     <Image
                         src="/logo.png"
                         alt="Brand Empire Logo"
@@ -16,12 +18,13 @@ const Navbar = () => {
                         height={60}
                         className="object-contain h-full w-auto"
                         priority
+                        unoptimized
                     />
                 </div>
             </div>
 
-            {/* Navigation Links */}
-            <div className="flex items-center gap-10 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider h-full">
+            {/* Navigation Links - Desktop Only */}
+            <div className="hidden lg:flex items-center gap-10 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider h-full">
                 {['MEN', 'WOMEN', 'KIDS', 'HOME & LIVING', 'BEAUTY'].map((item) => (
                     <a key={item} href="#" className="h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1">
                         {item}
@@ -34,9 +37,9 @@ const Navbar = () => {
             </div>
 
             {/* Right Section: Search & Actions */}
-            <div className="flex items-center gap-8">
-                {/* Search Bar */}
-                <div className="flex items-center bg-[#f5f5f6] rounded-md px-4 py-3 w-96 border border-transparent focus-within:border-gray-200 focus-within:bg-white transition-all group">
+            <div className="flex items-center gap-3 md:gap-8">
+                {/* Search Bar - Desktop Only */}
+                <div className="hidden lg:flex items-center bg-[#f5f5f6] rounded-md px-4 py-3 w-96 border border-transparent focus-within:border-gray-200 focus-within:bg-white transition-all group">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 mr-3 group-focus-within:text-gray-600">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -48,8 +51,8 @@ const Navbar = () => {
                     />
                 </div>
 
-                {/* Icons */}
-                <div className="flex items-center gap-8">
+                {/* Icons - Desktop Only */}
+                <div className="hidden md:flex items-center gap-6 lg:gap-8">
                     <div className="flex flex-col items-center gap-1 cursor-pointer group">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#282c3f] group-hover:text-black">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -72,7 +75,69 @@ const Navbar = () => {
                         <span className="text-[12px] font-bold text-black">Bag</span>
                     </div>
                 </div>
+
+                {/* Mobile Icons - Search and Bag */}
+                <div className="flex md:hidden items-center gap-4">
+                    <button className="p-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#282c3f]">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                    <button className="p-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#282c3f]">
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <path d="M16 10a4 4 0 0 1-8 0"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Mobile Menu Button */}
+                <button
+                    className="lg:hidden p-2"
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                    {mobileMenuOpen ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    )}
+                </button>
             </div>
+
+            {/* Mobile Menu Dropdown */}
+            {mobileMenuOpen && (
+                <div className="absolute top-full left-0 w-full bg-white shadow-lg lg:hidden border-t border-gray-100">
+                    <div className="flex flex-col p-4">
+                        {['MEN', 'WOMEN', 'KIDS', 'HOME & LIVING', 'BEAUTY', 'STUDIO'].map((item) => (
+                            <a
+                                key={item}
+                                href="#"
+                                className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100 last:border-0"
+                            >
+                                {item}
+                                {item === 'STUDIO' && <span className="ml-2 text-[10px] text-[var(--brand-royal-red)]">NEW</span>}
+                            </a>
+                        ))}
+                        <div className="flex gap-4 mt-4 pt-4 border-t border-gray-100">
+                            <button className="flex-1 py-2 px-4 border border-gray-300 rounded text-sm font-bold hover:bg-gray-50">
+                                Profile
+                            </button>
+                            <button className="flex-1 py-2 px-4 border border-gray-300 rounded text-sm font-bold hover:bg-gray-50">
+                                Wishlist
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </nav>
     );
 };

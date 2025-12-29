@@ -5,22 +5,22 @@ import Image from "next/image";
 
 const AppPromoSection = () => {
     return (
-        <section className="section-full bg-[#1a1a1a] py-12 mt-16">
-            <div className="section-content">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <section className="section-full bg-[#1a1a1a] py-8 md:py-12 mt-12 md:mt-16 overflow-hidden">
+            <div className="section-content overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center overflow-hidden">
                     {/* Left Side - Text & Download Options */}
-                    <div className="text-white">
-                        <h2 className="text-3xl font-bold mb-4 uppercase tracking-wide">
+                    <div className="text-white text-center md:text-left">
+                        <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4 uppercase tracking-wide">
                             GET FLAT 10% OFF ON APP AND WEB
                         </h2>
-                        <p className="text-gray-300 mb-6 text-base leading-relaxed">
+                        <p className="text-gray-300 mb-4 md:mb-6 text-sm md:text-base leading-relaxed">
                             Download the Brand Empire App and get<br />
                             Flat 10% off on your first purchase. Use<br />
                             Code <span className="font-bold text-white">BEFIRST10</span>. T&C applies!
                         </p>
 
                         {/* App Store Buttons - Real Badges */}
-                        <div className="flex gap-3 mb-6">
+                        <div className="flex flex-col sm:flex-row gap-3 mb-4 md:mb-6 justify-center md:justify-start">
                             <a
                                 href="#"
                                 className="hover:opacity-80 transition-opacity"

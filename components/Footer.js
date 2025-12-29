@@ -5,10 +5,10 @@ import Image from "next/image";
 
 const Footer = () => {
     return (
-        <footer className="section-full bg-[#1a1a1a] text-white mt-20">
-            <div className="section-content py-12">
+        <footer className="section-full bg-[#1a1a1a] text-white mt-16 md:mt-20 py-20">
+            <div className="section-content py-8 md:py-12">
                 {/* Main Footer Content */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-6 md:mb-8">
                     {/* Brand Column */}
                     <div className="col-span-1">
                         <div className="mb-4">

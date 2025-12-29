@@ -10,7 +10,7 @@ import Footer from "@/components/Footer";
 
 export default function Home() {
   return (
-    <main className="min-h-screen pt-20"> {/* pt-20 to account for fixed navbar */}
+    <main className="min-h-screen pt-16 md:pt-20 overflow-x-hidden w-full max-w-[100vw]"> {/* Responsive padding for navbar */}
       <Navbar />
 
       {/* Hero Section - Full Width */}

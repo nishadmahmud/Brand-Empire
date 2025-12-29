@@ -22,15 +22,15 @@ const localBrands = [
 ];
 
 const BrandRow = ({ title, brands }) => (
-    <div className="mb-16">
-        <h3 className="text-2xl font-bold text-center mb-10 tracking-[0.2em] text-[#282c3f] uppercase relative inline-block w-full">
+    <div className="mb-12 md:mb-16">
+        <h3 className="text-lg md:text-2xl font-bold text-center mb-6 md:mb-10 tracking-[0.1em] md:tracking-[0.2em] text-[#282c3f] uppercase relative inline-block w-full">
             {title}
-            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-[var(--brand-royal-red)] rounded-full mt-4 block translate-y-4"></span>
+            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 md:w-20 h-1 bg-[var(--brand-royal-red)] rounded-full mt-4 block translate-y-4"></span>
         </h3>
-        <div className="flex justify-center flex-wrap gap-12 px-4">
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8 lg:gap-12 px-4">
             {brands.map((brand, index) => (
                 <div key={index} className="flex flex-col items-center group cursor-pointer">
-                    <div className="relative w-40 h-40 rounded-full overflow-hidden shadow-lg border-4 border-transparent group-hover:border-[var(--brand-royal-red)] transition-all duration-300 transform group-hover:scale-105">
+                    <div className="relative w-20 h-20 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full overflow-hidden shadow-lg border-2 md:border-4 border-transparent group-hover:border-[var(--brand-royal-red)] transition-all duration-300 transform group-hover:scale-105">
                         <Image
                             src={brand.image}
                             alt={brand.name}
@@ -41,7 +41,7 @@ const BrandRow = ({ title, brands }) => (
                         {/* Dark overlay on hover */}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                     </div>
-                    <span className="mt-4 font-bold text-[#282c3f] tracking-widest text-sm group-hover:text-[var(--brand-royal-red)] transition-colors">
+                    <span className="mt-2 md:mt-4 font-bold text-[#282c3f] tracking-wider md:tracking-widest text-[10px] md:text-sm group-hover:text-[var(--brand-royal-red)] transition-colors">
                         {brand.name}
                     </span>
                 </div>
@@ -52,9 +52,8 @@ const BrandRow = ({ title, brands }) => (
 
 const BrandsSection = () => {
     return (
-        <section className="section-content py-20 bg-white">
+        <section className="section-content py-12 md:py-16 overflow-hidden">
             <BrandRow title="International Icons" brands={internationalBrands} />
-            <div className="w-full h-px bg-gray-100 mb-16 mx-auto max-w-4xl" /> {/* Divider */}
             <BrandRow title="Bangladeshi Pride" brands={localBrands} />
         </section>
     );

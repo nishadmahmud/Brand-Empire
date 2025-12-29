@@ -65,7 +65,7 @@ const HeroSlider = () => {
     };
 
     return (
-        <div className="relative w-full h-[600px] overflow-hidden group font-sans">
+        <div className="relative w-full h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden group font-sans">
             {/* Slides */}
             {slides.map((slide, index) => (
                 <div
@@ -85,16 +85,16 @@ const HeroSlider = () => {
                         <div className="absolute inset-0 bg-black/20" />
 
                         {/* Text Content */}
-                        <div className={`absolute inset-0 flex flex-col justify-center px-20 ${slide.alignment === 'left' ? 'items-start text-left' :
-                                slide.alignment === 'right' ? 'items-end text-right' : 'items-center text-center'
+                        <div className={`absolute inset-0 flex flex-col justify-center px-6 md:px-12 lg:px-20 ${slide.alignment === 'left' ? 'items-start text-left' :
+                            slide.alignment === 'right' ? 'items-end text-right' : 'items-center text-center'
                             }`}>
-                            <h2 className="text-6xl font-light text-white mb-2 font-serif tracking-wide drop-shadow-md">
+                            <h2 className="text-2xl md:text-4xl lg:text-6xl font-light text-white mb-2 font-serif tracking-wide drop-shadow-md">
                                 {slide.title}
                             </h2>
-                            <p className="text-xl text-white mb-8 tracking-[0.2em] font-light drop-shadow-sm uppercase">
+                            <p className="text-xs md:text-base lg:text-xl text-white mb-4 md:mb-8 tracking-[0.1em] md:tracking-[0.2em] font-light drop-shadow-sm uppercase">
                                 {slide.subtitle}
                             </p>
-                            <button className="bg-[#C41E3A] text-white px-10 py-3 font-bold text-sm tracking-widest hover:bg-[#a01830] transition-colors shadow-lg uppercase">
+                            <button className="bg-[#C41E3A] text-white px-6 md:px-10 py-2 md:py-3 font-bold text-xs md:text-sm tracking-widest hover:bg-[#a01830] transition-colors shadow-lg uppercase">
                                 {slide.buttonText}
                             </button>
                         </div>
