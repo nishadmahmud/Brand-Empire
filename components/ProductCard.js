@@ -85,7 +85,7 @@ const ProductCard = ({ product, tag }) => {
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{product.brand}</h4>
                 <h3 className="text-sm font-medium text-gray-900 truncate mb-1" title={product.name}>{product.name}</h3>
                 <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-bold text-gray-900">{product.price}</span>
+                    <span className="text-sm font-extrabold text-gray-900" style={{ fontWeight: 800 }}>{product.price}</span>
                     <span className="text-xs text-gray-400 line-through">{product.originalPrice}</span>
                     <span className="text-xs text-[var(--brand-royal-red)] font-bold">({product.discount})</span>
                 </div>

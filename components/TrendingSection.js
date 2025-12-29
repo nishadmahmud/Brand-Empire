@@ -9,8 +9,8 @@ const dummyProducts = [
         id: 1,
         brand: "FORMAL SUITS",
         name: "Men Blue Solid Formal Two Piece Suit",
-        price: "₹ 5,793",
-        originalPrice: "₹ 11,999",
+        price: "৳ 5,793",
+        originalPrice: "৳ 11,999",
         discount: "51% OFF",
         images: [
             "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=1000&auto=format&fit=crop", // Front
@@ -25,8 +25,8 @@ const dummyProducts = [
         id: 2,
         brand: "SWEATERS",
         name: "Men Brown Solid V Neck Sweater",
-        price: "₹ 1,044",
-        originalPrice: "₹ 1,899",
+        price: "৳ 1,044",
+        originalPrice: "৳ 1,899",
         discount: "45% OFF",
         images: [
             "https://images.unsplash.com/photo-1516826957135-700dedea698c?q=80&w=1000&auto=format&fit=crop",
@@ -40,8 +40,8 @@ const dummyProducts = [
         id: 3,
         brand: "JACKETS",
         name: "Men Olive Solid Casual Jacket",
-        price: "₹ 2,362",
-        originalPrice: "₹ 2,625",
+        price: "৳ 2,362",
+        originalPrice: "৳ 2,625",
         discount: "10% OFF",
         images: [
             "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?q=80&w=1000&auto=format&fit=crop",
@@ -55,8 +55,8 @@ const dummyProducts = [
         id: 4,
         brand: "FORMAL SHIRTS",
         name: "Men Blue Regular Fit Full Sleeves Formal Shirt",
-        price: "₹ 1,799",
-        originalPrice: "₹ 1,999",
+        price: "৳ 1,799",
+        originalPrice: "৳ 1,999",
         discount: "10% OFF",
         images: [
             "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?q=80&w=1000&auto=format&fit=crop",

@@ -8,7 +8,7 @@ const newArrivals = [
         id: 101,
         brand: "JACKETS",
         name: "Men Black Solid Casual Jacket",
-        price: "₹ 4,999",
+        price: "৳ 4,999",
         originalPrice: "",
         discount: "",
         images: [
@@ -23,7 +23,7 @@ const newArrivals = [
         id: 102,
         brand: "JACKETS",
         name: "Men Off White Solid Casual Jacket",
-        price: "₹ 4,999",
+        price: "৳ 4,999",
         originalPrice: "",
         discount: "",
         images: [
@@ -38,8 +38,8 @@ const newArrivals = [
         id: 103,
         brand: "REGULAR STRAIGHT FIT JEANS",
         name: "Men Blue Mid Wash Jeans",
-        price: "₹ 2,135",
-        originalPrice: "₹ 2,399",
+        price: "৳ 2,135",
+        originalPrice: "৳ 2,399",
         discount: "11% OFF",
         images: [
             "https://images.unsplash.com/photo-1542272454315-4c01d7abdf4a?q=80&w=1000&auto=format&fit=crop",
@@ -53,7 +53,7 @@ const newArrivals = [
         id: 104,
         brand: "FORMAL TROUSERS",
         name: "Men Brown Solid Formal Trousers",
-        price: "₹ 2,499",
+        price: "৳ 2,499",
         originalPrice: "",
         discount: "",
         images: [
@@ -68,7 +68,7 @@ const newArrivals = [
         id: 105,
         brand: "FORMAL SHIRTS",
         name: "Men Beige Slim Fit Full Sleeves Formal",
-        price: "₹ 1,399",
+        price: "৳ 1,399",
         originalPrice: "",
         discount: "",
         images: [
@@ -83,8 +83,8 @@ const newArrivals = [
         id: 106,
         brand: "CASUAL SHIRTS",
         name: "Men Black Regular Fit Full Sleeves Shirt",
-        price: "₹ 1,599",
-        originalPrice: "₹ 1,999",
+        price: "৳ 1,599",
+        originalPrice: "৳ 1,999",
         discount: "20% OFF",
         images: [
             "https://images.unsplash.com/photo-1626497764746-6dc36546b388?q=80&w=1000&auto=format&fit=crop",
