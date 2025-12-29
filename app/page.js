@@ -19,22 +19,34 @@ export default function Home() {
       </section>
 
       {/* Brands Section */}
-      <BrandsSection />
+      <div className="mt-8 md:mt-12">
+        <BrandsSection />
+      </div>
 
       {/* Promotional Banners */}
-      <PromoBanners />
+      <div className="mt-8 md:mt-12">
+        <PromoBanners />
+      </div>
 
       {/* Trending Section */}
-      <TrendingSection />
+      <div className="mt-8 md:mt-12">
+        <TrendingSection />
+      </div>
 
       {/* Featured Collections */}
-      <FeaturedCollections />
+      <div className="mt-8 md:mt-12">
+        <FeaturedCollections />
+      </div>
 
       {/* New Arrivals */}
-      <NewArrivals />
+      <div className="mt-8 md:mt-12">
+        <NewArrivals />
+      </div>
 
       {/* App Promotion */}
-      <AppPromoSection />
+      <div className="mt-8 md:mt-12">
+        <AppPromoSection />
+      </div>
 
       {/* Footer */}
       <Footer />
