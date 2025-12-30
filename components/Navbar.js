@@ -2,9 +2,11 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { megaMenuData } from "@/data/megaMenuData";
 
 const Navbar = ({ marqueeVisible = true }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [activeMegaMenu, setActiveMegaMenu] = useState(null);
 
     return (
         <nav className={`fixed ${marqueeVisible ? 'top-[36px]' : 'top-0'} left-0 w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)] z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-12 font-sans transition-all duration-300`}>
@@ -25,15 +27,27 @@ const Navbar = ({ marqueeVisible = true }) => {
 
             {/* Navigation Links - Desktop Only */}
             <div className="hidden lg:flex items-center gap-10 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider h-full">
-                <a href="/category/men" className="h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1">
-                    MEN
-                </a>
-                <a href="/category/women" className="h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1">
-                    WOMEN
-                </a>
-                <a href="/category/kids" className="h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1">
-                    KIDS
-                </a>
+                <div
+                    className="relative h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1"
+                    onMouseEnter={() => setActiveMegaMenu('men')}
+                    onMouseLeave={() => setActiveMegaMenu(null)}
+                >
+                    <a href="/category/men">MEN</a>
+                </div>
+                <div
+                    className="relative h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1"
+                    onMouseEnter={() => setActiveMegaMenu('women')}
+                    onMouseLeave={() => setActiveMegaMenu(null)}
+                >
+                    <a href="/category/women">WOMEN</a>
+                </div>
+                <div
+                    className="relative h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1"
+                    onMouseEnter={() => setActiveMegaMenu('kids')}
+                    onMouseLeave={() => setActiveMegaMenu(null)}
+                >
+                    <a href="/category/kids">KIDS</a>
+                </div>
                 <a href="#" className="h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1">
                     HOME & LIVING
                 </a>
@@ -45,6 +59,41 @@ const Navbar = ({ marqueeVisible = true }) => {
                     <span className="absolute top-4 -right-3 text-[10px] font-bold text-[var(--brand-royal-red)]">NEW</span>
                 </div>
             </div>
+
+            {/* Mega Menu Dropdown */}
+            {activeMegaMenu && (
+                <div
+                    className="absolute left-0 right-0 top-full bg-white shadow-lg border-t border-gray-200"
+                    onMouseEnter={() => setActiveMegaMenu(activeMegaMenu)}
+                    onMouseLeave={() => setActiveMegaMenu(null)}
+                >
+                    <div className="max-w-[1400px] mx-auto px-12 py-3">
+                        <div className="grid grid-cols-5 gap-6">
+                            {megaMenuData[activeMegaMenu]?.categories.map((category, index) => (
+                                <div key={index} className="space-y-1.5">
+                                    <h3 className={`font-bold text-xs uppercase ${category.color} mb-1.5`}>
+                                        {category.title}
+                                    </h3>
+                                    {category.items.length > 0 && (
+                                        <ul className="space-y-1">
+                                            {category.items.slice(0, 5).map((item, itemIndex) => (
+                                                <li key={itemIndex}>
+                                                    <a
+                                                        href="#"
+                                                        className="text-xs text-gray-600 hover:text-[var(--brand-royal-red)] hover:font-medium transition-colors"
+                                                    >
+                                                        {item}
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Right Section: Search & Actions */}
             <div className="flex items-center gap-3 md:gap-8">
