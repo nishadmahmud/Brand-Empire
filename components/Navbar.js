@@ -25,11 +25,21 @@ const Navbar = ({ marqueeVisible = true }) => {
 
             {/* Navigation Links - Desktop Only */}
             <div className="hidden lg:flex items-center gap-10 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider h-full">
-                {['MEN', 'WOMEN', 'KIDS', 'HOME & LIVING', 'BEAUTY'].map((item) => (
-                    <a key={item} href="#" className="h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1">
-                        {item}
-                    </a>
-                ))}
+                <a href="/category/men" className="h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1">
+                    MEN
+                </a>
+                <a href="/category/women" className="h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1">
+                    WOMEN
+                </a>
+                <a href="/category/kids" className="h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1">
+                    KIDS
+                </a>
+                <a href="#" className="h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1">
+                    HOME & LIVING
+                </a>
+                <a href="#" className="h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1">
+                    BEAUTY
+                </a>
                 <div className="relative h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1 group cursor-pointer">
                     <span className="">STUDIO</span>
                     <span className="absolute top-4 -right-3 text-[10px] font-bold text-[var(--brand-royal-red)]">NEW</span>
@@ -117,16 +127,25 @@ const Navbar = ({ marqueeVisible = true }) => {
             {mobileMenuOpen && (
                 <div className="absolute top-full left-0 w-full bg-white shadow-lg lg:hidden border-t border-gray-100">
                     <div className="flex flex-col p-4">
-                        {['MEN', 'WOMEN', 'KIDS', 'HOME & LIVING', 'BEAUTY', 'STUDIO'].map((item) => (
-                            <a
-                                key={item}
-                                href="#"
-                                className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100 last:border-0"
-                            >
-                                {item}
-                                {item === 'STUDIO' && <span className="ml-2 text-[10px] text-[var(--brand-royal-red)]">NEW</span>}
-                            </a>
-                        ))}
+                        <a href="/category/men" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                            MEN
+                        </a>
+                        <a href="/category/women" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                            WOMEN
+                        </a>
+                        <a href="/category/kids" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                            KIDS
+                        </a>
+                        <a href="#" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                            HOME & LIVING
+                        </a>
+                        <a href="#" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                            BEAUTY
+                        </a>
+                        <a href="#" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                            STUDIO
+                            <span className="ml-2 text-[10px] text-[var(--brand-royal-red)]">NEW</span>
+                        </a>
                         <div className="flex gap-4 mt-4 pt-4 border-t border-gray-100">
                             <button className="flex-1 py-2 px-4 border border-gray-300 rounded text-sm font-bold hover:bg-gray-50">
                                 Profile
