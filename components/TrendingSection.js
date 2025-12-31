@@ -1,84 +1,71 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Image from "next/image";
-import ProductCard from "./ProductCard";
+import Link from "next/link";
 
-const dummyProducts = [
-    {
-        id: 1,
-        brand: "FORMAL SUITS",
-        name: "Men Blue Solid Formal Two Piece Suit",
-        price: "৳ 5,793",
-        originalPrice: "৳ 11,999",
-        discount: "51% OFF",
-        images: [
-            "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=1000&auto=format&fit=crop", // Front
-            "https://images.unsplash.com/photo-1594938328870-9623159c8c99?q=80&w=1000&auto=format&fit=crop", // Detail
-            "https://images.unsplash.com/photo-1507680434567-5739c80be1ac?q=80&w=1000&auto=format&fit=crop", // Full body
-        ],
-        sizes: ["36", "38", "40", "42", "44", "46", "48", "50"],
-        unavailableSizes: ["48", "50"],
-        color: "blue",
-    },
-    {
-        id: 2,
-        brand: "SWEATERS",
-        name: "Men Brown Solid V Neck Sweater",
-        price: "৳ 1,044",
-        originalPrice: "৳ 1,899",
-        discount: "45% OFF",
-        images: [
-            "https://images.unsplash.com/photo-1516826957135-700dedea698c?q=80&w=1000&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1620799139507-2a76f79a2f4d?q=80&w=1000&auto=format&fit=crop",
-        ],
-        sizes: ["S", "M", "L", "XL", "XXL"],
-        unavailableSizes: ["XXL"],
-        color: "brown",
-    },
-    {
-        id: 3,
-        brand: "JACKETS",
-        name: "Men Olive Solid Casual Jacket",
-        price: "৳ 2,362",
-        originalPrice: "৳ 2,625",
-        discount: "10% OFF",
-        images: [
-            "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?q=80&w=1000&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1512353087810-25dfcd100962?q=80&w=1000&auto=format&fit=crop",
-        ],
-        sizes: ["M", "L", "XL"],
-        unavailableSizes: [],
-        color: "olive",
-    },
-    {
-        id: 4,
-        brand: "FORMAL SHIRTS",
-        name: "Men Blue Regular Fit Full Sleeves Formal Shirt",
-        price: "৳ 1,799",
-        originalPrice: "৳ 1,999",
-        discount: "10% OFF",
-        images: [
-            "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?q=80&w=1000&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?q=80&w=1000&auto=format&fit=crop",
-        ],
-        sizes: ["39", "40", "42", "44"],
-        unavailableSizes: ["39"],
-        color: "blue",
-    },
-];
+const CategoryBanner = ({ image, category, title, link }) => {
+    return (
+        <Link href={link} className="block relative h-[300px] md:h-[400px] group overflow-hidden rounded-lg">
+            <Image
+                src={image}
+                alt={category}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                unoptimized
+            />
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-
+            {/* Content */}
+            <div className="absolute bottom-6 left-6 right-6 text-white">
+                <p className="text-xs md:text-sm font-bold uppercase tracking-widest mb-2 text-gray-300">
+                    {category}
+                </p>
+                <h3 className="text-2xl md:text-3xl font-bold mb-4">
+                    {title}
+                </h3>
+                <button className="bg-white text-black px-6 py-2 text-sm font-bold uppercase tracking-wider hover:bg-[var(--brand-royal-red)] hover:text-white transition-colors">
+                    Shop Now
+                </button>
+            </div>
+        </Link>
+    );
+};
 
 const TrendingSection = () => {
+    const trendingCategories = [
+        {
+            id: 1,
+            image: "https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?q=80&w=1000&auto=format&fit=crop",
+            category: "MEN'S FASHION",
+            title: "Formal Suits & Blazers",
+            link: "/category/men"
+        },
+        {
+            id: 2,
+            image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1000&auto=format&fit=crop",
+            category: "WOMEN'S COLLECTION",
+            title: "Summer Dresses",
+            link: "/category/women"
+        },
+        {
+            id: 3,
+            image: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=1000&auto=format&fit=crop",
+            category: "ACCESSORIES",
+            title: "Trending Bags & Shoes",
+            link: "/category/accessories"
+        }
+    ];
+
     return (
         <section className="section-content py-12 md:py-16">
-            <h2 className="text-lg md:text-2xl font-bold mb-6 md:mb-8 uppercase tracking-widest text-gray-900 relative">
+            <h2 className="text-lg md:text-xl font-bold mb-6 md:mb-8 uppercase tracking-widest text-gray-900">
                 Trending Now
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
-                {dummyProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {trendingCategories.map((category) => (
+                    <CategoryBanner key={category.id} {...category} />
                 ))}
             </div>
         </section>

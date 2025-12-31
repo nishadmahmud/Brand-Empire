@@ -1,17 +1,55 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import ProductCard from "./ProductCard";
 import { dummyProduct, similarProducts, customersAlsoLiked } from "@/data/productData";
+import { searchLocation } from "@/data/deliveryData";
 
 const ProductDetailsPage = () => {
     const [selectedImage, setSelectedImage] = useState(0);
     const [selectedSize, setSelectedSize] = useState("");
     const [pincode, setPincode] = useState("");
     const [showOffers, setShowOffers] = useState(false);
+    const [showLightbox, setShowLightbox] = useState(false);
+
+    // Delivery autocomplete states
+    const [deliveryQuery, setDeliveryQuery] = useState("");
+    const [deliveryResults, setDeliveryResults] = useState([]);
+    const [selectedDelivery, setSelectedDelivery] = useState(null);
+    const [showDeliveryDropdown, setShowDeliveryDropdown] = useState(false);
 
     const product = dummyProduct;
+
+    // Keyboard navigation for lightbox
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (!showLightbox) return;
+
+            if (e.key === 'Escape') {
+                setShowLightbox(false);
+            } else if (e.key === 'ArrowLeft') {
+                setSelectedImage((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
+            } else if (e.key === 'ArrowRight') {
+                setSelectedImage((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showLightbox, product.images.length]);
+
+    // Prevent body scroll when lightbox is open
+    useEffect(() => {
+        if (showLightbox) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showLightbox]);
 
     return (
         <div className="min-h-screen bg-white">
@@ -36,7 +74,10 @@ const ProductDetailsPage = () => {
                     {/* Left: Image Gallery */}
                     <div className="space-y-4">
                         {/* Main Image */}
-                        <div className="relative w-full h-[500px] md:h-[600px] bg-gray-100 rounded">
+                        <div
+                            className="relative w-full h-[500px] md:h-[600px] bg-gray-100 rounded cursor-zoom-in"
+                            onClick={() => setShowLightbox(true)}
+                        >
                             <Image
                                 src={product.images[selectedImage]}
                                 alt={product.name}
@@ -44,6 +85,15 @@ const ProductDetailsPage = () => {
                                 className="object-cover rounded"
                                 unoptimized
                             />
+                            {/* Zoom Icon Indicator */}
+                            <div className="absolute top-4 right-4 bg-white/90 p-2 rounded-full shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                                </svg>
+                            </div>
                         </div>
 
                         {/* Thumbnails */}
@@ -138,28 +188,115 @@ const ProductDetailsPage = () => {
 
                         {/* Delivery Options */}
                         <div className="pb-6 border-b border-gray-200">
-                            <h3 className="text-sm font-bold uppercase mb-4 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="1" y="3" width="15" height="13"></rect>
-                                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
-                                </svg>
-                                Delivery Options
-                            </h3>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    placeholder="Enter pincode"
-                                    value={pincode}
-                                    onChange={(e) => setPincode(e.target.value)}
-                                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[var(--brand-royal-red)]"
-                                />
-                                <button className="px-6 py-2 text-[var(--brand-royal-red)] font-bold border border-[var(--brand-royal-red)] rounded hover:bg-red-50 transition-colors">
-                                    Check
-                                </button>
+                            <h3 className="text-sm font-bold uppercase mb-4">Delivery Options</h3>
+                            <div className="relative">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Enter your district or area"
+                                        value={deliveryQuery}
+                                        onChange={(e) => {
+                                            const query = e.target.value;
+                                            setDeliveryQuery(query);
+                                            if (query.length >= 2) {
+                                                const results = searchLocation(query);
+                                                setDeliveryResults(results);
+                                                setShowDeliveryDropdown(true);
+                                            } else {
+                                                setDeliveryResults([]);
+                                                setShowDeliveryDropdown(false);
+                                            }
+                                        }}
+                                        onFocus={() => {
+                                            if (deliveryResults.length > 0) {
+                                                setShowDeliveryDropdown(true);
+                                            }
+                                        }}
+                                        className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[var(--brand-royal-red)]"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            if (deliveryResults.length > 0) {
+                                                setSelectedDelivery(deliveryResults[0]);
+                                                setShowDeliveryDropdown(false);
+                                            }
+                                        }}
+                                        className="px-6 py-2 text-[var(--brand-royal-red)] font-bold border border-[var(--brand-royal-red)] rounded hover:bg-red-50 transition-colors"
+                                    >
+                                        Check
+                                    </button>
+                                </div>
+
+                                {/* Autocomplete Dropdown */}
+                                {showDeliveryDropdown && deliveryResults.length > 0 && (
+                                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto">
+                                        {deliveryResults.map((result, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => {
+                                                    setSelectedDelivery(result);
+                                                    setDeliveryQuery(result.name);
+                                                    setShowDeliveryDropdown(false);
+                                                }}
+                                                className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-900">{result.name}</p>
+                                                        <p className="text-xs text-gray-500">{result.deliveryTime} • ৳{result.deliveryCharge}</p>
+                                                    </div>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                        <circle cx="12" cy="12" r="3"></circle>
+                                                    </svg>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">Please enter PIN code to check delivery time & Pay on Delivery Availability</p>
+
+                            {/* Selected Delivery Info */}
+                            {selectedDelivery && (
+                                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-sm text-gray-900 mb-2">Delivery Available</h4>
+                                            <div className="space-y-1.5 text-sm">
+                                                <p className="flex items-center gap-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <rect x="1" y="3" width="15" height="13"></rect>
+                                                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                                                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                                                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                                                    </svg>
+                                                    <span className="text-gray-700">Estimated delivery: <strong className="text-green-700">{selectedDelivery.deliveryTime}</strong></span>
+                                                </p>
+                                                <p className="flex items-center gap-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                                    </svg>
+                                                    <span className="text-gray-700">Delivery charge: <strong className="text-green-700">৳{selectedDelivery.deliveryCharge}</strong></span>
+                                                </p>
+                                                <p className="flex items-center gap-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                    </svg>
+                                                    <span className="text-gray-700">Cash on Delivery available</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <p className="text-xs text-gray-500 mt-3">Enter your district or area to check delivery time & charges</p>
                             <div className="mt-4 space-y-2 text-sm">
                                 <p className="flex items-center gap-2">
                                     <span className="text-green-600">✓</span>
@@ -167,7 +304,7 @@ const ProductDetailsPage = () => {
                                 </p>
                                 <p className="flex items-center gap-2">
                                     <span className="text-green-600">✓</span>
-                                    <span>Pay on delivery might be available</span>
+                                    <span>Pay on delivery available</span>
                                 </p>
                                 <p className="flex items-center gap-2">
                                     <span className="text-green-600">✓</span>
@@ -243,6 +380,73 @@ const ProductDetailsPage = () => {
                 {/* Customers Also Liked */}
                 <CustomersAlsoLikedSection products={customersAlsoLiked} />
             </div>
+
+            {/* Image Lightbox */}
+            {showLightbox && (
+                <div
+                    className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center"
+                    onClick={() => setShowLightbox(false)}
+                >
+                    {/* Close Button */}
+                    <button
+                        onClick={() => setShowLightbox(false)}
+                        className="absolute top-4 right-4 z-10 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors"
+                        aria-label="Close"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+
+                    {/* Previous Button */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedImage((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
+                        }}
+                        className="absolute left-4 z-10 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors"
+                        aria-label="Previous image"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+
+                    {/* Image */}
+                    <div
+                        className="relative w-[90vw] h-[90vh] max-w-6xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <Image
+                            src={product.images[selectedImage]}
+                            alt={product.name}
+                            fill
+                            className="object-contain"
+                            unoptimized
+                        />
+                    </div>
+
+                    {/* Next Button */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedImage((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
+                        }}
+                        className="absolute right-4 z-10 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors"
+                        aria-label="Next image"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+
+                    {/* Image Counter */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/10 text-white px-4 py-2 rounded-full text-sm">
+                        {selectedImage + 1} / {product.images.length}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

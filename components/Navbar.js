@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { megaMenuData } from "@/data/megaMenuData";
 
 const Navbar = ({ marqueeVisible = true }) => {
@@ -11,7 +12,7 @@ const Navbar = ({ marqueeVisible = true }) => {
     return (
         <nav className={`fixed ${marqueeVisible ? 'top-[36px]' : 'top-0'} left-0 w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)] z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-12 font-sans transition-all duration-300`}>
             {/* Logo Section */}
-            <div className="flex items-center">
+            <Link href="/" className="flex items-center">
                 <div className="relative h-12 md:h-16 w-32 md:w-44">
                     <Image
                         src="/logo.png"
@@ -23,7 +24,7 @@ const Navbar = ({ marqueeVisible = true }) => {
                         unoptimized
                     />
                 </div>
-            </div>
+            </Link>
 
             {/* Navigation Links - Desktop Only */}
             <div className="hidden lg:flex items-center gap-10 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider h-full">
