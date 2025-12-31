@@ -4,10 +4,12 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { megaMenuData } from "@/data/megaMenuData";
+import { useCart } from "@/context/CartContext";
 
 const Navbar = ({ marqueeVisible = true }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [activeMegaMenu, setActiveMegaMenu] = useState(null);
+    const { toggleCart, getCartCount } = useCart();
 
     return (
         <nav className={`fixed ${marqueeVisible ? 'top-[36px]' : 'top-0'} left-0 w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.05)] z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-12 font-sans transition-all duration-300`}>
@@ -126,31 +128,19 @@ const Navbar = ({ marqueeVisible = true }) => {
                         </svg>
                         <span className="text-[12px] font-bold text-black">Wishlist</span>
                     </div>
-                    <div className="flex flex-col items-center gap-1 cursor-pointer group">
+                    <div className="flex flex-col items-center gap-1 cursor-pointer group relative" onClick={toggleCart}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#282c3f] group-hover:text-black">
                             <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
                             <line x1="3" y1="6" x2="21" y2="6"></line>
                             <path d="M16 10a4 4 0 0 1-8 0"></path>
                         </svg>
                         <span className="text-[12px] font-bold text-black">Bag</span>
+                        {getCartCount() > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-[var(--brand-royal-red)] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                {getCartCount()}
+                            </span>
+                        )}
                     </div>
-                </div>
-
-                {/* Mobile Icons - Search and Bag */}
-                <div className="flex md:hidden items-center gap-4">
-                    <button className="p-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#282c3f]">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                    </button>
-                    <button className="p-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#282c3f]">
-                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <path d="M16 10a4 4 0 0 1-8 0"></path>
-                        </svg>
-                    </button>
                 </div>
 
                 {/* Mobile Menu Button */}
@@ -171,42 +161,42 @@ const Navbar = ({ marqueeVisible = true }) => {
                         </svg>
                     )}
                 </button>
-            </div>
 
-            {/* Mobile Menu Dropdown */}
-            {mobileMenuOpen && (
-                <div className="absolute top-full left-0 w-full bg-white shadow-lg lg:hidden border-t border-gray-100">
-                    <div className="flex flex-col p-4">
-                        <a href="/category/men" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
-                            MEN
-                        </a>
-                        <a href="/category/women" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
-                            WOMEN
-                        </a>
-                        <a href="/category/kids" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
-                            KIDS
-                        </a>
-                        <a href="#" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
-                            HOME & LIVING
-                        </a>
-                        <a href="#" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
-                            BEAUTY
-                        </a>
-                        <a href="#" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
-                            STUDIO
-                            <span className="ml-2 text-[10px] text-[var(--brand-royal-red)]">NEW</span>
-                        </a>
-                        <div className="flex gap-4 mt-4 pt-4 border-t border-gray-100">
-                            <button className="flex-1 py-2 px-4 border border-gray-300 rounded text-sm font-bold hover:bg-gray-50">
-                                Profile
-                            </button>
-                            <button className="flex-1 py-2 px-4 border border-gray-300 rounded text-sm font-bold hover:bg-gray-50">
-                                Wishlist
-                            </button>
+                {/* Mobile Menu Dropdown */}
+                {mobileMenuOpen && (
+                    <div className="absolute top-full left-0 w-full bg-white shadow-lg lg:hidden border-t border-gray-100">
+                        <div className="flex flex-col p-4">
+                            <a href="/category/men" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                                MEN
+                            </a>
+                            <a href="/category/women" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                                WOMEN
+                            </a>
+                            <a href="/category/kids" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                                KIDS
+                            </a>
+                            <a href="#" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                                HOME & LIVING
+                            </a>
+                            <a href="#" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                                BEAUTY
+                            </a>
+                            <a href="#" className="py-3 px-4 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider hover:bg-gray-50 hover:text-[var(--brand-royal-red)] transition-colors border-b border-gray-100">
+                                STUDIO
+                                <span className="ml-2 text-[10px] text-[var(--brand-royal-red)]">NEW</span>
+                            </a>
+                            <div className="flex gap-4 mt-4 pt-4 border-t border-gray-100">
+                                <button className="flex-1 py-2 px-4 border border-gray-300 rounded text-sm font-bold hover:bg-gray-50">
+                                    Profile
+                                </button>
+                                <button className="flex-1 py-2 px-4 border border-gray-300 rounded text-sm font-bold hover:bg-gray-50">
+                                    Wishlist
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </nav>
     );
 };

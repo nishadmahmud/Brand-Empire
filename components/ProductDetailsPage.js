@@ -5,6 +5,7 @@ import Image from "next/image";
 import ProductCard from "./ProductCard";
 import { dummyProduct, similarProducts, customersAlsoLiked } from "@/data/productData";
 import { searchLocation } from "@/data/deliveryData";
+import { useCart } from "@/context/CartContext";
 
 const ProductDetailsPage = () => {
     const [selectedImage, setSelectedImage] = useState(0);
@@ -12,6 +13,7 @@ const ProductDetailsPage = () => {
     const [pincode, setPincode] = useState("");
     const [showOffers, setShowOffers] = useState(false);
     const [showLightbox, setShowLightbox] = useState(false);
+    const [sizeError, setSizeError] = useState(false);
 
     // Delivery autocomplete states
     const [deliveryQuery, setDeliveryQuery] = useState("");
@@ -19,7 +21,23 @@ const ProductDetailsPage = () => {
     const [selectedDelivery, setSelectedDelivery] = useState(null);
     const [showDeliveryDropdown, setShowDeliveryDropdown] = useState(false);
 
+    // Cart functionality
+    const { addToCart, setIsCartOpen } = useCart();
+
     const product = dummyProduct;
+
+    // Handle Add to Bag
+    const handleAddToBag = () => {
+        if (!selectedSize) {
+            setSizeError(true);
+            // Scroll to size selector
+            document.getElementById('size-selector')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        setSizeError(false);
+        addToCart(product, 1, selectedSize);
+        setIsCartOpen(true); // Explicitly open cart modal
+    };
 
     // Keyboard navigation for lightbox
     useEffect(() => {
@@ -145,8 +163,8 @@ const ProductDetailsPage = () => {
                         <p className="text-xs text-green-600 font-medium -mt-4">inclusive of all taxes</p>
 
                         {/* Size Selector */}
-                        <div className="pb-6 border-b border-gray-200">
-                            <div className="flex items-center justify-between mb-4">
+                        <div id="size-selector" className="mb-6">
+                            <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-sm font-bold uppercase">Select Size</h3>
                                 <button className="text-sm text-[var(--brand-royal-red)] font-bold hover:underline">
                                     SIZE CHART →
@@ -156,7 +174,10 @@ const ProductDetailsPage = () => {
                                 {product.sizes.map((size) => (
                                     <button
                                         key={size}
-                                        onClick={() => setSelectedSize(size)}
+                                        onClick={() => {
+                                            setSelectedSize(size);
+                                            setSizeError(false);
+                                        }}
                                         className={`w-14 h-14 rounded-full border-2 font-bold transition-all ${selectedSize === size
                                             ? 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]'
                                             : 'border-gray-300 text-gray-700 hover:border-gray-400'
@@ -166,11 +187,24 @@ const ProductDetailsPage = () => {
                                     </button>
                                 ))}
                             </div>
+                            {sizeError && (
+                                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded flex items-center gap-2 text-red-700 text-sm animate-shake">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                    <span className="font-medium">Please select a size before adding to bag</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Action Buttons */}
                         <div className="flex gap-4">
-                            <button className="flex-1 bg-[var(--brand-royal-red)] text-white py-4 rounded font-bold text-sm uppercase hover:bg-[#a01830] transition-colors flex items-center justify-center gap-2">
+                            <button
+                                onClick={handleAddToBag}
+                                className="flex-1 bg-[var(--brand-royal-red)] text-white py-4 rounded font-bold text-sm uppercase hover:bg-[#a01830] transition-colors flex items-center justify-center gap-2"
+                            >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
                                     <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -384,13 +418,38 @@ const ProductDetailsPage = () => {
             {/* Image Lightbox */}
             {showLightbox && (
                 <div
-                    className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center"
+                    className="fixed inset-0 bg-gray-900/60 backdrop-blur-[3px] z-[100] flex items-center justify-center"
+
                     onClick={() => setShowLightbox(false)}
                 >
+                    {/* Thumbnail Strip - Left Side */}
+                    <div
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2 max-h-[80vh] overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {product.images.map((img, index) => (
+                            <button
+                                key={index}
+                                onClick={() => setSelectedImage(index)}
+                                className={`relative w-16 h-20 flex-shrink-0 rounded overflow-hidden transition-all ${selectedImage === index
+                                    ? 'ring-2 ring-white opacity-100'
+                                    : 'opacity-60 hover:opacity-100'
+                                    }`}
+                            >
+                                <Image
+                                    src={img}
+                                    alt={`Thumbnail ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                    unoptimized
+                                />
+                            </button>
+                        ))}
+                    </div>
                     {/* Close Button */}
                     <button
                         onClick={() => setShowLightbox(false)}
-                        className="absolute top-4 right-4 z-10 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors"
+                        className="absolute top-4 right-4 z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
                         aria-label="Close"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -405,7 +464,7 @@ const ProductDetailsPage = () => {
                             e.stopPropagation();
                             setSelectedImage((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
                         }}
-                        className="absolute left-4 z-10 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors"
+                        className="absolute left-24 z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
                         aria-label="Previous image"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -433,7 +492,7 @@ const ProductDetailsPage = () => {
                             e.stopPropagation();
                             setSelectedImage((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
                         }}
-                        className="absolute right-4 z-10 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors"
+                        className="absolute right-4 z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
                         aria-label="Next image"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -442,7 +501,7 @@ const ProductDetailsPage = () => {
                     </button>
 
                     {/* Image Counter */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/10 text-white px-4 py-2 rounded-full text-sm">
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
                         {selectedImage + 1} / {product.images.length}
                     </div>
                 </div>

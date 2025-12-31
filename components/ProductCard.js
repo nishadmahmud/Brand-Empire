@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useCart } from "@/context/CartContext";
 
 const ProductCard = ({ product, tag }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
+    const { addToCart } = useCart();
+
+    const handleAddToCart = (e) => {
+        e.preventDefault(); // Prevent Link navigation
+        addToCart(product, 1);
+    };
 
     useEffect(() => {
         let interval;
@@ -54,10 +61,25 @@ const ProductCard = ({ product, tag }) => {
                     </div>
 
                     {/* Wishlist Icon */}
-                    <button className="absolute top-4 right-4 p-2 transition-opacity opacity-0 group-hover:opacity-100 text-gray-700 hover:text-black hover:bg-white/50 rounded-full z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            // Add wishlist functionality later
+                        }}
+                        className="absolute top-2 right-2 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 hover:bg-[var(--brand-royal-red)] hover:text-white"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
                     </button>
 
+                    {/* Add to Cart Button */}
+                    <button
+                        onClick={handleAddToCart}
+                        className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm py-3 font-bold uppercase text-sm tracking-wider text-black hover:bg-[var(--brand-royal-red)] hover:text-white transition-all duration-300 opacity-0 group-hover:opacity-100 translate-y-full group-hover:translate-y-0 z-10"
+                    >
+                        Add to Cart
+                    </button>
                     {/* Size Overlay - Clean Professional Look */}
                     <div className={`absolute bottom-2 left-2 right-2 bg-white shadow-md px-4 py-3 transform transition-all duration-300 ease-out z-10 ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
                         <div className="flex justify-between items-center px-2">
