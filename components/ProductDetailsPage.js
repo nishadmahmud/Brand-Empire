@@ -449,7 +449,7 @@ const ProductDetailsPage = () => {
                     {/* Close Button */}
                     <button
                         onClick={() => setShowLightbox(false)}
-                        className="absolute top-4 right-4 z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
+                        className="absolute top-4 right-20 z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
                         aria-label="Close"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -464,7 +464,7 @@ const ProductDetailsPage = () => {
                             e.stopPropagation();
                             setSelectedImage((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
                         }}
-                        className="absolute left-24 z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
+                        className="absolute left-[250px] z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
                         aria-label="Previous image"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -492,7 +492,7 @@ const ProductDetailsPage = () => {
                             e.stopPropagation();
                             setSelectedImage((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
                         }}
-                        className="absolute right-4 z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
+                        className="absolute right-[250px] z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
                         aria-label="Next image"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
