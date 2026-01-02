@@ -166,5 +166,14 @@ export const megaMenuData = {
                 items: ["H&M", "Max Kids", "United Colors Of Benetton Kids", "YK", "U.S. Polo Assn. Kids", "Mothercare", "HRX"]
             }
         ]
+    },
+    offers: {
+        categories: [
+            {
+                title: "Shop by Brand",
+                color: "text-[var(--brand-royal-red)]",
+                items: ["Nike", "Adidas", "Levi's", "H&M", "Zara"]
+            }
+        ]
     }
 };

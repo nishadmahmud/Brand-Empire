@@ -30,6 +30,16 @@ const Navbar = ({ marqueeVisible = true }) => {
 
             {/* Navigation Links - Desktop Only */}
             <div className="hidden lg:flex items-center gap-10 font-bold text-[#282c3f] uppercase text-[14px] tracking-wider h-full">
+                {/* Offers Link - FIRST POSITION */}
+                <div
+                    className="relative h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1 group"
+                    onMouseEnter={() => setActiveMegaMenu('offers')}
+                    onMouseLeave={() => setActiveMegaMenu(null)}
+                >
+                    <Link href="/offers" className="text-[var(--brand-royal-red)] font-extrabold">
+                        OFFERS
+                    </Link>
+                </div>
                 <div
                     className="relative h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-1"
                     onMouseEnter={() => setActiveMegaMenu('men')}
@@ -61,6 +71,7 @@ const Navbar = ({ marqueeVisible = true }) => {
                     <span className="">STUDIO</span>
                     <span className="absolute top-4 -right-3 text-[10px] font-bold text-[var(--brand-royal-red)]">NEW</span>
                 </div>
+
             </div>
 
             {/* Mega Menu Dropdown */}
@@ -70,31 +81,61 @@ const Navbar = ({ marqueeVisible = true }) => {
                     onMouseEnter={() => setActiveMegaMenu(activeMegaMenu)}
                     onMouseLeave={() => setActiveMegaMenu(null)}
                 >
-                    <div className="max-w-[1400px] mx-auto px-12 py-3">
-                        <div className="grid grid-cols-5 gap-6">
-                            {megaMenuData[activeMegaMenu]?.categories.map((category, index) => (
-                                <div key={index} className="space-y-1.5">
-                                    <h3 className={`font-bold text-xs uppercase ${category.color} mb-1.5`}>
-                                        {category.title}
-                                    </h3>
-                                    {category.items.length > 0 && (
-                                        <ul className="space-y-1">
-                                            {category.items.slice(0, 5).map((item, itemIndex) => (
-                                                <li key={itemIndex}>
-                                                    <a
-                                                        href="#"
-                                                        className="text-xs text-gray-600 hover:text-[var(--brand-royal-red)] hover:font-medium transition-colors"
-                                                    >
-                                                        {item}
-                                                    </a>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </div>
-                            ))}
+                    {activeMegaMenu === 'offers' ? (
+                        // Special styling for Offers dropdown
+                        <div className="max-w-[1400px] mx-auto px-12 py-6">
+                            <div className="flex items-center justify-center gap-8">
+                                {megaMenuData[activeMegaMenu]?.categories[0]?.items.map((brand, index) => (
+                                    <Link
+                                        key={index}
+                                        href={`/offers?brand=${brand.toLowerCase()}`}
+                                        className="group flex flex-col items-center gap-2 px-6 py-4 rounded-lg hover:bg-gray-50 transition-all"
+                                    >
+                                        <div className="w-24 h-24 flex items-center justify-center bg-white rounded-lg shadow-md group-hover:shadow-xl transition-all p-3">
+                                            <Image
+                                                src={`/brands/${brand.toLowerCase().replace(/[&']/g, "")}.png`}
+                                                alt={`${brand} logo`}
+                                                width={80}
+                                                height={80}
+                                                className="object-contain w-full h-full"
+                                                unoptimized
+                                            />
+                                        </div>
+                                        <span className="text-sm font-bold text-gray-900 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                            {brand}
+                                        </span>
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        // Regular mega menu for other categories
+                        <div className="max-w-[1400px] mx-auto px-12 py-3">
+                            <div className="grid grid-cols-5 gap-6">
+                                {megaMenuData[activeMegaMenu]?.categories.map((category, index) => (
+                                    <div key={index} className="space-y-1.5">
+                                        <h3 className={`font-bold text-xs uppercase ${category.color} mb-1.5`}>
+                                            {category.title}
+                                        </h3>
+                                        {category.items.length > 0 && (
+                                            <ul className="space-y-1">
+                                                {category.items.slice(0, 5).map((item, itemIndex) => (
+                                                    <li key={itemIndex}>
+                                                        <a
+                                                            href="#"
+                                                            className="text-xs text-gray-600 hover:text-[var(--brand-royal-red)] hover:font-medium transition-colors"
+                                                        >
+                                                            {item}
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
