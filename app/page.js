@@ -10,6 +10,7 @@ import NewArrivals from "@/components/NewArrivals";
 import AppPromoSection from "@/components/AppPromoSection";
 import Footer from "@/components/Footer";
 import TopMarquee from "@/components/TopMarquee";
+import WelcomePopup from "@/components/WelcomePopup";
 import { useState } from "react";
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
     <main className={`min-h-screen ${marqueeVisible ? 'pt-[88px] md:pt-[116px]' : 'pt-16 md:pt-20'} overflow-x-hidden w-full max-w-[100vw] transition-all duration-300`}> {/* Responsive padding for marquee + navbar */}
       <TopMarquee onClose={() => setMarqueeVisible(false)} />
       <Navbar marqueeVisible={marqueeVisible} />
+      <WelcomePopup />
 
       {/* Hero Section - Full Width */}
       <section className="section-full relative">
