@@ -3,36 +3,73 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { getPopupBanners } from "@/lib/api";
 
 const WelcomePopup = () => {
     const [isVisible, setIsVisible] = useState(false);
+    const [popupData, setPopupData] = useState(null);
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
         // Check if popup has been shown in this session
         const hasSeenPopup = sessionStorage.getItem("welcomePopupShown");
+        console.log("🔍 Popup session check:", hasSeenPopup ? "Already shown" : "Not shown yet");
 
         if (!hasSeenPopup) {
-            // Show popup after a short delay
-            const timer = setTimeout(() => {
-                setIsVisible(true);
-                sessionStorage.setItem("welcomePopupShown", "true");
-            }, 1000);
+            // Fetch popup data from API
+            const fetchPopupData = async () => {
+                try {
+                    console.log("🎯 Fetching popup banners from API...");
+                    const response = await getPopupBanners();
+                    console.log("📦 Popup API Response:", response);
 
-            return () => clearTimeout(timer);
+                    if (response.success && response.data && response.data.length > 0) {
+                        console.log("✅ Popup data found:", response.data[0]);
+                        setPopupData(response.data[0]); // Use first popup
+
+                        // Show popup after a short delay
+                        setTimeout(() => {
+                            console.log("🎉 Showing popup!");
+                            setIsVisible(true);
+                            sessionStorage.setItem("welcomePopupShown", "true");
+                        }, 1000);
+                    } else {
+                        console.warn("⚠️ No popup data available in response");
+                    }
+                } catch (error) {
+                    console.error("❌ Error fetching popup banners:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            fetchPopupData();
+        } else {
+            console.log("ℹ️ Popup already shown in this session");
+            setLoading(false);
         }
     }, []);
 
     const handleClose = () => {
+        console.log("🚫 Closing popup");
         setIsVisible(false);
     };
 
     const handleShopNow = () => {
+        console.log("🛍️ Shop Now clicked");
         setIsVisible(false);
-        router.push("/category/all");
+        // Use the URL from API if available, otherwise fallback to default
+        const targetUrl = popupData?.url || "/category/all";
+        router.push(targetUrl);
     };
 
-    if (!isVisible) return null;
+    if (loading || !isVisible || !popupData) {
+        console.log("⏳ Popup not ready:", { loading, isVisible, hasData: !!popupData });
+        return null;
+    }
+
+    console.log("✨ Rendering popup with data:", popupData);
 
     return (
         <div
@@ -63,8 +100,8 @@ const WelcomePopup = () => {
                     {/* Background Image */}
                     <div className="relative w-full h-[500px]">
                         <Image
-                            src="/welcome_popup_banner.png"
-                            alt="Welcome to Brand Empire"
+                            src={popupData.image || "/welcome_popup_banner.png"}
+                            alt={popupData.title || "Welcome"}
                             fill
                             className="object-cover"
                             unoptimized
@@ -77,40 +114,29 @@ const WelcomePopup = () => {
 
                     {/* Text Content Overlay */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8">
-                        {/* Brand Logo/Text */}
+                        {/* Brand Title */}
                         <div className="mb-6">
-                            <p className="text-white text-lg font-semibold tracking-wider mb-2 drop-shadow-lg">
-                                Welcome to
-                            </p>
                             <h1 className="text-white text-5xl md:text-6xl font-bold tracking-tight drop-shadow-2xl">
-                                BRAND EMPIRE
+                                {popupData.title || "BRAND EMPIRE"}
                             </h1>
                         </div>
 
-                        {/* Promotional Text */}
-                        <div className="mb-8">
-                            <h2 className="text-white text-3xl md:text-4xl font-bold mb-3 drop-shadow-lg">
-                                New Season Collection
-                            </h2>
-                            <p className="text-white text-lg md:text-xl font-medium drop-shadow-lg">
-                                Discover Premium Fashion & Exclusive Deals
-                            </p>
-                        </div>
+                        {/* Description */}
+                        {popupData.description && (
+                            <div className="mb-8">
+                                <p className="text-white text-lg md:text-xl font-medium drop-shadow-lg max-w-2xl">
+                                    {popupData.description}
+                                </p>
+                            </div>
+                        )}
 
                         {/* CTA Button */}
                         <button
                             onClick={handleShopNow}
                             className="bg-white text-gray-900 px-10 py-4 text-lg font-bold uppercase tracking-wider rounded-md hover:bg-gray-100 transition-all shadow-2xl hover:scale-105 hover:shadow-xl"
                         >
-                            Shop Now
+                            {popupData.button_text || "Shop Now"}
                         </button>
-
-                        {/* Optional: Discount Badge */}
-                        <div className="mt-6">
-                            <span className="inline-block bg-[var(--brand-royal-red)] text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wide shadow-lg">
-                                Up to 50% Off
-                            </span>
-                        </div>
                     </div>
                 </div>
             </div>
