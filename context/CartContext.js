@@ -66,7 +66,7 @@ export const CartProvider = ({ children }) => {
                 }];
             }
         });
-        setIsCartOpen(true); // Open cart modal when item added
+
     };
 
     // Remove item from cart

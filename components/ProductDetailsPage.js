@@ -6,6 +6,7 @@ import ProductCard from "./ProductCard";
 import { dummyProduct, similarProducts, customersAlsoLiked } from "@/data/productData";
 import { searchLocation } from "@/data/deliveryData";
 import { useCart } from "@/context/CartContext";
+import { useToast } from "@/context/ToastContext";
 
 const ProductDetailsPage = () => {
     const [selectedImage, setSelectedImage] = useState(0);
@@ -23,6 +24,7 @@ const ProductDetailsPage = () => {
 
     // Cart functionality
     const { addToCart, setIsCartOpen } = useCart();
+    const { showToast } = useToast();
 
     const product = dummyProduct;
 
@@ -36,7 +38,7 @@ const ProductDetailsPage = () => {
         }
         setSizeError(false);
         addToCart(product, 1, selectedSize);
-        setIsCartOpen(true); // Explicitly open cart modal
+        showToast(product); // Show toast notification
     };
 
     // Keyboard navigation for lightbox
