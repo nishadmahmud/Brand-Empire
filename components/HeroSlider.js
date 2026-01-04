@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import { getSlidersFromServer } from "@/lib/api";
+import Link from "next/link";
 
-const slides = [
+// Dummy slides as fallback
+const dummySlides = [
     {
         id: 1,
         image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop",
@@ -11,6 +14,7 @@ const slides = [
         subtitle: "JAPANESE CRAFTSMANSHIP MEETS EFFORTLESS STYLE.",
         buttonText: "EXPLORE NOW",
         alignment: "left",
+        link: "/category/all"
     },
     {
         id: 2,
@@ -19,6 +23,7 @@ const slides = [
         subtitle: "BOLD LOOKS FOR THE MODERN ERA.",
         buttonText: "SHOP LATEST",
         alignment: "right",
+        link: "/category/all"
     },
     {
         id: 3,
@@ -27,6 +32,7 @@ const slides = [
         subtitle: "CURATED COLLECTIONS FOR HER.",
         buttonText: "VIEW COLLECTION",
         alignment: "center",
+        link: "/category/all"
     },
     {
         id: 4,
@@ -35,6 +41,7 @@ const slides = [
         subtitle: "WARMTH MEETS LUXURY.",
         buttonText: "SHOP WINTER",
         alignment: "left",
+        link: "/category/all"
     },
     {
         id: 5,
@@ -43,18 +50,58 @@ const slides = [
         subtitle: "RUNWAY READY STYLES.",
         buttonText: "DISCOVER MORE",
         alignment: "right",
+        link: "/category/all"
     },
 ];
 
 const HeroSlider = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [slides, setSlides] = useState(dummySlides); // Start with dummy data
+    const [autoPlayInterval, setAutoPlayInterval] = useState(5000);
+
+    useEffect(() => {
+        const fetchSliders = async () => {
+            try {
+                const response = await getSlidersFromServer();
+
+                if (response.success && response.sliders && response.sliders.length > 0) {
+                    // Transform API data to match component structure
+                    const apiSlides = response.sliders
+                        .filter(slider => slider.status === 1)
+                        .map((slider, index) => ({
+                            id: slider.id,
+                            image: slider.image_path,
+                            title: slider.title || "",
+                            subtitle: "",
+                            buttonText: "SHOP NOW",
+                            alignment: index % 3 === 0 ? "left" : index % 3 === 1 ? "right" : "center",
+                            link: slider.link || `/product/${slider.product_id}`
+                        }));
+
+                    if (apiSlides.length > 0) {
+                        setSlides(apiSlides);
+                    }
+
+                    // Set autoplay interval from API (convert to milliseconds)
+                    if (response.autoPlayInterval) {
+                        setAutoPlayInterval(parseInt(response.autoPlayInterval));
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching sliders:", error);
+                // Keep dummy slides on error
+            }
+        };
+
+        fetchSliders();
+    }, []);
 
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % slides.length);
-        }, 5000);
+        }, autoPlayInterval);
         return () => clearInterval(timer);
-    }, []);
+    }, [slides.length, autoPlayInterval]);
 
     const nextSlide = () => {
         setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -76,28 +123,36 @@ const HeroSlider = () => {
                     <div className="relative w-full h-full">
                         <Image
                             src={slide.image}
-                            alt={slide.title}
+                            alt={slide.title || "Slider"}
                             fill
                             className="object-cover"
                             priority={index === 0}
+                            unoptimized
                         />
-                        {/* Overlay Gradient */}
-                        <div className="absolute inset-0 bg-black/20" />
+                        {/* Overlay Gradient - Removed for clean image display */}
+                        {/* <div className="absolute inset-0 bg-black/20" /> */}
 
-                        {/* Text Content */}
-                        <div className={`absolute inset-0 flex flex-col justify-center px-6 md:px-12 lg:px-20 ${slide.alignment === 'left' ? 'items-start text-left' :
-                            slide.alignment === 'right' ? 'items-end text-right' : 'items-center text-center'
+                        {/* Text Content - Hidden per user request */}
+                        {/* <div className={`absolute inset-0 flex flex-col justify-center px-6 md:px-12 lg:px-20 ${slide.alignment === 'left' ? 'items-start text-left' :
+                                slide.alignment === 'right' ? 'items-end text-right' : 'items-center text-center'
                             }`}>
-                            <h2 className="text-2xl md:text-4xl lg:text-6xl font-light text-white mb-2 font-serif tracking-wide drop-shadow-md">
-                                {slide.title}
-                            </h2>
-                            <p className="text-xs md:text-base lg:text-xl text-white mb-4 md:mb-8 tracking-[0.1em] md:tracking-[0.2em] font-light drop-shadow-sm uppercase">
-                                {slide.subtitle}
-                            </p>
-                            <button className="bg-[#C41E3A] text-white px-6 md:px-10 py-2 md:py-3 font-bold text-xs md:text-sm tracking-widest hover:bg-[#a01830] transition-colors shadow-lg uppercase">
-                                {slide.buttonText}
-                            </button>
-                        </div>
+                            {slide.title && (
+                                <h2 className="text-2xl md:text-4xl lg:text-6xl font-light text-white mb-2 font-serif tracking-wide drop-shadow-md">
+                                    {slide.title}
+                                </h2>
+                            )}
+                            {slide.subtitle && (
+                                <p className="text-xs md:text-base lg:text-xl text-white mb-4 md:mb-8 tracking-[0.1em] md:tracking-[0.2em] font-light drop-shadow-sm uppercase">
+                                    {slide.subtitle}
+                                </p>
+                            )}
+                            <Link href={slide.link || "/category/all"}>
+                                <button className="bg-[#C41E3A] text-white px-6 md:px-10 py-2 md:py-3 font-bold text-xs md:text-sm tracking-widest hover:bg-[#a01830] transition-colors shadow-lg uppercase">
+                                    {slide.buttonText}
+                                </button>
+                            </Link>
+                        </div> */}
+
                     </div>
                 </div>
             ))}

@@ -1,16 +1,45 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getTopbarData } from "@/lib/api";
 
 const TopMarquee = ({ onClose }) => {
     const [isVisible, setIsVisible] = useState(true);
+    const [topbarData, setTopbarData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchTopbarData = async () => {
+            try {
+                const response = await getTopbarData();
+
+                if (response.success && response.topbars && response.topbars.length > 0) {
+                    setTopbarData({
+                        messages: response.topbars.filter(item => item.status).map(item => item.title),
+                        bgColor: response.settings?.bg_color || "#0066FF"
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching topbar data:", error);
+                // Fallback to default data if API fails
+                setTopbarData({
+                    messages: ["⚡ FREE SHIPPING AND RETURNS!!"],
+                    bgColor: "#0066FF"
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTopbarData();
+    }, []);
 
     const handleClose = () => {
         setIsVisible(false);
         if (onClose) onClose();
     };
 
-    if (!isVisible) return null;
+    if (!isVisible || loading || !topbarData) return null;
 
     return (
         <>
@@ -29,8 +58,9 @@ const TopMarquee = ({ onClose }) => {
                 `
             }} />
             <div
-                className="fixed top-0 left-0 right-0 w-full bg-[#0066FF] text-white z-[60] flex items-center"
+                className="fixed top-0 left-0 right-0 w-full text-white z-[60] flex items-center"
                 style={{
+                    backgroundColor: topbarData.bgColor,
                     height: '36px',
                     minHeight: '36px',
                     maxHeight: '36px',
@@ -56,6 +86,7 @@ const TopMarquee = ({ onClose }) => {
                             display: 'flex'
                         }}
                     >
+                        {/* First set of messages */}
                         <span
                             className="inline-flex items-center uppercase"
                             style={{
@@ -66,15 +97,15 @@ const TopMarquee = ({ onClose }) => {
                                 lineHeight: '36px'
                             }}
                         >
-                            ⚡ FREE SHIPPING AND RETURNS!!
-                            <span className="mx-8">•</span>
-                            NEW SEASON, NEW STYLES: FASHION SALE YOU CAN'T MISS
-                            <span className="mx-8">•</span>
-                            LIMITED TIME OFFER: FASHION SALE YOU CAN'T RESIST
-                            <span className="mx-8">•</span>
-                            FREE SHIPPING ON ORDERS OVER $50
+                            {topbarData.messages.map((message, index) => (
+                                <React.Fragment key={`msg-1-${index}`}>
+                                    {message}
+                                    {index < topbarData.messages.length - 1 && <span className="mx-8">•</span>}
+                                </React.Fragment>
+                            ))}
                             <span className="mx-8">•</span>
                         </span>
+                        {/* Duplicate set for seamless loop */}
                         <span
                             className="inline-flex items-center uppercase"
                             style={{
@@ -85,13 +116,12 @@ const TopMarquee = ({ onClose }) => {
                                 lineHeight: '36px'
                             }}
                         >
-                            ⚡ FREE SHIPPING AND RETURNS!!
-                            <span className="mx-8">•</span>
-                            NEW SEASON, NEW STYLES: FASHION SALE YOU CAN'T MISS
-                            <span className="mx-8">•</span>
-                            LIMITED TIME OFFER: FASHION SALE YOU CAN'T RESIST
-                            <span className="mx-8">•</span>
-                            FREE SHIPPING ON ORDERS OVER $50
+                            {topbarData.messages.map((message, index) => (
+                                <React.Fragment key={`msg-2-${index}`}>
+                                    {message}
+                                    {index < topbarData.messages.length - 1 && <span className="mx-8">•</span>}
+                                </React.Fragment>
+                            ))}
                             <span className="mx-8">•</span>
                         </span>
                     </div>

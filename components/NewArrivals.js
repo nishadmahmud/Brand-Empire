@@ -1,9 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import ProductCard from "./ProductCard";
+import { getNewArrivalsFromServer } from "@/lib/api";
 
-const newArrivals = [
+// Dummy products as fallback
+const dummyProducts = [
     {
         id: 101,
         brand: "JACKETS",
@@ -60,101 +62,77 @@ const newArrivals = [
             "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?q=80&w=1000&auto=format&fit=crop",
             "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?q=80&w=1000&auto=format&fit=crop",
         ],
-        sizes: ["30", "32", "34", "36", "38"],
-        unavailableSizes: ["38"],
-        color: "brown",
-    },
-    {
-        id: 105,
-        brand: "FORMAL SHIRTS",
-        name: "Men Beige Slim Fit Full Sleeves Formal",
-        price: "৳ 1,399",
-        originalPrice: "",
-        discount: "",
-        images: [
-            "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?q=80&w=1000&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?q=80&w=1000&auto=format&fit=crop",
-        ],
-        sizes: ["39", "40", "42", "44"],
-        unavailableSizes: ["44"],
-        color: "beige",
-    },
-    {
-        id: 106,
-        brand: "CASUAL SHIRTS",
-        name: "Men Black Regular Fit Full Sleeves Shirt",
-        price: "৳ 1,599",
-        originalPrice: "৳ 1,999",
-        discount: "20% OFF",
-        images: [
-            "https://images.unsplash.com/photo-1626497764746-6dc36546b388?q=80&w=1000&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?q=80&w=1000&auto=format&fit=crop",
-        ],
-        sizes: ["S", "M", "L", "XL"],
+        sizes: ["30", "32", "34", "36"],
         unavailableSizes: [],
-        color: "black",
+        color: "brown",
     },
 ];
 
 const NewArrivals = () => {
-    const scrollContainerRef = React.useRef(null);
+    const [products, setProducts] = useState(dummyProducts); // Start with dummy data
+    const [loading, setLoading] = useState(true);
 
-    const scroll = (direction) => {
-        if (scrollContainerRef.current) {
-            const { current } = scrollContainerRef;
-            const scrollAmount = 320; // Approx card width + gap
-            if (direction === "left") {
-                current.scrollBy({ left: -scrollAmount, behavior: "smooth" });
-            } else {
-                current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    useEffect(() => {
+        const fetchNewArrivals = async () => {
+            try {
+                const response = await getNewArrivalsFromServer();
+
+                if (response.success && response.data && response.data.data && response.data.data.length > 0) {
+                    // Transform API data to match ProductCard structure
+                    const apiProducts = response.data.data.map(product => ({
+                        id: product.id,
+                        brand: product.brands?.name || product.category_name || "BRAND",
+                        name: product.name,
+                        price: `৳ ${product.retails_price.toLocaleString()}`,
+                        originalPrice: product.discount > 0 ? `৳ ${(product.retails_price / (1 - product.discount / 100)).toFixed(0)}` : "",
+                        discount: product.discount > 0 ? `${product.discount}% OFF` : "",
+                        images: product.image_paths && product.image_paths.length > 0
+                            ? product.image_paths
+                            : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
+                        sizes: product.items && product.items.length > 0
+                            ? product.items.map(item => item.size)
+                            : ["S", "M", "L", "XL"], // Default sizes if no variants
+                        unavailableSizes: product.items && product.items.length > 0
+                            ? product.items.filter(item => item.quantity === 0).map(item => item.size)
+                            : [],
+                        color: product.name.toLowerCase().includes("black") ? "black" :
+                            product.name.toLowerCase().includes("blue") ? "blue" :
+                                product.name.toLowerCase().includes("white") ? "white" : "default",
+                        rating: product.review_summary?.average_rating || 0,
+                        reviews: product.review_summary?.total_reviews || 0,
+                    }));
+
+                    setProducts(apiProducts);
+                }
+            } catch (error) {
+                console.error("Error fetching new arrivals:", error);
+                // Keep dummy products on error
+            } finally {
+                setLoading(false);
             }
-        }
-    };
+        };
+
+        fetchNewArrivals();
+    }, []);
 
     return (
-        <section className="section-content py-16 border-t border-gray-100 group relative">
-            <div className="flex justify-between items-center mb-8 px-2">
-                <h2 className="text-xl font-bold uppercase tracking-widest text-gray-900">
-                    New Arrivals
-                </h2>
-            </div>
-
-            <div className="relative">
-                {/* Scroll Button Left */}
-                <button
-                    onClick={() => scroll('left')}
-                    className="hidden md:flex absolute left-0 top-[40%] -translate-y-1/2 -translate-x-5 z-20 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] rounded-full p-3 text-gray-800 hover:text-[var(--brand-royal-red)] hover:scale-110 transition-all border border-gray-100"
-                    aria-label="Scroll Left"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-                </button>
-
-                {/* Scroll Container */}
-                <div
-                    ref={scrollContainerRef}
-                    className="flex overflow-x-auto gap-6 pb-8 hide-scrollbar scroll-smooth snap-x snap-mandatory px-1"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
-                    {newArrivals.map((product) => (
-                        <div key={product.id} className="min-w-[280px] md:min-w-[300px] snap-start">
-                            <ProductCard product={product} tag="JUST IN" />
-                        </div>
-                    ))}
+        <section className="py-12 bg-white">
+            <div className="max-w-[1400px] mx-auto px-4 md:px-8">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+                        NEW ARRIVALS
+                    </h2>
+                    <button className="text-sm font-semibold text-[var(--brand-royal-red)] hover:underline uppercase tracking-wide">
+                        View All →
+                    </button>
                 </div>
 
-                {/* Scroll Button Right */}
-                <button
-                    onClick={() => scroll('right')}
-                    className="hidden md:flex absolute right-0 top-[40%] -translate-y-1/2 translate-x-5 z-20 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] rounded-full p-3 text-gray-800 hover:text-[var(--brand-royal-red)] hover:scale-110 transition-all border border-gray-100"
-                    aria-label="Scroll Right"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-                </button>
-
-                <div className="text-center mt-8">
-                    <button className="text-sm font-bold border-b-2 border-black pb-1 hover:text-[var(--brand-royal-red)] hover:border-[var(--brand-royal-red)] transition-colors uppercase tracking-widest">
-                        View All New Arrivals
-                    </button>
+                {/* Products Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                    {products.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
                 </div>
             </div>
         </section>
