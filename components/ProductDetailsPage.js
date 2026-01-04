@@ -7,14 +7,23 @@ import { dummyProduct, similarProducts, customersAlsoLiked } from "@/data/produc
 import { searchLocation } from "@/data/deliveryData";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
+import { getProductById, getRelatedProduct, getProducts } from "@/lib/api";
+import { useSearchParams } from "next/navigation";
 
-const ProductDetailsPage = () => {
+const ProductDetailsPage = ({ productId }) => {
+    const searchParams = useSearchParams();
+    const categoryIdFromUrl = searchParams.get('category'); // Get category from URL
+
     const [selectedImage, setSelectedImage] = useState(0);
     const [selectedSize, setSelectedSize] = useState("");
     const [pincode, setPincode] = useState("");
     const [showOffers, setShowOffers] = useState(false);
     const [showLightbox, setShowLightbox] = useState(false);
     const [sizeError, setSizeError] = useState(false);
+    const [product, setProduct] = useState(dummyProduct); // Start with dummy data
+    const [loading, setLoading] = useState(true);
+    const [relatedProducts, setRelatedProducts] = useState([]);
+    const [categoryProducts, setCategoryProducts] = useState([]);
 
     // Delivery autocomplete states
     const [deliveryQuery, setDeliveryQuery] = useState("");
@@ -26,7 +35,191 @@ const ProductDetailsPage = () => {
     const { addToCart, setIsCartOpen } = useCart();
     const { showToast } = useToast();
 
-    const product = dummyProduct;
+    // Fetch product data from API
+    useEffect(() => {
+        const fetchProduct = async () => {
+            if (!productId) return;
+
+            try {
+                setLoading(true);
+                const response = await getProductById(productId);
+
+                if (response.success && response.data) {
+                    const apiProduct = response.data;
+
+                    // Transform API data to match component structure
+                    const transformedProduct = {
+                        id: apiProduct.id,
+                        name: apiProduct.name,
+                        brand: apiProduct.brand_name || "BRAND",
+                        price: apiProduct.retails_price,
+                        mrp: apiProduct.discount > 0
+                            ? Math.round(apiProduct.retails_price / (1 - apiProduct.discount / 100))
+                            : apiProduct.retails_price,
+                        discount: apiProduct.discount,
+                        rating: apiProduct.review_summary?.average_rating || 0,
+                        reviewCount: apiProduct.review_summary?.total_reviews || 0,
+                        images: apiProduct.image_paths && apiProduct.image_paths.length > 0
+                            ? apiProduct.image_paths
+                            : apiProduct.images || [],
+                        sizes: apiProduct.product_variants && apiProduct.product_variants.length > 0
+                            ? apiProduct.product_variants.map(v => v.name)
+                            : ["S", "M", "L", "XL"],
+                        unavailableSizes: apiProduct.product_variants && apiProduct.product_variants.length > 0
+                            ? apiProduct.product_variants.filter(v => v.quantity === 0).map(v => v.name)
+                            : [],
+                        description: apiProduct.description || "",
+                        details: {
+                            fit: apiProduct.specifications?.find(s => s.name === "Fit")?.description || "Regular Fit",
+                            sizeWornByModel: "M",
+                            modelStats: {
+                                chest: "38\"",
+                                height: "6'1\"",
+                            },
+                        },
+                        materialCare: {
+                            material: apiProduct.specifications?.find(s => s.name === "Material" || s.name === "Fabric")?.description || "Cotton",
+                            wash: "Machine Wash",
+                        },
+                        specifications: apiProduct.specifications && apiProduct.specifications.length > 0
+                            ? apiProduct.specifications.reduce((acc, spec) => {
+                                acc[spec.name.toLowerCase().replace(/\s+/g, '')] = spec.description;
+                                return acc;
+                            }, {})
+                            : {},
+                        offers: [],
+                        ratings: apiProduct.review_summary?.rating_counts || {
+                            5: 0,
+                            4: 0,
+                            3: 0,
+                            2: 0,
+                            1: 0
+                        },
+                        reviews: [],
+                        stock: apiProduct.current_stock || 0,
+                        status: apiProduct.status || "In Stock",
+                        sku: apiProduct.sku || "",
+                        barcode: apiProduct.barcode || "",
+                        categoryId: apiProduct.category || null,
+                    };
+
+                    setProduct(transformedProduct);
+                }
+            } catch (error) {
+                console.error("Error fetching product:", error);
+                // Keep dummy product as fallback
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProduct();
+    }, [productId]);
+
+    // Fetch related products
+    useEffect(() => {
+        const fetchRelatedProducts = async () => {
+            if (!productId) return;
+
+            try {
+                const response = await getRelatedProduct(productId);
+
+                if (response.success && response.data && response.data.length > 0) {
+                    // Transform related products to ProductCard format
+                    const transformedRelated = response.data
+                        .filter(item => item.id != productId)
+                        .map(item => ({
+                            id: item.id,
+                            brand: item.brand_name || item.brands?.name || "BRAND",
+                            name: item.name,
+                            price: `৳ ${item.retails_price.toLocaleString()}`,
+                            originalPrice: item.discount > 0
+                                ? `৳ ${(item.retails_price / (1 - item.discount / 100)).toFixed(0)}`
+                                : "",
+                            discount: item.discount > 0 ? `${item.discount}% OFF` : "",
+                            images: (Array.isArray(item.image_paths) && item.image_paths.length > 0
+                                ? item.image_paths
+                                : [item.image_path, item.image_path1, item.image_path2])
+                                .filter(img => typeof img === 'string' && img.trim() !== ''),
+                            sizes: item.product_variants && item.product_variants.length > 0
+                                ? item.product_variants.map(v => v.name)
+                                : ["S", "M", "L", "XL"],
+                            unavailableSizes: item.product_variants && item.product_variants.length > 0
+                                ? item.product_variants.filter(v => v.quantity === 0).map(v => v.name)
+                                : [],
+                            color: item.color ||
+                                (item.name.toLowerCase().includes("black") ? "black" :
+                                    item.name.toLowerCase().includes("blue") ? "blue" :
+                                        item.name.toLowerCase().includes("white") ? "white" : "gray"),
+                            rating: item.review_summary?.average_rating || 0,
+                            reviews: item.review_summary?.total_reviews || 0,
+                        }));
+
+                    setRelatedProducts(transformedRelated);
+                }
+            } catch (error) {
+                console.error("Error fetching related products:", error);
+                setRelatedProducts([]);
+            }
+        };
+
+        fetchRelatedProducts();
+    }, [productId]);
+
+    // Fetch products from the same category for "Customers Also Liked"
+    useEffect(() => {
+        const fetchCategoryProducts = async () => {
+            // Use category from URL first, fallback to product's category
+            const categoryToUse = categoryIdFromUrl || product.categoryId;
+
+            if (!categoryToUse) return;
+
+            try {
+                const response = await getProducts(1, categoryToUse);
+
+                if (response.success && response.data && response.data.length > 0) {
+                    // Transform and filter out the current product
+                    const transformedCategory = response.data
+                        .filter(item => item.id != productId) // Exclude current product (loose equality for string/number)
+                        .slice(0, 4) // Limit to 4 products
+                        .map(item => ({
+                            id: item.id,
+                            brand: item.brand_name || item.brands?.name || "BRAND",
+                            name: item.name,
+                            price: `৳ ${item.retails_price.toLocaleString()}`,
+                            originalPrice: item.discount > 0
+                                ? `৳ ${(item.retails_price / (1 - item.discount / 100)).toFixed(0)}`
+                                : "",
+                            discount: item.discount > 0 ? `${item.discount}% OFF` : "",
+                            images: (Array.isArray(item.image_paths) && item.image_paths.length > 0
+                                ? item.image_paths
+                                : [item.image_path, item.image_path1, item.image_path2])
+                                .filter(img => typeof img === 'string' && img.trim() !== ''),
+                            sizes: item.product_variants && item.product_variants.length > 0
+                                ? item.product_variants.map(v => v.name)
+                                : ["S", "M", "L", "XL"],
+                            unavailableSizes: item.product_variants && item.product_variants.length > 0
+                                ? item.product_variants.filter(v => v.quantity === 0).map(v => v.name)
+                                : [],
+                            color: item.color ||
+                                (item.name.toLowerCase().includes("black") ? "black" :
+                                    item.name.toLowerCase().includes("blue") ? "blue" :
+                                        item.name.toLowerCase().includes("white") ? "white" : "gray"),
+                            rating: item.review_summary?.average_rating || 0,
+                            reviews: item.review_summary?.total_reviews || 0,
+                        }))
+                        .filter(item => item.images && item.images.length > 0); // Only include products with valid images
+
+                    setCategoryProducts(transformedCategory);
+                }
+            } catch (error) {
+                console.error("Error fetching category products:", error);
+                setCategoryProducts([]);
+            }
+        };
+
+        fetchCategoryProducts();
+    }, [categoryIdFromUrl, productId]); // Fixed: Removed product.categoryId to keep array size consistent
 
     // Handle Add to Bag
     const handleAddToBag = () => {
@@ -59,6 +252,7 @@ const ProductDetailsPage = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [showLightbox, product.images.length]);
 
+
     // Prevent body scroll when lightbox is open
     useEffect(() => {
         if (showLightbox) {
@@ -70,6 +264,15 @@ const ProductDetailsPage = () => {
             document.body.style.overflow = 'unset';
         };
     }, [showLightbox]);
+
+    // Show loading state
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[var(--brand-royal-red)]"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-white">
@@ -410,11 +613,15 @@ const ProductDetailsPage = () => {
                 {/* Product Details Section */}
                 <ProductDetailsSection product={product} />
 
-                {/* Similar Products */}
-                <SimilarProductsSection products={similarProducts} />
+                {/* Similar Products - Only show if we have related products from API */}
+                {relatedProducts.length > 0 && (
+                    <SimilarProductsSection products={relatedProducts} />
+                )}
 
-                {/* Customers Also Liked */}
-                <CustomersAlsoLikedSection products={customersAlsoLiked} />
+                {/* Customers Also Liked - Products from same category */}
+                {categoryProducts.length > 0 && (
+                    <CustomersAlsoLikedSection products={categoryProducts} />
+                )}
             </div>
 
             {/* Image Lightbox */}
@@ -525,7 +732,7 @@ const ProductDetailsSection = ({ product }) => {
                         <span>Product Details</span>
                     </summary>
                     <div className="mt-4 text-sm text-gray-700 space-y-2">
-                        <p>{product.description}</p>
+                        <div dangerouslySetInnerHTML={{ __html: product.description }} />
                         <div className="mt-4">
                             <h4 className="font-bold mb-2">Size & Fit</h4>
                             <p>{product.details.fit}</p>
@@ -635,25 +842,12 @@ const RatingsSection = ({ product }) => {
 
 // Similar Products Section
 const SimilarProductsSection = ({ products }) => {
-    // Format products for ProductCard
-    const formatProduct = (product) => ({
-        id: product.id,
-        brand: product.brand,
-        name: product.name,
-        price: `৳ ${product.price.toLocaleString()}`,
-        originalPrice: product.mrp > 0 ? `৳ ${product.mrp.toLocaleString()}` : "",
-        discount: product.discount > 0 ? `${product.discount}% OFF` : "",
-        images: [product.image],
-        sizes: ["S", "M", "L", "XL"],
-        color: "#000000",
-    });
-
     return (
         <div className="mt-12 border-t border-gray-200 pt-8">
             <h3 className="text-xl font-bold mb-6 uppercase">Similar Products</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {products.map((product) => (
-                    <ProductCard key={product.id} product={formatProduct(product)} />
+                    <ProductCard key={product.id} product={product} />
                 ))}
             </div>
         </div>
@@ -662,25 +856,12 @@ const SimilarProductsSection = ({ products }) => {
 
 // Customers Also Liked Section
 const CustomersAlsoLikedSection = ({ products }) => {
-    // Format products for ProductCard
-    const formatProduct = (product) => ({
-        id: product.id,
-        brand: product.brand,
-        name: product.name,
-        price: `৳ ${product.price.toLocaleString()}`,
-        originalPrice: product.mrp > 0 ? `৳ ${product.mrp.toLocaleString()}` : "",
-        discount: product.discount > 0 ? `${product.discount}% OFF` : "",
-        images: [product.image],
-        sizes: ["30", "32", "34", "36"],
-        color: "#000000",
-    });
-
     return (
         <div className="mt-12 border-t border-gray-200 pt-8">
             <h3 className="text-xl font-bold mb-6 uppercase">Customers Also Liked</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {products.map((product) => (
-                    <ProductCard key={product.id} product={formatProduct(product)} />
+                    <ProductCard key={product.id} product={product} />
                 ))}
             </div>
         </div>

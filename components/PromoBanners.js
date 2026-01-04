@@ -1,16 +1,44 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import { getBannerFromServer } from "@/lib/api";
 
 const PromoBanners = () => {
+    const [banners, setBanners] = useState([]);
+
+    useEffect(() => {
+        const fetchBanners = async () => {
+            try {
+                const response = await getBannerFromServer();
+                if (response.success && response.banners) {
+                    setBanners(response.banners);
+                }
+            } catch (error) {
+                console.error("Error loading banners:", error);
+            }
+        };
+
+        fetchBanners();
+    }, []);
+
+    // Default Images
+    const defaultImage1 = "https://images.unsplash.com/photo-1507680434567-5739c80be1ac?q=80&w=2000&auto=format&fit=crop";
+    const defaultImage2 = "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?q=80&w=2000&auto=format&fit=crop";
+
+    // Assign images based on user request:
+    // 2nd API image -> 1st Card ("The December Edit")
+    // 1st API image -> 2nd Card ("Holiday Gifting")
+    const image1 = banners.length > 1 ? banners[1].image_path : defaultImage1;
+    const image2 = banners.length > 0 ? banners[0].image_path : defaultImage2;
+
     return (
         <section className="section-content py-10 pb-20">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Banner 1: The December Edit */}
                 <div className="relative h-[350px] md:h-[450px] lg:h-[500px] w-full group overflow-hidden cursor-pointer rounded-sm">
                     <Image
-                        src="https://images.unsplash.com/photo-1507680434567-5739c80be1ac?q=80&w=2000&auto=format&fit=crop" // Man in blazer
+                        src={image1}
                         alt="The December Edit"
                         fill
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -33,7 +61,7 @@ const PromoBanners = () => {
                 {/* Banner 2: Holiday Gifting */}
                 <div className="relative h-[350px] md:h-[450px] lg:h-[500px] w-full group overflow-hidden cursor-pointer rounded-sm">
                     <Image
-                        src="https://images.unsplash.com/photo-1513201099705-a9746e1e201f?q=80&w=2000&auto=format&fit=crop" // Gift box
+                        src={image2}
                         alt="Holiday Gifting"
                         fill
                         className="object-cover transition-transform duration-700 group-hover:scale-105"

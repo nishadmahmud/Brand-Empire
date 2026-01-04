@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 
-const ProductCard = ({ product, tag }) => {
+const ProductCard = ({ product, tag, categoryId }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const { addToCart } = useCart();
@@ -13,20 +13,27 @@ const ProductCard = ({ product, tag }) => {
         addToCart(product, 1);
     };
 
+
     useEffect(() => {
         let interval;
-        if (isHovered && product.images.length > 1) {
+        const validImages = (product.images || []).filter(img => img && img.trim() !== '');
+        if (isHovered && validImages.length > 1) {
             interval = setInterval(() => {
-                setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
+                setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
             }, 1500); // Smooth sliding appreciation
         } else {
             setCurrentImageIndex(0);
         }
         return () => clearInterval(interval);
-    }, [isHovered, product.images.length]);
+    }, [isHovered, product.images]);
+
+    // Build product URL with optional category parameter
+    const productUrl = categoryId
+        ? `/product/${product.id}?category=${categoryId}`
+        : `/product/${product.id}`;
 
     return (
-        <Link href="/product/1">
+        <Link href={productUrl}>
             <div
                 className="group relative cursor-pointer w-full" // Removed min-w for better mobile grid
                 onMouseEnter={() => setIsHovered(true)}
@@ -47,7 +54,7 @@ const ProductCard = ({ product, tag }) => {
                         className="absolute top-0 left-0 w-full h-full flex transition-transform duration-700 ease-in-out"
                         style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
                     >
-                        {product.images.map((img, index) => (
+                        {(product.images || []).filter(img => img && img.trim() !== '').map((img, index) => (
                             <div key={index} className="relative w-full h-full flex-shrink-0">
                                 <Image
                                     src={img}
