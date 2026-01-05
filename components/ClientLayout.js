@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
+import MobileBottomNav from "./MobileBottomNav";
 import Navbar from "./Navbar";
 import TopMarquee from "./TopMarquee";
 import Footer from "./Footer";
@@ -10,6 +12,7 @@ export default function ClientLayout({ children }) {
     const pathname = usePathname();
     const [marqueeActive, setMarqueeActive] = useState(false);
     const [isMarqueeClosed, setIsMarqueeClosed] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // State for Mobile Sidebar
 
     // Pages where marquee should be hidden
     const noMarqueeRoutes = ["/checkout", "/order-success", "/track-order"];
@@ -30,11 +33,16 @@ export default function ClientLayout({ children }) {
                     }}
                 />
             )}
-            <Navbar marqueeVisible={finalMarqueeVisible} />
-            <main className={`flex-grow transition-all duration-300 ${finalMarqueeVisible ? 'pt-[106px] md:pt-[106px]' : 'pt-[64px] md:pt-[70px]'}`}>
+            <Navbar
+                marqueeVisible={finalMarqueeVisible}
+                mobileMenuOpen={mobileMenuOpen}
+                setMobileMenuOpen={setMobileMenuOpen}
+            />
+            <main className={`flex-grow transition-all duration-300 ${finalMarqueeVisible ? 'pt-[106px] md:pt-[106px]' : 'pt-[60px] md:pt-[70px]'}`}>
                 {children}
             </main>
             <Footer />
+            <MobileBottomNav onOpenCategories={() => setMobileMenuOpen(true)} />
         </div>
     );
 }
