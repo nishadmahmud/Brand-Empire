@@ -295,55 +295,31 @@ const ProductDetailsPage = ({ productId }) => {
             <div className="w-[90%] max-w-[1600px] mx-auto py-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left: Image Gallery */}
-                    <div className="space-y-4">
-                        {/* Main Image */}
-                        <div
-                            className="relative w-full h-[500px] md:h-[600px] bg-gray-100 rounded cursor-zoom-in"
-                            onClick={() => setShowLightbox(true)}
-                        >
-                            <Image
-                                src={product.images[selectedImage]}
-                                alt={product.name}
-                                fill
-                                className="object-cover rounded"
-                                unoptimized
-                            />
-                            {/* Zoom Icon Indicator */}
-                            <div className="absolute top-4 right-4 bg-white/90 p-2 rounded-full shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="11" cy="11" r="8"></circle>
-                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                    <line x1="11" y1="8" x2="11" y2="14"></line>
-                                    <line x1="8" y1="11" x2="14" y2="11"></line>
-                                </svg>
+                    {/* Left: Image Gallery - 2 Column Grid */}
+                    <div className="grid grid-cols-2 gap-0.5 h-fit">
+                        {product.images.map((img, index) => (
+                            <div
+                                key={index}
+                                className="relative w-full h-[500px] bg-gray-100 cursor-zoom-in overflow-hidden group"
+                                onClick={() => {
+                                    setSelectedImage(index);
+                                    setShowLightbox(true);
+                                }}
+                            >
+                                <Image
+                                    src={img}
+                                    alt={`${product.name} view ${index + 1}`}
+                                    fill
+                                    className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
+                                    unoptimized
+                                />
                             </div>
-                        </div>
-
-                        {/* Thumbnails */}
-                        <div className="grid grid-cols-6 gap-2">
-                            {product.images.map((img, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => setSelectedImage(index)}
-                                    className={`relative h-20 bg-gray-100 rounded border-2 transition-all ${selectedImage === index
-                                        ? 'border-[var(--brand-royal-red)]'
-                                        : 'border-transparent hover:border-gray-300'
-                                        }`}
-                                >
-                                    <Image
-                                        src={img}
-                                        alt={`View ${index + 1}`}
-                                        fill
-                                        className="object-cover rounded"
-                                        unoptimized
-                                    />
-                                </button>
-                            ))}
-                        </div>
+                        ))}
                     </div>
 
                     {/* Right: Product Info */}
-                    <div className="space-y-6">
+                    {/* Right: Product Info */}
+                    <div className="space-y-6 sticky top-24 h-fit">
                         {/* Brand & Title */}
                         <div>
                             <h2 className="text-xl font-bold text-gray-800 mb-1">{product.brand}</h2>
@@ -607,11 +583,13 @@ const ProductDetailsPage = ({ productId }) => {
                                 </div>
                             )}
                         </div>
+                        {/* Product Details Section (Moved to Right Column) */}
+                        <ProductDetailsSection product={product} />
                     </div>
                 </div>
 
                 {/* Product Details Section */}
-                <ProductDetailsSection product={product} />
+
 
                 {/* Similar Products - Only show if we have related products from API */}
                 {relatedProducts.length > 0 && (
@@ -724,12 +702,15 @@ const ProductDetailsSection = ({ product }) => {
     const [activeTab, setActiveTab] = useState('details');
 
     return (
-        <div className="mt-12 border-t border-gray-200 pt-8">
+        <div className="mt-6 border-t border-gray-100 pt-6">
             <div className="space-y-6">
                 {/* Product Details */}
-                <details open className="border-b border-gray-200 pb-6">
-                    <summary className="text-sm font-bold uppercase cursor-pointer flex items-center justify-between">
+                <details open className="border-b border-gray-200 pb-6 group">
+                    <summary className="text-sm font-bold uppercase cursor-pointer flex items-center justify-between list-none">
                         <span>Product Details</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-180">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </summary>
                     <div className="mt-4 text-sm text-gray-700 space-y-2">
                         <div dangerouslySetInnerHTML={{ __html: product.description }} />
@@ -744,8 +725,13 @@ const ProductDetailsSection = ({ product }) => {
                 </details>
 
                 {/* Material & Care */}
-                <details className="border-b border-gray-200 pb-6">
-                    <summary className="text-sm font-bold uppercase cursor-pointer">Material & Care</summary>
+                <details open className="border-b border-gray-200 pb-6 group">
+                    <summary className="text-sm font-bold uppercase cursor-pointer flex items-center justify-between list-none">
+                        <span>Material & Care</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-180">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </summary>
                     <div className="mt-4 text-sm text-gray-700">
                         <p>{product.materialCare.material}</p>
                         <p>{product.materialCare.wash}</p>
@@ -753,15 +739,22 @@ const ProductDetailsSection = ({ product }) => {
                 </details>
 
                 {/* Specifications */}
-                <details className="border-b border-gray-200 pb-6">
-                    <summary className="text-sm font-bold uppercase cursor-pointer">Specifications</summary>
-                    <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                        {Object.entries(product.specifications).map(([key, value]) => (
-                            <div key={key} className="flex justify-between">
-                                <span className="text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
-                                <span className="font-medium">{value}</span>
-                            </div>
-                        ))}
+                <details open className="border-b border-gray-200 pb-6 group">
+                    <summary className="text-sm font-bold uppercase cursor-pointer flex items-center justify-between list-none">
+                        <span>Specifications</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-180">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </summary>
+                    <div className="mt-4 text-sm">
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                            {Object.entries(product.specifications).map(([key, value]) => (
+                                <div key={key} className="flex justify-between py-1 border-b border-gray-50">
+                                    <span className="text-gray-500 capitalize text-xs">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                    <span className="font-medium text-gray-900 text-right">{value}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </details>
 
