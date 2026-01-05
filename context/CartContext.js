@@ -62,11 +62,12 @@ export const CartProvider = ({ children }) => {
                     selectedSize: selectedSize,
                     selectedColor: selectedColor,
                     brand: product.brand || null,
-                    maxStock: product.stock || 99
+                    maxStock: product.stock || 99,
+                    availableSizes: product.sizes || [], // Store available sizes for later changes
+                    selected: true // Default to selected
                 }];
             }
         });
-
     };
 
     // Remove item from cart
@@ -102,25 +103,91 @@ export const CartProvider = ({ children }) => {
         );
     };
 
+    // Update item size (Critical for Cart Page)
+    const updateSize = (itemId, oldSize, newSize, selectedColor) => {
+        setCartItems(prevItems => {
+            // Check if there is ALREADY an item with the NEW size
+            const targetItemIndex = prevItems.findIndex(
+                item => item.id === itemId &&
+                    item.selectedSize === newSize &&
+                    item.selectedColor === selectedColor
+            );
+
+            const sourceItemIndex = prevItems.findIndex(
+                item => item.id === itemId &&
+                    item.selectedSize === oldSize &&
+                    item.selectedColor === selectedColor
+            );
+
+            if (sourceItemIndex === -1) return prevItems; // Should not happen
+
+            if (targetItemIndex > -1) {
+                // Merge quantities
+                const updatedItems = [...prevItems];
+                updatedItems[targetItemIndex].quantity += updatedItems[sourceItemIndex].quantity;
+                // Remove the old item
+                updatedItems.splice(sourceItemIndex, 1);
+                return updatedItems;
+            } else {
+                // Just update the size of the existing item
+                const updatedItems = [...prevItems];
+                updatedItems[sourceItemIndex] = {
+                    ...updatedItems[sourceItemIndex],
+                    selectedSize: newSize
+                };
+                return updatedItems;
+            }
+        });
+    };
+
     // Clear entire cart
     const clearCart = () => {
         setCartItems([]);
         localStorage.removeItem('brand_empire_cart');
     };
 
-    // Get total number of items
+    // Toggle item selection
+    const toggleItemSelection = (itemId, selectedSize, selectedColor) => {
+        setCartItems(prevItems =>
+            prevItems.map(item => {
+                if (item.id === itemId &&
+                    item.selectedSize === selectedSize &&
+                    item.selectedColor === selectedColor) {
+                    return { ...item, selected: !item.selected };
+                }
+                return item;
+            })
+        );
+    };
+
+    // Select or Deselect All
+    const selectAllItems = (select = true) => {
+        setCartItems(prevItems =>
+            prevItems.map(item => ({ ...item, selected: select }))
+        );
+    };
+
+    // Get total number of items (Physical count)
     const getCartCount = () => {
         return cartItems.reduce((total, item) => total + item.quantity, 0);
     };
 
-    // Calculate subtotal
-    const getSubtotal = () => {
-        return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    // Get total number of SELECTED items (Force Reload)
+    const getSelectedCount = () => {
+        return cartItems.reduce((total, item) => item.selected ? total + item.quantity : total, 0);
     };
 
-    // Calculate total
+    // Calculate subtotal (Selected only)
+    const getSubtotal = () => {
+        return cartItems.reduce((total, item) => item.selected ? total + (item.price * item.quantity) : total, 0);
+    };
+
+    // Calculate total (Selected only)
     const getTotal = () => {
-        return getSubtotal() + deliveryFee;
+        const subtotal = getSubtotal();
+        // If subtotal is 0 (no items selected), delivery fee might still apply if we enforce it, 
+        // but typically total is 0 if nothing is selected.
+        return subtotal > 0 ? subtotal + deliveryFee : 0;
     };
 
     // Update delivery fee based on location
@@ -140,6 +207,10 @@ export const CartProvider = ({ children }) => {
         addToCart,
         removeFromCart,
         updateQuantity,
+        updateSize, // Export new function
+        toggleItemSelection,
+        selectAllItems,
+        getSelectedCount,
         clearCart,
         getCartCount,
         getSubtotal,

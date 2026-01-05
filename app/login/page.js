@@ -4,8 +4,6 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 export default function LoginPage() {
     const { login } = useAuth();
@@ -38,8 +36,6 @@ export default function LoginPage() {
 
     return (
         <main className="min-h-screen bg-gray-50">
-            <Navbar />
-
             <div className="flex flex-col justify-center py-12 sm:px-6 lg:px-8 mt-16">
                 <div className="sm:mx-auto sm:w-full sm:max-w-md">
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -115,7 +111,6 @@ export default function LoginPage() {
                     </div>
                 </div>
             </div>
-            <Footer />
         </main>
     );
 }

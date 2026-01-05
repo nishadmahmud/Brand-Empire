@@ -6,8 +6,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search, Package, Calendar, DollarSign, MapPin, Truck } from "lucide-react";
 import toast from "react-hot-toast";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
 
 export default function TrackOrderPage() {
     const [formData, setFormData] = useState({
@@ -92,7 +90,6 @@ export default function TrackOrderPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Navbar marqueeVisible={false} />
             <div className="flex-1 py-12 px-4 sm:px-6 lg:px-8 pt-24 md:pt-28">
                 <div className="max-w-4xl mx-auto">
                     <div className="text-center mb-10">
@@ -259,7 +256,6 @@ export default function TrackOrderPage() {
                     ) : null}
                 </div>
             </div>
-            <Footer />
         </div>
     );
 }

@@ -2,9 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import TopMarquee from "@/components/TopMarquee";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/lib/api";
@@ -154,9 +151,6 @@ export default function CategoryPage() {
 
     return (
         <>
-            <TopMarquee />
-            <Navbar marqueeVisible={true} />
-
             <div className="min-h-screen bg-gray-50 pt-[120px]">
                 {/* Breadcrumb */}
                 <div className="bg-white border-b border-gray-200">
@@ -302,8 +296,6 @@ export default function CategoryPage() {
                     </div>
                 )}
             </div>
-
-            <Footer />
         </>
     );
 }

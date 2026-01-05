@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { getTopbarData } from "@/lib/api";
 
-const TopMarquee = ({ onClose }) => {
-    const [isVisible, setIsVisible] = useState(true);
+const TopMarquee = ({ onClose, onReady }) => {
     const [topbarData, setTopbarData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -18,6 +17,7 @@ const TopMarquee = ({ onClose }) => {
                         messages: response.topbars.filter(item => item.status).map(item => item.title),
                         bgColor: response.settings?.bg_color || "#0066FF"
                     });
+                    if (onReady) onReady();
                 }
             } catch (error) {
                 console.error("Error fetching topbar data:", error);
@@ -26,20 +26,20 @@ const TopMarquee = ({ onClose }) => {
                     messages: ["⚡ FREE SHIPPING AND RETURNS!!"],
                     bgColor: "#0066FF"
                 });
+                if (onReady) onReady();
             } finally {
                 setLoading(false);
             }
         };
 
         fetchTopbarData();
-    }, []);
+    }, [onReady]);
 
     const handleClose = () => {
-        setIsVisible(false);
         if (onClose) onClose();
     };
 
-    if (!isVisible || loading || !topbarData) return null;
+    if (loading || !topbarData) return null;
 
     return (
         <>

@@ -3,8 +3,6 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 const SuccessContent = () => {
     const searchParams = useSearchParams();
@@ -90,11 +88,9 @@ const SuccessContent = () => {
 const OrderSuccessPage = () => {
     return (
         <div className="min-h-screen flex flex-col">
-            <Navbar marqueeVisible={false} />
             <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
                 <SuccessContent />
             </Suspense>
-            <Footer />
         </div>
     );
 };

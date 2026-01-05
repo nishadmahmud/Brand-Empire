@@ -277,8 +277,6 @@ export default function OffersPage() {
                     </div>
                 </div>
             </div>
-
-            <Footer />
         </main>
     );
 }

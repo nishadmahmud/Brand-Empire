@@ -18,8 +18,6 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import AddressSelect from "../../components/AddressSelect";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
 
 export default function CheckoutPage() {
     const { cartItems, getSubtotal, deliveryFee, updateDeliveryFee, clearCart } =
@@ -196,8 +194,6 @@ export default function CheckoutPage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <Navbar marqueeVisible={false} />
-
             <div className="pt-24 lg:pt-28 pb-8 lg:pb-12">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-8">
@@ -484,8 +480,6 @@ export default function CheckoutPage() {
                     </div>
                 </div>
             </div>
-
-            <Footer />
         </div>
     );
 }
