@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const Footer = () => {
     return (
@@ -67,7 +68,7 @@ const Footer = () => {
                             <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Contact Us</a></li>
                             <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Shipping Info</a></li>
                             <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Returns</a></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Track Order</a></li>
+                            <li><Link href="/track-order" className="text-gray-400 hover:text-white text-sm transition-colors">Track Order</Link></li>
                             <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Size Guide</a></li>
                         </ul>
                     </div>

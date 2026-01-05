@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { getCustomerOrders, updateCustomerPassword } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Image from "next/image";
+import Link from "next/link";
 
 const TABS = [
     {
@@ -182,6 +184,30 @@ export default function ProfilePage() {
         } finally {
             setIsPasswordUpdating(false);
         }
+    };
+
+    // Helper for status badge color (same as track-order)
+    const getStatusLabel = (status) => {
+        switch (Number(status)) {
+            case 1: return "Order Received";
+            case 2: return "Order Completed";
+            case 3: return "Delivery Processing";
+            case 4: return "Delivered";
+            case 5: return "Canceled";
+            case 6: return "Hold";
+            default: return "Pending";
+        }
+    };
+
+    const getStatusColor = (status) => {
+        const s = Number(status);
+        if (s === 1) return "border-blue-100 text-blue-700 bg-blue-50";
+        if (s === 2) return "border-green-100 text-green-700 bg-green-50";
+        if (s === 3) return "border-purple-100 text-purple-700 bg-purple-50";
+        if (s === 4) return "border-teal-100 text-teal-700 bg-teal-50";
+        if (s === 5) return "border-red-100 text-red-700 bg-red-50";
+        if (s === 6) return "border-orange-100 text-orange-700 bg-orange-50";
+        return "border-gray-200 text-gray-700 bg-gray-50";
     };
 
     if (loading || !user) {
@@ -495,48 +521,83 @@ export default function ProfilePage() {
                                 <p className="mt-2 text-sm text-gray-500">Loading orders...</p>
                             </div>
                         ) : orders.length > 0 ? (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Invoice ID
-                                            </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Date
-                                            </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Total
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {orders.map((order) => (
-                                            <tr key={order.order_id || order.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                    {order.invoice_no || order.invoice_id}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {order.date || new Date(order.created_at).toLocaleDateString()}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                                                        order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                            'bg-gray-100 text-gray-800'
-                                                        }`}>
-                                                        {order.status || order.order_status}
+                            <div className="space-y-6">
+                                {orders.map((order) => (
+                                    <div key={order.id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden animate-fade-in hover:shadow-md transition-shadow">
+                                        {/* Order Header */}
+                                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
+                                            <div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-mono text-sm font-bold text-gray-900">{order.invoice_id}</span>
+                                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${getStatusColor(order.status)}`}>
+                                                        {getStatusLabel(order.status)}
                                                     </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                                                    {order.grand_total || order.total}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Placed on {new Date(order.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-medium text-gray-900">Total Amount</p>
+                                                <p className="text-lg font-bold text-[var(--brand-royal-red)]">৳{order.sub_total || order.total || order.paid_amount}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6">
+                                            {/* Delivery Info */}
+                                            <div className="mb-6 pb-6 border-b border-gray-100">
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Delivery Details</h4>
+                                                <div className="text-sm">
+                                                    <div>
+                                                        <p className="text-gray-500">Address</p>
+                                                        <p className="font-medium text-gray-900">{order.delivery_customer_address}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Order Items */}
+                                            <div>
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Items ({order.sales_details?.length || 0})</h4>
+                                                <div className="space-y-4">
+                                                    {order.sales_details?.map((item, idx) => (
+                                                        <div key={idx} className="flex items-center gap-4 py-2">
+                                                            <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50 relative">
+                                                                {item.product_info?.image_path ? (
+                                                                    <Image
+                                                                        src={item.product_info.image_path}
+                                                                        alt={item.product_info.name || "Product"}
+                                                                        fill
+                                                                        unoptimized
+                                                                        className="object-cover"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="flex h-full w-full items-center justify-center text-gray-300">
+                                                                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                                        </svg>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h5 className="text-sm font-medium text-gray-900 truncate" title={item.product_info?.name}>
+                                                                    {item.product_info?.name}
+                                                                </h5>
+                                                                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                                                                    <p>Qty: <span className="font-medium text-gray-900">{item.qty}</span></p>
+                                                                    {item.size && <p>Size: <span className="font-medium text-gray-900">{item.size}</span></p>}
+                                                                    {item.color && <p>Color: <span className="font-medium text-gray-900">{item.color}</span></p>}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right text-sm font-medium text-gray-900">
+                                                                ৳{item.price}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 text-center">

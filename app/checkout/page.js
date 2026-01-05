@@ -1,454 +1,491 @@
 "use client";
 
-import React, { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useCart } from '@/context/CartContext';
-import { searchLocation } from '@/data/deliveryData';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCart } from "../../context/CartContext";
+import { useAuth } from "../../context/AuthContext";
+import { saveSalesOrder } from "../../lib/api";
+import {
+    MapPin,
+    CreditCard,
+    ShoppingBag,
+    Shield,
+    Truck,
+    User,
+    Phone,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import AddressSelect from "../../components/AddressSelect";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
-const CheckoutPage = () => {
+export default function CheckoutPage() {
+    const { cartItems, getSubtotal, deliveryFee, updateDeliveryFee, clearCart } =
+        useCart();
+    const { user } = useAuth();
     const router = useRouter();
-    const {
-        cartItems,
-        getSubtotal,
-        deliveryFee,
-        updateDeliveryFee,
-        getTotal,
-        clearCart
-    } = useCart();
 
-    // Form state
+    const subTotal = getSubtotal();
+
+    // We'll manage district/city separately now
+    const [selectedDistrict, setSelectedDistrict] = useState(null);
+    const [selectedCity, setSelectedCity] = useState(null);
+
     const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        address: '',
-        district: '',
-        deliveryMethod: 'standard',
-        paymentMethod: 'cod',
-        orderNotes: '',
-        termsAccepted: false
+        firstName: "",
+        phone: "",
+        address: "",
     });
 
-    // Delivery autocomplete
-    const [deliveryQuery, setDeliveryQuery] = useState('');
-    const [deliveryResults, setDeliveryResults] = useState([]);
-    const [showDeliveryDropdown, setShowDeliveryDropdown] = useState(false);
-    const [selectedDelivery, setSelectedDelivery] = useState(null);
-
-    // Form validation errors
-    const [errors, setErrors] = useState({});
+    const [paymentMethod, setPaymentMethod] = useState("Cash");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [couponCode, setCouponCode] = useState("");
 
-    // Redirect if cart is empty
-    if (cartItems.length === 0) {
-        router.push('/cart');
-        return null;
-    }
+    const formRef = useRef(null);
 
-    // Handle input change
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-        // Clear error for this field
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: '' }));
+    // Prefill form with user data
+    useEffect(() => {
+        if (user) {
+            setFormData((prev) => ({
+                ...prev,
+                firstName: user.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : user.name || prev.firstName,
+                phone: user.phone || prev.phone,
+                address: user.address || prev.address,
+            }));
         }
-    };
+    }, [user]);
 
-    // Handle delivery search
-    const handleDeliverySearch = (query) => {
-        setDeliveryQuery(query);
-        if (query.length >= 2) {
-            const results = searchLocation(query);
-            setDeliveryResults(results);
-            setShowDeliveryDropdown(true);
+    // Update delivery fee based on selection
+    useEffect(() => {
+        if (!selectedDistrict && !selectedCity) {
+            updateDeliveryFee(0);
+            return;
+        }
+
+        let fee = 130; // Default: Outside Dhaka
+
+        // Priority: specific city rules first
+        if (
+            selectedCity === "Demra" ||
+            selectedCity?.includes("Savar") ||
+            selectedDistrict === "Gazipur" ||
+            selectedCity?.includes("Keraniganj")
+        ) {
+            fee = 90;
+        }
+        // Then district-specific rules
+        else if (selectedDistrict === "Dhaka") {
+            fee = 70;
         } else {
-            setDeliveryResults([]);
-            setShowDeliveryDropdown(false);
+            fee = 130;
         }
+        updateDeliveryFee(fee);
+    }, [selectedDistrict, selectedCity, updateDeliveryFee]);
+
+    const grandTotal = subTotal + deliveryFee;
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // Select delivery location
-    const selectDeliveryLocation = (location) => {
-        setSelectedDelivery(location);
-        setDeliveryQuery(location.name);
-        setFormData(prev => ({ ...prev, district: location.name }));
-        updateDeliveryFee(location.deliveryCharge);
-        setShowDeliveryDropdown(false);
-    };
-
-    // Validate form
-    const validateForm = () => {
-        const newErrors = {};
-
-        if (!formData.name.trim()) newErrors.name = 'Name is required';
-        if (!formData.email.trim()) {
-            newErrors.email = 'Email is required';
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email is invalid';
-        }
-        if (!formData.phone.trim()) {
-            newErrors.phone = 'Phone is required';
-        } else if (!/^01[0-9]{9}$/.test(formData.phone)) {
-            newErrors.phone = 'Phone must be 11 digits starting with 01';
-        }
-        if (!formData.address.trim() || formData.address.length < 10) {
-            newErrors.address = 'Address must be at least 10 characters';
-        }
-        if (!formData.district.trim()) {
-            newErrors.district = 'Please select your district/area';
-        }
-        if (!formData.termsAccepted) {
-            newErrors.termsAccepted = 'You must accept the terms and conditions';
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!validateForm()) {
+        if (!selectedDistrict || !selectedCity) {
+            toast.error("Please select both District and Area");
+            return;
+        }
+
+        // Phone number validation for Bangladesh (01[3-9]XXXXXXXX)
+        const phoneRegex = /^01[3-9]\d{8}$/;
+        if (!phoneRegex.test(formData.phone)) {
+            toast.error("Please enter a valid 11-digit Bangladeshi phone number");
             return;
         }
 
         setIsSubmitting(true);
 
-        // Prepare order data
-        const orderData = {
-            customer: {
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone,
-                address: formData.address,
-                district: formData.district
-            },
-            items: cartItems,
-            delivery: {
-                method: formData.deliveryMethod,
-                fee: deliveryFee,
-                location: selectedDelivery
-            },
-            payment: {
-                method: formData.paymentMethod
-            },
-            totals: {
-                subtotal: getSubtotal(),
-                deliveryFee: deliveryFee,
-                total: getTotal()
-            },
-            notes: formData.orderNotes,
-            createdAt: new Date().toISOString()
+        // Construct the payload as per user requirements
+        const orderPayload = {
+            pay_mode: paymentMethod,
+            paid_amount: 0,
+            user_id: process.env.NEXT_PUBLIC_USER_ID, // Store/Sales ID
+            sub_total: subTotal,
+            vat: 0,
+            tax: 0, // Assuming 0 for now
+            discount: 0, // Coupon discount if any
+            product: cartItems.map((item) => ({
+                product_id: item.id,
+                qty: item.quantity,
+                price: item.price,
+                mode: 1, // Assuming fixed mode
+                size: item.selectedSize || "Free Size", // Pass size string directly. Fallback if empty.
+                sales_id: process.env.NEXT_PUBLIC_USER_ID,
+            })),
+            delivery_method_id: 1, // Default to Standard Delivery
+            delivery_info_id: 1, // Default ID, could be dynamic
+            delivery_customer_name: formData.firstName,
+            delivery_customer_address: `${selectedDistrict}, ${selectedCity}`, // Using the structured address
+            delivery_customer_phone: formData.phone,
+            delivery_fee: deliveryFee,
+            variants: [],
+            imeis: [null], // As per example
+            created_at: new Date().toISOString(),
+            customer_id: user?.id || null,
+            customer_name: formData.firstName,
+            customer_phone: formData.phone,
+            sales_id: process.env.NEXT_PUBLIC_USER_ID,
+            wholeseller_id: 1, // Hardcoded as per request
+            status: 3, // Pending status
+            delivery_city: selectedCity, // Added for completeness
+            delivery_district: selectedDistrict, // Added for completeness
+            detailed_address: formData.address, // Sending the text area address too
         };
 
-        // Simulate API call (replace with actual API call later)
-        setTimeout(() => {
-            console.log('Order submitted:', orderData);
-            clearCart();
-            router.push('/order-success');
-        }, 1500);
+        // Combine detailed address with the district/city for the main address field if needed
+        // But for now, keeping them separate or as keys might be better.
+        // The previous format was concatenated string. Let's make sure we send a useful string.
+        orderPayload.delivery_customer_address = `${formData.address}, ${selectedCity}, ${selectedDistrict}`;
+
+        try {
+            const response = await saveSalesOrder(orderPayload);
+
+            if (response.success) {
+                clearCart();
+                toast.success("Order placed successfully!");
+                // Redirect to success page with invoice ID
+                router.push(
+                    `/order-success?invoice=${response.invoice_id || "INV-" + Date.now()
+                    }`
+                );
+            } else {
+                toast.error("Failed to place order. Please try again.");
+                console.error("Order failed:", response);
+            }
+        } catch (error) {
+            console.error("Error submitting order:", error);
+            toast.error("An unexpected error occurred.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
+    if (cartItems.length === 0) {
+        return (
+            <div className="flex h-screen flex-col items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <ShoppingBag className="mx-auto h-16 w-16 text-gray-300" />
+                    <h2 className="mt-4 text-2xl font-bold text-gray-900">
+                        Your cart is empty
+                    </h2>
+                    <p className="mt-2 text-gray-600">
+                        Add some items to start your checkout.
+                    </p>
+                    <Link
+                        href="/"
+                        className="mt-6 inline-block rounded-md bg-black px-6 py-3 text-white transition hover:bg-gray-800"
+                    >
+                        Continue Shopping
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen flex flex-col">
-            <Navbar />
-            <div className="flex-1 py-8 md:py-12 px-4 md:px-8 max-w-7xl mx-auto w-full">
-                <h1 className="text-2xl md:text-3xl font-bold mb-8 uppercase tracking-wider">
-                    Checkout
-                </h1>
+        <div className="min-h-screen bg-gray-50">
+            <Navbar marqueeVisible={false} />
 
-                <form onSubmit={handleSubmit}>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Checkout Form */}
-                        <div className="lg:col-span-2 space-y-6">
-                            {/* Customer Information */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h2 className="text-lg font-bold uppercase mb-4">Customer Information</h2>
-                                <div className="space-y-4">
+            <div className="pt-24 lg:pt-28 pb-8 lg:pb-12">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-bold text-gray-900">Checkout</h1>
+                        <p className="mt-1 text-sm text-gray-500">
+                            Complete your order by providing your delivery and payment details.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[1.5fr_1fr]">
+                        {/* Left Column: Forms */}
+                        <div className="space-y-8">
+                            {/* Delivery Information */}
+                            <section className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                                <div className="mb-6 flex items-center gap-3 border-b border-gray-100 pb-4">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                                        <MapPin className="h-5 w-5" />
+                                    </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Full Name <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="name"
-                                            value={formData.name}
-                                            onChange={handleChange}
-                                            className={`w-full px-4 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded focus:outline-none focus:border-[var(--brand-royal-red)]`}
-                                            placeholder="John Doe"
-                                        />
-                                        {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                                        <h2 className="font-semibold text-gray-900">
+                                            Delivery Address
+                                        </h2>
+                                        <p className="text-xs text-gray-500">
+                                            Where should we send your order?
+                                        </p>
                                     </div>
+                                </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Email <span className="text-red-500">*</span>
+                                <form
+                                    id="checkout-form"
+                                    ref={formRef}
+                                    onSubmit={handleSubmit}
+                                    className="space-y-5"
+                                >
+                                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-gray-700">
+                                                Full Name
                                             </label>
-                                            <input
-                                                type="email"
-                                                name="email"
-                                                value={formData.email}
-                                                onChange={handleChange}
-                                                className={`w-full px-4 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded focus:outline-none focus:border-[var(--brand-royal-red)]`}
-                                                placeholder="john@example.com"
-                                            />
-                                            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                                            <div className="relative">
+                                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                                    <User className="h-4 w-4 text-gray-400" />
+                                                </div>
+                                                <input
+                                                    required
+                                                    type="text"
+                                                    name="firstName"
+                                                    value={formData.firstName}
+                                                    onChange={handleChange}
+                                                    className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                                                    placeholder="John Doe"
+                                                />
+                                            </div>
                                         </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Phone <span className="text-red-500">*</span>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-gray-700">
+                                                Phone Number
                                             </label>
-                                            <input
-                                                type="tel"
-                                                name="phone"
-                                                value={formData.phone}
+                                            <div className="relative">
+                                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                                    <Phone className="h-4 w-4 text-gray-400" />
+                                                </div>
+                                                <input
+                                                    required
+                                                    type="tel"
+                                                    name="phone"
+                                                    value={formData.phone}
+                                                    onChange={handleChange}
+                                                    className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                                                    placeholder="01XXXXXXXXX"
+                                                />
+                                            </div>
+                                            {formData.phone && !/^01[3-9]\d{8}$/.test(formData.phone) && (
+                                                <p className="text-xs text-red-500">
+                                                    Invalid phone number format.
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <AddressSelect
+                                            selectedDistrict={selectedDistrict}
+                                            setSelectedDistrict={setSelectedDistrict}
+                                            selectedCity={selectedCity}
+                                            setSelectedCity={setSelectedCity}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-700">
+                                            Detailed Address
+                                        </label>
+                                        <div className="relative">
+                                            <textarea
+                                                required
+                                                name="address"
+                                                rows={3}
+                                                value={formData.address}
                                                 onChange={handleChange}
-                                                className={`w-full px-4 py-2 border ${errors.phone ? 'border-red-500' : 'border-gray-300'} rounded focus:outline-none focus:border-[var(--brand-royal-red)]`}
-                                                placeholder="01XXXXXXXXX"
+                                                className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-3 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                                                placeholder="Street address, house number, landmarks..."
                                             />
-                                            {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Delivery Address */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h2 className="text-lg font-bold uppercase mb-4">Delivery Address</h2>
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Address <span className="text-red-500">*</span>
-                                        </label>
-                                        <textarea
-                                            name="address"
-                                            value={formData.address}
-                                            onChange={handleChange}
-                                            rows="3"
-                                            className={`w-full px-4 py-2 border ${errors.address ? 'border-red-500' : 'border-gray-300'} rounded focus:outline-none focus:border-[var(--brand-royal-red)]`}
-                                            placeholder="House/Flat No, Street, Area"
-                                        />
-                                        {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
-                                    </div>
-
-                                    <div className="relative">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            District/Area <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={deliveryQuery}
-                                            onChange={(e) => handleDeliverySearch(e.target.value)}
-                                            onFocus={() => {
-                                                if (deliveryResults.length > 0) {
-                                                    setShowDeliveryDropdown(true);
-                                                }
-                                            }}
-                                            className={`w-full px-4 py-2 border ${errors.district ? 'border-red-500' : 'border-gray-300'} rounded focus:outline-none focus:border-[var(--brand-royal-red)]`}
-                                            placeholder="Search district or area"
-                                        />
-                                        {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district}</p>}
-
-                                        {/* Autocomplete Dropdown */}
-                                        {showDeliveryDropdown && deliveryResults.length > 0 && (
-                                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto">
-                                                {deliveryResults.map((result, index) => (
-                                                    <button
-                                                        key={index}
-                                                        type="button"
-                                                        onClick={() => selectDeliveryLocation(result)}
-                                                        className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
-                                                    >
-                                                        <p className="text-sm font-medium text-gray-900">{result.name}</p>
-                                                        <p className="text-xs text-gray-500">{result.deliveryTime} • ৳{result.deliveryCharge}</p>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {selectedDelivery && (
-                                            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded text-sm">
-                                                <p className="font-medium text-green-800">Delivery: {selectedDelivery.deliveryTime}</p>
-                                                <p className="text-green-700">Charge: ৳{selectedDelivery.deliveryCharge}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Delivery Method */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h2 className="text-lg font-bold uppercase mb-4">Delivery Method</h2>
-                                <div className="space-y-3">
-                                    <label className="flex items-center gap-3 p-3 border border-gray-300 rounded cursor-pointer hover:bg-gray-50">
-                                        <input
-                                            type="radio"
-                                            name="deliveryMethod"
-                                            value="standard"
-                                            checked={formData.deliveryMethod === 'standard'}
-                                            onChange={handleChange}
-                                            className="w-4 h-4 text-[var(--brand-royal-red)]"
-                                        />
-                                        <div className="flex-1">
-                                            <p className="font-medium">Standard Delivery</p>
-                                            <p className="text-sm text-gray-600">Delivery within {selectedDelivery?.deliveryTime || '2-3 days'}</p>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
+                                </form>
+                            </section>
 
                             {/* Payment Method */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h2 className="text-lg font-bold uppercase mb-4">Payment Method</h2>
-                                <div className="space-y-3">
-                                    <label className="flex items-center gap-3 p-3 border border-gray-300 rounded cursor-pointer hover:bg-gray-50">
+                            <section className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                                <div className="mb-6 flex items-center gap-3 border-b border-gray-100 pb-4">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50 text-green-600">
+                                        <CreditCard className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h2 className="font-semibold text-gray-900">
+                                            Payment Method
+                                        </h2>
+                                        <p className="text-xs text-gray-500">
+                                            Select how you want to pay
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <label
+                                        className={`relative flex cursor-pointer rounded-xl border p-4 shadow-sm transition-all hover:border-black ${paymentMethod === "Cash"
+                                            ? "border-black ring-1 ring-black"
+                                            : "border-gray-200"
+                                            }`}
+                                    >
                                         <input
                                             type="radio"
                                             name="paymentMethod"
-                                            value="cod"
-                                            checked={formData.paymentMethod === 'cod'}
-                                            onChange={handleChange}
-                                            className="w-4 h-4 text-[var(--brand-royal-red)]"
+                                            value="Cash"
+                                            className="sr-only"
+                                            checked={paymentMethod === "Cash"}
+                                            onChange={(e) => setPaymentMethod(e.target.value)}
                                         />
-                                        <div className="flex-1">
-                                            <p className="font-medium">Cash on Delivery</p>
-                                            <p className="text-sm text-gray-600">Pay when you receive your order</p>
+                                        <div className="flex flex-1 flex-col">
+                                            <span className="flex items-center gap-2 font-medium text-gray-900">
+                                                <Truck className="h-4 w-4 text-gray-500" />
+                                                Cash on Delivery
+                                            </span>
+                                            <span className="mt-1 text-xs text-gray-500">
+                                                Pay when you receive
+                                            </span>
                                         </div>
+                                        {paymentMethod === "Cash" && (
+                                            <div className="absolute right-4 top-4 text-black">
+                                                <div className="h-3 w-3 rounded-full bg-black" />
+                                            </div>
+                                        )}
                                     </label>
-                                    <label className="flex items-center gap-3 p-3 border border-gray-300 rounded cursor-pointer hover:bg-gray-50 opacity-50">
-                                        <input
-                                            type="radio"
-                                            name="paymentMethod"
-                                            value="online"
-                                            disabled
-                                            className="w-4 h-4 text-[var(--brand-royal-red)]"
-                                        />
-                                        <div className="flex-1">
-                                            <p className="font-medium">Online Payment</p>
-                                            <p className="text-sm text-gray-600">Coming soon</p>
+
+                                    <label className="relative flex cursor-not-allowed rounded-xl border border-gray-100 p-4 opacity-60">
+                                        <div className="flex flex-1 flex-col">
+                                            <span className="flex items-center gap-2 font-medium text-gray-400">
+                                                <CreditCard className="h-4 w-4" />
+                                                Online Payment
+                                            </span>
+                                            <span className="mt-1 text-xs text-gray-400">
+                                                Coming soon
+                                            </span>
                                         </div>
                                     </label>
                                 </div>
-                            </div>
-
-                            {/* Order Notes */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <h2 className="text-lg font-bold uppercase mb-4">Order Notes (Optional)</h2>
-                                <textarea
-                                    name="orderNotes"
-                                    value={formData.orderNotes}
-                                    onChange={handleChange}
-                                    rows="3"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[var(--brand-royal-red)]"
-                                    placeholder="Any special instructions for your order"
-                                />
-                            </div>
-
-                            {/* Terms and Conditions */}
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                <label className="flex items-start gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="termsAccepted"
-                                        checked={formData.termsAccepted}
-                                        onChange={handleChange}
-                                        className="mt-1 w-4 h-4 text-[var(--brand-royal-red)]"
-                                    />
-                                    <div>
-                                        <p className="text-sm">
-                                            I agree to the <Link href="/terms" className="text-[var(--brand-royal-red)] hover:underline">Terms and Conditions</Link> and <Link href="/privacy" className="text-[var(--brand-royal-red)] hover:underline">Privacy Policy</Link>
-                                        </p>
-                                        {errors.termsAccepted && <p className="text-red-500 text-sm mt-1">{errors.termsAccepted}</p>}
-                                    </div>
-                                </label>
-                            </div>
+                            </section>
                         </div>
 
-                        {/* Order Summary */}
-                        <div className="lg:col-span-1">
-                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 sticky top-24">
-                                <h2 className="text-lg font-bold uppercase mb-4">Order Summary</h2>
+                        {/* Right Column: Order Summary */}
+                        <div className="h-fit space-y-6 lg:sticky lg:top-24">
+                            <section className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                                <h2 className="mb-6 font-semibold text-gray-900">
+                                    Order Summary
+                                </h2>
 
-                                {/* Cart Items */}
-                                <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
+                                <div className="mb-6 max-h-[300px] space-y-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200">
                                     {cartItems.map((item) => (
-                                        <div key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} className="flex gap-3">
-                                            <div className="relative w-16 h-16 flex-shrink-0 bg-white rounded">
+                                        <div key={item.id} className="flex gap-4">
+                                            <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-100 bg-gray-50">
                                                 <Image
                                                     src={item.image}
                                                     alt={item.name}
                                                     fill
-                                                    className="object-cover rounded"
                                                     unoptimized
+                                                    className="object-cover"
                                                 />
-                                                <span className="absolute -top-2 -right-2 bg-gray-800 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                                                    {item.quantity}
-                                                </span>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
-                                                {(item.selectedSize || item.selectedColor) && (
-                                                    <p className="text-xs text-gray-500">
-                                                        {item.selectedSize && `Size: ${item.selectedSize}`}
-                                                        {item.selectedSize && item.selectedColor && ' • '}
-                                                        {item.selectedColor && `${item.selectedColor}`}
+                                            <div className="flex flex-1 flex-col justify-between">
+                                                <div className="flex justify-between">
+                                                    <h3 className="line-clamp-1 text-sm font-medium text-gray-900">
+                                                        {item.name}
+                                                    </h3>
+                                                    <p className="text-sm font-semibold text-gray-900">
+                                                        ৳{item.price * item.quantity}
                                                     </p>
-                                                )}
-                                                <p className="text-sm font-bold text-gray-900 mt-1">
-                                                    ৳{(item.price * item.quantity).toLocaleString()}
-                                                </p>
+                                                </div>
+                                                <div className="flex items-center justify-between text-xs text-gray-500">
+                                                    <p>
+                                                        Qty: {item.quantity} · Size: {item.selectedSize}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
 
-                                {/* Totals */}
-                                <div className="border-t border-gray-300 pt-4 space-y-2 mb-6">
-                                    <div className="flex justify-between text-gray-700">
+                                <div className="mb-6 space-y-3 border-t border-gray-100 pt-4">
+                                    <div className="flex justify-between text-sm text-gray-600">
                                         <span>Subtotal</span>
-                                        <span className="font-medium">৳{getSubtotal().toLocaleString()}</span>
+                                        <span>৳{subTotal}</span>
                                     </div>
-                                    <div className="flex justify-between text-gray-700">
-                                        <span>Delivery Fee</span>
-                                        <span className="font-medium">৳{deliveryFee.toLocaleString()}</span>
+                                    <div className="flex justify-between text-sm text-gray-600">
+                                        <span>Delivery ({
+                                            // Show method name nicely
+                                            selectedCity ? (selectedCity === "Demra" || selectedCity?.includes("Savar") || selectedDistrict === "Gazipur" || selectedCity?.includes("Keraniganj"))
+                                                ? "Special Area"
+                                                : selectedDistrict === "Dhaka"
+                                                    ? "Inside Dhaka"
+                                                    : "Outside Dhaka"
+                                                : "Pending"
+                                        })</span>
+                                        <span>৳{deliveryFee}</span>
                                     </div>
-                                    <div className="border-t border-gray-300 pt-2 flex justify-between text-lg font-bold">
-                                        <span>Total</span>
-                                        <span>৳{getTotal().toLocaleString()}</span>
+                                    {/* Coupon Input UI - Placeholder */}
+                                    <div className="flex gap-2 pt-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Coupon Code"
+                                            value={couponCode}
+                                            onChange={(e) => setCouponCode(e.target.value)}
+                                            className="flex-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs focus:border-black focus:outline-none"
+                                        />
+                                        <button className="rounded-md bg-gray-900 px-3 py-2 text-xs font-medium text-white transition hover:bg-gray-800">
+                                            Apply
+                                        </button>
                                     </div>
                                 </div>
 
-                                {/* Place Order Button */}
+                                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                                    <span className="text-base font-bold text-gray-900">
+                                        Grand Total
+                                    </span>
+                                    <span className="text-xl font-bold text-gray-900">
+                                        ৳{grandTotal}
+                                    </span>
+                                </div>
+
                                 <button
                                     type="submit"
+                                    form="checkout-form"
                                     disabled={isSubmitting}
-                                    className="w-full py-3 bg-[var(--brand-royal-red)] text-white font-bold uppercase text-sm hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-6 py-4 text-sm font-bold text-white shadow-lg transition hover:translate-y-[-1px] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
                                 >
-                                    {isSubmitting ? 'Processing...' : 'Place Order'}
+                                    {isSubmitting ? (
+                                        <>Processing...</>
+                                    ) : (
+                                        <>
+                                            Pay ৳{grandTotal}
+                                            <Truck className="h-4 w-4" />
+                                        </>
+                                    )}
                                 </button>
 
-                                <p className="text-xs text-gray-500 text-center mt-4">
-                                    Your personal data will be used to process your order and support your experience throughout this website.
-                                </p>
+                                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
+                                    <Shield className="h-3 w-3" />
+                                    Secure checkout powered by SSL encryption
+                                </div>
+                            </section>
+
+                            <div className="flex justify-center gap-4 opacity-50 grayscale transition hover:grayscale-0">
+                                {/* Delivery Partner Logos Placeholders */}
+                                <div className="h-8 w-12 rounded bg-gray-200"></div>
+                                <div className="h-8 w-12 rounded bg-gray-200"></div>
+                                <div className="h-8 w-12 rounded bg-gray-200"></div>
+                            </div>
+
+                            <div className="text-center text-xs text-gray-400">
+                                <Link href="/terms" className="hover:underline">Terms</Link> · <Link href="/privacy" className="hover:underline">Privacy</Link>
                             </div>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
+
             <Footer />
         </div>
     );
-};
-
-export default CheckoutPage;
+}
