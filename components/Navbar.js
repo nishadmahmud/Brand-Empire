@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { megaMenuData } from "@/data/megaMenuData";
 import { useCart } from "@/context/CartContext";
-import { getCategoriesFromServer } from "@/lib/api";
+import { getCategoriesFromServer, searchProducts } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import ProductCard from "./ProductCard";
 
 const Navbar = ({ marqueeVisible = true }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -14,6 +15,13 @@ const Navbar = ({ marqueeVisible = true }) => {
     const [categories, setCategories] = useState([]);
     const { toggleCart, getCartCount } = useCart();
     const { user, logout } = useAuth();
+
+    // Search State
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearchLoading, setIsSearchLoading] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const searchContainerRef = useRef(null);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -28,6 +36,60 @@ const Navbar = ({ marqueeVisible = true }) => {
         };
 
         fetchCategories();
+    }, []);
+
+    // Debounced Search
+    useEffect(() => {
+        const fetchSearch = async () => {
+            if (searchQuery.trim().length === 0) {
+                setSearchResults([]);
+                setShowDropdown(false);
+                return;
+            }
+
+            setIsSearchLoading(true);
+            setShowDropdown(true);
+
+            try {
+                const res = await searchProducts(searchQuery);
+                if (res.success && res.data && res.data.data) {
+                    const products = res.data.data.map(p => ({
+                        ...p,
+                        images: [p.image_path, p.image_path1, p.image_path2, p.image_path3].filter(Boolean),
+                        brand: p.brands?.name || "Brand Empire",
+                        price: `৳ ${p.retails_price}`,
+                        originalPrice: p.regular_price > 0 ? `৳ ${p.regular_price}` : null,
+                        discount: p.discount > 0 ? `${p.discount}% OFF` : null,
+                        sizes: [] // Search API doesn't return sizes yet
+                    }));
+                    setSearchResults(products);
+                } else {
+                    setSearchResults([]);
+                }
+            } catch (error) {
+                console.error("Search error:", error);
+                setSearchResults([]);
+            } finally {
+                setIsSearchLoading(false);
+            }
+        };
+
+        const timeoutId = setTimeout(fetchSearch, 500);
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery]);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
     }, []);
 
     return (
@@ -79,7 +141,8 @@ const Navbar = ({ marqueeVisible = true }) => {
                 {/* Right Section - Search & Icons */}
                 <div className="flex items-center gap-4 xl:gap-6 flex-shrink-0">
                     {/* Search Bar - Desktop Only */}
-                    <div className="hidden lg:flex items-center bg-gray-50 rounded-md px-4 py-2 w-64">
+                    {/* Search Bar - Desktop Only */}
+                    <div ref={searchContainerRef} className="hidden lg:flex items-center bg-gray-50 rounded-md px-4 py-2 w-64 relative">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.35-4.35"></path>
@@ -88,7 +151,30 @@ const Navbar = ({ marqueeVisible = true }) => {
                             type="text"
                             placeholder="Search for products, brands and more"
                             className="ml-2 bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none w-full"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
+
+                        {/* Dropdown Results */}
+                        {showDropdown && (
+                            <div className="absolute top-full right-0 mt-2 w-[800px] bg-white rounded-lg shadow-2xl z-50 overflow-hidden border border-gray-100 max-h-[70vh] flex flex-col">
+                                {isSearchLoading ? (
+                                    <div className="flex justify-center items-center py-10">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
+                                    </div>
+                                ) : searchResults.length > 0 ? (
+                                    <div className="p-4 grid grid-cols-3 gap-4 overflow-y-auto">
+                                        {searchResults.map((product) => (
+                                            <ProductCard key={product.id} product={product} />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-10 text-gray-500">
+                                        <p className="text-lg">No products found for "{searchQuery}"</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Profile/Login Icon - Desktop Only */}
@@ -234,6 +320,8 @@ const Navbar = ({ marqueeVisible = true }) => {
                     </div>
                 </div>
             )}
+
+
         </nav>
     );
 };

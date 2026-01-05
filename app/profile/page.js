@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCustomerOrders } from "@/lib/api";
+import { getCustomerOrders, updateCustomerPassword } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -62,6 +62,15 @@ export default function ProfilePage() {
     });
     const [updateStatus, setUpdateStatus] = useState({ message: "", type: "" });
     const [isUpdating, setIsUpdating] = useState(false);
+
+    const [passwordData, setPasswordData] = useState({
+        current_password: "",
+        new_password: "",
+        new_password_confirmation: ""
+    });
+    const [passwordStatus, setPasswordStatus] = useState({ message: "", type: "" });
+    const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
+    const [isPasswordExpanded, setIsPasswordExpanded] = useState(false);
 
 
     useEffect(() => {
@@ -141,6 +150,40 @@ export default function ProfilePage() {
         setIsUpdating(false);
     };
 
+    const handlePasswordChange = (e) => {
+        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    }
+
+    const handlePasswordUpdate = async (e) => {
+        e.preventDefault();
+        setIsPasswordUpdating(true);
+        setPasswordStatus({ message: "", type: "" });
+
+        if (passwordData.new_password !== passwordData.new_password_confirmation) {
+            setPasswordStatus({ message: "New passwords do not match.", type: "error" });
+            setIsPasswordUpdating(false);
+            return;
+        }
+
+        try {
+            const data = await updateCustomerPassword(token, {
+                email: user.email,
+                ...passwordData
+            });
+
+            if (data.success) {
+                setPasswordStatus({ message: data.message || "Password updated successfully!", type: "success" });
+                setPasswordData({ current_password: "", new_password: "", new_password_confirmation: "" });
+            } else {
+                setPasswordStatus({ message: data.message || "Failed to update password.", type: "error" });
+            }
+        } catch (error) {
+            setPasswordStatus({ message: "An error occurred.", type: "error" });
+        } finally {
+            setIsPasswordUpdating(false);
+        }
+    };
+
     if (loading || !user) {
         return (
             <main className="min-h-screen bg-gray-50">
@@ -157,7 +200,7 @@ export default function ProfilePage() {
         <main className="min-h-screen bg-gray-50 font-sans">
             <Navbar />
 
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-16">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-16">
                 <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
                     <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
                         <div>
@@ -327,17 +370,101 @@ export default function ProfilePage() {
                                         {user.address || "No address provided"}
                                     </dd>
                                 </div>
-                                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                    <dt className="text-sm font-medium text-gray-500">
-                                        Wallet Balance
-                                    </dt>
-                                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                                        {user.wallet_balance ? `${user.wallet_balance}` : "0.00"}
-                                    </dd>
-                                </div>
                             </dl>
                         )}
                     </div>
+                </div>
+
+                {/* Change Password Section */}
+                <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+                    <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+                        <div>
+                            <h3 className="text-lg leading-6 font-medium text-gray-900">
+                                Change Password
+                            </h3>
+                            <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                                Update your account password.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setIsPasswordExpanded(!isPasswordExpanded)}
+                            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                        >
+                            {isPasswordExpanded ? "Cancel" : "Update Password"}
+                        </button>
+                    </div>
+                    {isPasswordExpanded && (
+                        <>
+                            {passwordStatus.message && (
+                                <div className={`px-4 py-3 mb-2 ${passwordStatus.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                                    {passwordStatus.message}
+                                </div>
+                            )}
+                            <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
+                                <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                                    <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                                        <div className="sm:col-span-2">
+                                            <label htmlFor="current_password" className="block text-sm font-medium text-gray-700">
+                                                Current Password
+                                            </label>
+                                            <div className="mt-1">
+                                                <input
+                                                    type="password"
+                                                    name="current_password"
+                                                    id="current_password"
+                                                    value={passwordData.current_password}
+                                                    onChange={handlePasswordChange}
+                                                    required
+                                                    className="shadow-sm focus:ring-[var(--brand-royal-red)] focus:border-[var(--brand-royal-red)] block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <label htmlFor="new_password" className="block text-sm font-medium text-gray-700">
+                                                New Password
+                                            </label>
+                                            <div className="mt-1">
+                                                <input
+                                                    type="password"
+                                                    name="new_password"
+                                                    id="new_password"
+                                                    value={passwordData.new_password}
+                                                    onChange={handlePasswordChange}
+                                                    required
+                                                    className="shadow-sm focus:ring-[var(--brand-royal-red)] focus:border-[var(--brand-royal-red)] block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <label htmlFor="new_password_confirmation" className="block text-sm font-medium text-gray-700">
+                                                Confirm New Password
+                                            </label>
+                                            <div className="mt-1">
+                                                <input
+                                                    type="password"
+                                                    name="new_password_confirmation"
+                                                    id="new_password_confirmation"
+                                                    value={passwordData.new_password_confirmation}
+                                                    onChange={handlePasswordChange}
+                                                    required
+                                                    className="shadow-sm focus:ring-[var(--brand-royal-red)] focus:border-[var(--brand-royal-red)] block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <button
+                                            type="submit"
+                                            disabled={isPasswordUpdating}
+                                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[var(--brand-royal-red)] hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--brand-royal-red)] disabled:opacity-50"
+                                        >
+                                            {isPasswordUpdating ? "Updating..." : "Update Password"}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Tabbed Order History Section */}
@@ -350,8 +477,8 @@ export default function ProfilePage() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`${activeTab === tab.id
-                                            ? 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        ? 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                         } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm flex items-center gap-2`}
                                 >
                                     {tab.icon}
@@ -397,8 +524,8 @@ export default function ProfilePage() {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                                                            order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                                'bg-gray-100 text-gray-800'
+                                                        order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-gray-100 text-gray-800'
                                                         }`}>
                                                         {order.status || order.order_status}
                                                     </span>
