@@ -128,7 +128,7 @@ const Navbar = ({ marqueeVisible = true }) => {
                         <div
                             key={category.category_id}
                             className="relative h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-2"
-                            onMouseEnter={() => setActiveMegaMenu(category.name.toLowerCase())}
+                            onMouseEnter={() => setActiveMegaMenu(category.category_id)}
                             onMouseLeave={() => setActiveMegaMenu(null)}
                         >
                             <Link href={`/category/${category.category_id}`}>
@@ -140,7 +140,6 @@ const Navbar = ({ marqueeVisible = true }) => {
 
                 {/* Right Section - Search & Icons */}
                 <div className="flex items-center gap-4 xl:gap-6 flex-shrink-0">
-                    {/* Search Bar - Desktop Only */}
                     {/* Search Bar - Desktop Only */}
                     <div ref={searchContainerRef} className="hidden lg:flex items-center bg-gray-50 rounded-md px-4 py-2 w-64 relative">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -243,11 +242,11 @@ const Navbar = ({ marqueeVisible = true }) => {
                     onMouseEnter={() => setActiveMegaMenu(activeMegaMenu)}
                     onMouseLeave={() => setActiveMegaMenu(null)}
                 >
-                    {/* Offers Mega Menu */}
-                    {activeMegaMenu === 'offers' && megaMenuData[activeMegaMenu] && (
+                    {/* Offers Mega Menu (Static for now) */}
+                    {activeMegaMenu === 'offers' && megaMenuData['offers'] && (
                         <div className="max-w-[1400px] mx-auto px-8 py-8">
                             <div className="flex justify-center items-center gap-12">
-                                {megaMenuData[activeMegaMenu]?.categories[0]?.items.map((brand, index) => (
+                                {megaMenuData['offers']?.categories[0]?.items.map((brand, index) => (
                                     <Link
                                         key={index}
                                         href={`/offers?brand=${brand.toLowerCase()}`}
@@ -272,32 +271,45 @@ const Navbar = ({ marqueeVisible = true }) => {
                         </div>
                     )}
 
-                    {/* Other Category Mega Menus */}
-                    {activeMegaMenu !== 'offers' && megaMenuData[activeMegaMenu] && (
+                    {/* Dynamic Category Mega Menus */}
+                    {activeMegaMenu !== 'offers' && (
                         <div className="max-w-[1400px] mx-auto px-8 py-8">
                             <div className="grid grid-cols-5 gap-8">
-                                {megaMenuData[activeMegaMenu]?.categories.map((category, index) => (
-                                    <div key={index}>
-                                        <h3 className="font-bold text-[var(--brand-royal-red)] mb-4 text-sm uppercase tracking-wider">
-                                            {category.title}
-                                        </h3>
-                                        <ul className="space-y-2">
-                                            {category.items.map((item, itemIndex) => (
-                                                <li key={itemIndex}>
-                                                    <a
-                                                        href="#"
-                                                        className="text-sm text-gray-600 hover:text-[var(--brand-royal-red)] transition-colors"
-                                                    >
-                                                        {item}
-                                                    </a>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                {categories.find(c => c.category_id === activeMegaMenu)?.sub_category?.length > 0 ? (
+                                    categories.find(c => c.category_id === activeMegaMenu)?.sub_category.map((subCat) => (
+                                        <div key={subCat.id}>
+                                            <Link href={`/category/${activeMegaMenu}?subcategory=${subCat.id}`}>
+                                                <h3 className="font-bold text-[var(--brand-royal-red)] mb-4 text-sm uppercase tracking-wider hover:underline">
+                                                    {subCat.name}
+                                                </h3>
+                                            </Link>
+                                            <ul className="space-y-2">
+                                                {subCat.child_categories && subCat.child_categories.length > 0 ? (
+                                                    subCat.child_categories.map((child) => (
+                                                        <li key={child.id}>
+                                                            <Link
+                                                                href={`/category/${activeMegaMenu}?subcategory=${subCat.id}&child=${child.id}`}
+                                                                className="text-sm text-gray-600 hover:text-[var(--brand-royal-red)] transition-colors"
+                                                            >
+                                                                {child.name}
+                                                            </Link>
+                                                        </li>
+                                                    ))
+                                                ) : (
+                                                    <li className="text-sm text-gray-400 italic">No items</li>
+                                                )}
+                                            </ul>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-span-5 text-center text-gray-500 py-8">
+                                        No sub-categories found.
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </div>
                     )}
+
                 </div>
             )}
 
