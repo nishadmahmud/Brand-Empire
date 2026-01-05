@@ -605,91 +605,81 @@ const ProductDetailsPage = ({ productId }) => {
             {/* Image Lightbox */}
             {showLightbox && (
                 <div
-                    className="fixed inset-0 bg-gray-900/60 backdrop-blur-[3px] z-[100] flex items-center justify-center"
-
+                    className="fixed inset-0 bg-gray-900/60 backdrop-blur-[3px] z-[100] flex items-center justify-center p-8"
                     onClick={() => setShowLightbox(false)}
                 >
-                    {/* Thumbnail Strip - Left Side */}
-                    <div
-                        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2 max-h-[80vh] overflow-y-auto"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {product.images.map((img, index) => (
-                            <button
-                                key={index}
-                                onClick={() => setSelectedImage(index)}
-                                className={`relative w-16 h-20 flex-shrink-0 rounded overflow-hidden transition-all ${selectedImage === index
-                                    ? 'ring-2 ring-white opacity-100'
-                                    : 'opacity-60 hover:opacity-100'
-                                    }`}
-                            >
-                                <Image
-                                    src={img}
-                                    alt={`Thumbnail ${index + 1}`}
-                                    fill
-                                    className="object-cover"
-                                    unoptimized
-                                />
-                            </button>
-                        ))}
-                    </div>
-                    {/* Close Button */}
-                    <button
-                        onClick={() => setShowLightbox(false)}
-                        className="absolute top-4 right-20 z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
-                        aria-label="Close"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
+                    {/* Shrink-wrapped Content Container */}
+                    <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
 
-                    {/* Previous Button */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedImage((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
-                        }}
-                        className="absolute left-[250px] z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
-                        aria-label="Previous image"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                    </button>
+                        {/* Close Button - Top Right Inside */}
+                        <button
+                            onClick={() => setShowLightbox(false)}
+                            className="absolute top-2 right-2 z-40 bg-white/90 hover:bg-white text-gray-900 p-2 rounded-full transition-colors shadow-lg"
+                            aria-label="Close"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
 
-                    {/* Image */}
-                    <div
-                        className="relative w-[90vw] h-[90vh] max-w-6xl"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <Image
+                        {/* Previous Button - Left Outside */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedImage((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
+                            }}
+                            className="absolute -left-14 top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
+                            aria-label="Previous image"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+
+                        {/* Next Button - Right Outside */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedImage((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
+                            }}
+                            className="absolute -right-14 top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
+                            aria-label="Next image"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+
+                        {/* Thumbnail Strip - Vertical Overlay Top Left */}
+                        <div
+                            className="absolute left-4 top-4 z-30 flex flex-col gap-2 max-h-[80vh] overflow-y-auto no-scrollbar"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {product.images.map((img, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setSelectedImage(index)}
+                                    className={`relative w-14 h-16 flex-shrink-0 rounded overflow-hidden transition-all shadow-sm ${selectedImage === index
+                                        ? 'ring-2 ring-white opacity-100'
+                                        : 'opacity-60 hover:opacity-100'
+                                        }`}
+                                >
+                                    <img
+                                        src={img}
+                                        alt={`Thumbnail ${index + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Main Image - Use standard img for shrink-wrapping */}
+                        <img
                             src={product.images[selectedImage]}
                             alt={product.name}
-                            fill
-                            className="object-contain"
-                            unoptimized
+                            className="h-[95vh] w-auto max-w-[90vw] object-contain rounded shadow-2xl"
                         />
-                    </div>
-
-                    {/* Next Button */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedImage((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
-                        }}
-                        className="absolute right-[250px] z-20 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
-                        aria-label="Next image"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
-
-                    {/* Image Counter */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                        {selectedImage + 1} / {product.images.length}
                     </div>
                 </div>
             )}
