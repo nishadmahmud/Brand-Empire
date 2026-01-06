@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 const ProductCard = ({ product, tag, categoryId, onClick }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const { addToCart } = useCart();
+    const { toggleWishlist, isInWishlist } = useWishlist();
+    const inWishlist = isInWishlist(product.id);
 
     const handleAddToCart = (e) => {
         e.preventDefault(); // Prevent Link navigation
@@ -71,11 +74,13 @@ const ProductCard = ({ product, tag, categoryId, onClick }) => {
                     <button
                         onClick={(e) => {
                             e.preventDefault();
-                            // Add wishlist functionality later
+                            e.stopPropagation(); // detailed prevents navigation
+                            toggleWishlist(product);
                         }}
-                        className="absolute top-2 right-2 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 hover:bg-[var(--brand-royal-red)] hover:text-white"
+                        className={`absolute top-2 right-2 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md transition-all duration-300 z-10 hover:scale-110 ${inWishlist ? "opacity-100 text-[var(--brand-royal-red)]" : "opacity-0 group-hover:opacity-100 text-gray-400 hover:text-[var(--brand-royal-red)]"
+                            }`}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={inWishlist ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                         </svg>
                     </button>

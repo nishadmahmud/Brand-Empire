@@ -6,6 +6,7 @@ import ProductCard from "./ProductCard";
 import { dummyProduct, similarProducts, customersAlsoLiked } from "@/data/productData";
 import { searchLocation } from "@/data/deliveryData";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { useToast } from "@/context/ToastContext";
 import { getProductById, getRelatedProduct, getProducts } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
@@ -33,6 +34,8 @@ const ProductDetailsPage = ({ productId }) => {
 
     // Cart functionality
     const { addToCart, setIsCartOpen } = useCart();
+
+    const { toggleWishlist, isInWishlist } = useWishlist();
     const { showToast } = useToast();
 
     // Fetch product data from API
@@ -439,11 +442,17 @@ const ProductDetailsPage = ({ productId }) => {
                                 </svg>
                                 Add to Bag
                             </button>
-                            <button className="px-6 py-4 border-2 border-gray-300 rounded font-bold text-sm uppercase hover:border-gray-400 transition-colors flex items-center justify-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <button
+                                onClick={() => toggleWishlist(product)}
+                                className={`px-6 py-4 border-2 rounded font-bold text-sm uppercase transition-colors flex items-center justify-center gap-2 ${isInWishlist(product.id)
+                                    ? 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-red-50'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                    }`}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={isInWishlist(product.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                                 </svg>
-                                Wishlist
+                                {isInWishlist(product.id) ? "Wishlisted" : "Wishlist"}
                             </button>
                         </div>
 

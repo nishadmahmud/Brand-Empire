@@ -6,14 +6,18 @@ import Link from "next/link";
 import { megaMenuData } from "@/data/megaMenuData";
 import { useCart } from "@/context/CartContext";
 import { getCategoriesFromServer, searchProducts } from "@/lib/api";
+
 import { useAuth } from "@/context/AuthContext";
+import { useWishlist } from "@/context/WishlistContext";
 import ProductCard from "./ProductCard";
 
 const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) => {
     const [activeMegaMenu, setActiveMegaMenu] = useState(null);
     const [categories, setCategories] = useState([]);
     const { toggleCart, getCartCount } = useCart();
+
     const { user, logout } = useAuth();
+    const { wishlist } = useWishlist();
 
     // Search State
     const [searchQuery, setSearchQuery] = useState("");
@@ -231,11 +235,16 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                         )}
 
                         {/* Wishlist Icon - Visible on Mobile too per user request */}
-                        <Link href="/wishlist" className="flex flex-col items-center gap-0.5 text-gray-700 hover:text-[var(--brand-royal-red)] transition-colors">
+                        <Link href="/wishlist" className="relative flex flex-col items-center gap-0.5 text-gray-700 hover:text-[var(--brand-royal-red)] transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                             </svg>
                             <span className="hidden lg:block text-[10px] font-medium">Wishlist</span>
+                            {wishlist.length > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-[var(--brand-royal-red)] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                    {wishlist.length}
+                                </span>
+                            )}
                         </Link>
 
                         {/* Bag Icon - Always Visible */}
@@ -474,7 +483,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 placeholder="Search..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="ml-2 bg-transparent w-full text-sm text-gray-900 placeholder-gray-500 focus:outline-none"
+                                className="ml-2 bg-transparent w-full text-base text-gray-900 placeholder-gray-500 focus:outline-none"
                             />
                             {searchQuery && (
                                 <button onClick={() => setSearchQuery("")} className="text-gray-400">

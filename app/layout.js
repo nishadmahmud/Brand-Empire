@@ -3,6 +3,7 @@ import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 import CartModal from "@/components/CartModal";
 import ClientLayout from "@/components/ClientLayout";
 
@@ -32,12 +33,14 @@ export default function RootLayout({ children }) {
       >
         <ToastProvider>
           <AuthProvider>
-            <CartProvider>
-              <ClientLayout>
-                <CartModal />
-                {children}
-              </ClientLayout>
-            </CartProvider>
+            <WishlistProvider>
+              <CartProvider>
+                <ClientLayout>
+                  <CartModal />
+                  {children}
+                </ClientLayout>
+              </CartProvider>
+            </WishlistProvider>
           </AuthProvider>
         </ToastProvider>
       </body>
