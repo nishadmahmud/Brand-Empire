@@ -21,6 +21,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
     const [isSearchLoading, setIsSearchLoading] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const searchContainerRef = useRef(null);
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -59,7 +60,8 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                         price: `৳ ${p.retails_price}`,
                         originalPrice: p.regular_price > 0 ? `৳ ${p.regular_price}` : null,
                         discount: p.discount > 0 ? `${p.discount}% OFF` : null,
-                        sizes: [] // Search API doesn't return sizes yet
+                        sizes: p.items?.map(item => item.size) || [],
+                        unavailableSizes: p.items?.filter(item => item.quantity === 0).map(item => item.size) || []
                     }));
                     setSearchResults(products);
                 } else {
@@ -179,7 +181,14 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                     ) : searchResults.length > 0 ? (
                                         <div className="p-4 grid grid-cols-3 gap-4 overflow-y-auto">
                                             {searchResults.map((product) => (
-                                                <ProductCard key={product.id} product={product} />
+                                                <ProductCard
+                                                    key={product.id}
+                                                    product={product}
+                                                    onClick={() => {
+                                                        setShowDropdown(false);
+                                                        setSearchQuery(""); // Optional: clear search on navigation
+                                                    }}
+                                                />
                                             ))}
                                         </div>
                                     ) : (
@@ -192,7 +201,10 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                         </div>
 
                         {/* Search Icon - Mobile Only */}
-                        <button className="lg:hidden text-gray-700 hover:text-[var(--brand-royal-red)]">
+                        <button
+                            className="lg:hidden text-gray-700 hover:text-[var(--brand-royal-red)]"
+                            onClick={() => setMobileSearchOpen(true)}
+                        >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <path d="m21 21-4.35-4.35"></path>
@@ -436,6 +448,77 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
 
                 </div>
             </div>
+
+            {/* Mobile Search Overlay */}
+            {mobileSearchOpen && (
+                <div className="fixed inset-0 bg-white z-[100] flex flex-col lg:hidden animate-fade-in">
+                    {/* Header */}
+                    <div className="flex items-center gap-2 p-4 border-b border-gray-100 shadow-sm bg-white">
+                        <button
+                            onClick={() => setMobileSearchOpen(false)}
+                            className="p-2 -ml-2 text-gray-600 hover:text-black"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M19 12H5"></path>
+                                <path d="M12 19l-7-7 7-7"></path>
+                            </svg>
+                        </button>
+                        <div className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="Search..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="ml-2 bg-transparent w-full text-sm text-gray-900 placeholder-gray-500 focus:outline-none"
+                            />
+                            {searchQuery && (
+                                <button onClick={() => setSearchQuery("")} className="text-gray-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Results */}
+                    <div className="flex-1 overflow-y-auto bg-gray-50 pb-20">
+                        {isSearchLoading ? (
+                            <div className="flex justify-center items-center py-20">
+                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
+                            </div>
+                        ) : searchResults.length > 0 ? (
+                            <div className="p-4 grid grid-cols-2 gap-4">
+                                {searchResults.map((product) => (
+                                    <ProductCard
+                                        key={product.id}
+                                        product={product}
+                                        onClick={() => setMobileSearchOpen(false)}
+                                    />
+                                ))}
+                            </div>
+                        ) : searchQuery ? (
+                            <div className="text-center py-20 text-gray-500 px-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 text-gray-300">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                </svg>
+                                <p>No products found for "{searchQuery}"</p>
+                            </div>
+                        ) : (
+                            <div className="px-6 py-8 text-center text-gray-400 text-sm">
+                                Start typing to search for products
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </>
     );
 };

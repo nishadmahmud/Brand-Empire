@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 
-const ProductCard = ({ product, tag, categoryId }) => {
+const ProductCard = ({ product, tag, categoryId, onClick }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const { addToCart } = useCart();
@@ -33,7 +33,7 @@ const ProductCard = ({ product, tag, categoryId }) => {
         : `/product/${product.id}`;
 
     return (
-        <Link href={productUrl}>
+        <Link href={productUrl} onClick={onClick}>
             <div
                 className="group relative cursor-pointer w-full" // Removed min-w for better mobile grid
                 onMouseEnter={() => setIsHovered(true)}
@@ -88,25 +88,27 @@ const ProductCard = ({ product, tag, categoryId }) => {
                         Add to Cart
                     </button>
                     {/* Size Overlay - Clean Professional Look */}
-                    <div className={`absolute bottom-2 left-2 right-2 bg-white shadow-md px-4 py-3 transform transition-all duration-300 ease-out z-10 ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
-                        <div className="flex flex-wrap justify-center items-center gap-1.5 px-1">
-                            {(product.sizes || []).map((size) => {
-                                const isUnavailable = product.unavailableSizes?.includes(size);
-                                return (
-                                    <span
-                                        key={size}
-                                        className={`relative text-sm font-medium ${isUnavailable ? 'text-gray-300 cursor-not-allowed' : 'text-gray-800 hover:text-[var(--brand-royal-red)] cursor-pointer'}`}
-                                    >
-                                        {size}
-                                        {/* Strikethrough for unavailable */}
-                                        {isUnavailable && (
-                                            <span className="absolute top-1/2 left-0 w-full h-[1px] bg-gray-300 -rotate-45 transform origin-center"></span>
-                                        )}
-                                    </span>
-                                );
-                            })}
+                    {product.sizes && product.sizes.length > 0 && (
+                        <div className={`absolute bottom-2 left-2 right-2 bg-white shadow-md px-4 py-3 transform transition-all duration-300 ease-out z-10 ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
+                            <div className="flex flex-wrap justify-center items-center gap-1.5 px-1">
+                                {product.sizes.map((size) => {
+                                    const isUnavailable = product.unavailableSizes?.includes(size);
+                                    return (
+                                        <span
+                                            key={size}
+                                            className={`relative text-sm font-medium ${isUnavailable ? 'text-gray-300 cursor-not-allowed' : 'text-gray-800 hover:text-[var(--brand-royal-red)] cursor-pointer'}`}
+                                        >
+                                            {size}
+                                            {/* Strikethrough for unavailable */}
+                                            {isUnavailable && (
+                                                <span className="absolute top-1/2 left-0 w-full h-[1px] bg-gray-300 -rotate-45 transform origin-center"></span>
+                                            )}
+                                        </span>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Product Details */}

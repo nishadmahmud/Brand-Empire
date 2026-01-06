@@ -380,8 +380,12 @@ const ProductDetailsPage = ({ productId }) => {
                         {/* Price */}
                         <div className="flex items-center gap-3 pb-6 border-b border-gray-200">
                             <span className="text-2xl font-bold text-gray-900">৳{product.price}</span>
-                            <span className="text-lg text-gray-400 line-through">MRP ৳{product.mrp}</span>
-                            <span className="text-[var(--brand-royal-red)] font-bold">({product.discount}% OFF)</span>
+                            {product.discount > 0 && (
+                                <>
+                                    <span className="text-lg text-gray-400 line-through">MRP ৳{product.mrp}</span>
+                                    <span className="text-[var(--brand-royal-red)] font-bold">({product.discount}% OFF)</span>
+                                </>
+                            )}
                         </div>
                         <p className="text-xs text-green-600 font-medium -mt-4">inclusive of all taxes</p>
 
