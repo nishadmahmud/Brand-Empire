@@ -90,7 +90,7 @@ export default function TrackOrderPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <div className="flex-1 py-12 px-4 sm:px-6 lg:px-8 pt-24 md:pt-28">
+            <div className="flex-1 py-12 px-4 sm:px-6 lg:px-8 pt-4 md:pt-8">
                 <div className="max-w-4xl mx-auto">
                     <div className="text-center mb-10">
                         <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">

@@ -194,7 +194,7 @@ export default function CheckoutPage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <div className="pt-24 lg:pt-28 pb-8 lg:pb-12">
+            <div className="pt-0 lg:pt-8 pb-8 lg:pb-12">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-gray-900">Checkout</h1>

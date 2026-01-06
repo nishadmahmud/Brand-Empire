@@ -1,10 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import TopMarquee from "@/components/TopMarquee";
 
 // Dummy product data for offers
 const dummyProducts = [
@@ -119,16 +116,12 @@ const filterTabs = ["CATEGORIES", "STYLE", "SIZE", "PATTERN", "COLOR", "DISCOUNT
 const preferenceOptions = ["CASUAL", "TAILORED"];
 
 export default function OffersPage() {
-    const [marqueeVisible, setMarqueeVisible] = useState(true);
     const [activeTab, setActiveTab] = useState("CATEGORIES");
     const [preferenceTab, setPreferenceTab] = useState("STYLE");
     const [sortBy, setSortBy] = useState("featured");
 
     return (
-        <main className={`min-h-screen ${marqueeVisible ? 'pt-[88px] md:pt-[116px]' : 'pt-16 md:pt-20'} bg-white`}>
-            <TopMarquee onClose={() => setMarqueeVisible(false)} />
-            <Navbar marqueeVisible={marqueeVisible} />
-
+        <div className="min-h-screen bg-white">
             <div className="w-full">
                 {/* Top Bar */}
                 <div className="border-b border-gray-200">
@@ -186,9 +179,9 @@ export default function OffersPage() {
                                             key={tab}
                                             onClick={() => setActiveTab(tab)}
                                             className={`text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === tab
-                                                ? "text-[var(--brand-royal-red)]"
-                                                : "text-gray-600 hover:text-gray-900"
-                                                }`}
+                                                    ? "text-[var(--brand-royal-red)]"
+                                                    : "text-gray-600 hover:text-gray-900"
+                                                } `}
                                         >
                                             {tab}
                                         </button>
@@ -235,18 +228,18 @@ export default function OffersPage() {
                                     <button
                                         onClick={() => setPreferenceTab("STYLE")}
                                         className={`text-sm font-semibold transition-colors ${preferenceTab === "STYLE"
-                                            ? "text-[var(--brand-royal-red)]"
-                                            : "text-gray-600"
-                                            }`}
+                                                ? "text-[var(--brand-royal-red)]"
+                                                : "text-gray-600"
+                                            } `}
                                     >
                                         STYLE
                                     </button>
                                     <button
                                         onClick={() => setPreferenceTab("PATTERN")}
                                         className={`text-sm font-semibold transition-colors ${preferenceTab === "PATTERN"
-                                            ? "text-[var(--brand-royal-red)]"
-                                            : "text-gray-600"
-                                            }`}
+                                                ? "text-[var(--brand-royal-red)]"
+                                                : "text-gray-600"
+                                            } `}
                                     >
                                         PATTERN
                                     </button>
@@ -277,6 +270,6 @@ export default function OffersPage() {
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
     );
 }

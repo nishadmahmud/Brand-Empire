@@ -151,7 +151,7 @@ export default function CategoryPage() {
 
     return (
         <>
-            <div className="min-h-screen bg-gray-50 pt-[120px]">
+            <div className="min-h-screen bg-gray-50 pt-4 md:pt-4">
                 {/* Breadcrumb */}
                 <div className="bg-white border-b border-gray-200">
                     <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3">
@@ -179,7 +179,7 @@ export default function CategoryPage() {
                         {/* Products Section */}
                         <div className="flex-1">
                             {/* Header with Sort */}
-                            <div className="flex items-center justify-between mb-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 md:gap-0">
                                 <div>
                                     <h1 className="text-2xl font-bold text-gray-900">
                                         Products
@@ -189,11 +189,11 @@ export default function CategoryPage() {
                                     </p>
                                 </div>
 
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center justify-between w-full md:w-auto gap-4">
                                     {/* Mobile Filter Button */}
                                     <button
                                         onClick={() => setMobileFiltersOpen(true)}
-                                        className="lg:hidden flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                                        className="lg:hidden flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex-1 md:flex-none bg-white font-medium"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <line x1="4" y1="21" x2="4" y2="14"></line>
@@ -210,16 +210,21 @@ export default function CategoryPage() {
                                     </button>
 
                                     {/* Sort Dropdown */}
-                                    <select
-                                        value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value)}
-                                        className="px-4 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]"
-                                    >
-                                        <option value="recommended">Recommended</option>
-                                        <option value="newest">Newest First</option>
-                                        <option value="price-low">Price: Low to High</option>
-                                        <option value="price-high">Price: High to Low</option>
-                                    </select>
+                                    <div className="relative flex-1 md:w-auto">
+                                        <select
+                                            value={sortBy}
+                                            onChange={(e) => setSortBy(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] appearance-none font-medium h-full"
+                                        >
+                                            <option value="recommended">Recommended</option>
+                                            <option value="newest">Newest First</option>
+                                            <option value="price-low">Price: Low to High</option>
+                                            <option value="price-high">Price: High to Low</option>
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -229,7 +234,7 @@ export default function CategoryPage() {
                                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand-royal-red)]"></div>
                                 </div>
                             ) : filteredAndSortedProducts.length > 0 ? (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
                                     {filteredAndSortedProducts.map((product) => (
                                         <ProductCard key={product.id} product={product} categoryId={categoryId} />
                                     ))}

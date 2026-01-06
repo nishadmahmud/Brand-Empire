@@ -296,7 +296,49 @@ const ProductDetailsPage = ({ productId }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left: Image Gallery */}
                     {/* Left: Image Gallery - 2 Column Grid */}
-                    <div className="grid grid-cols-2 gap-0.5 h-fit">
+                    {/* Mobile Image Slider (Horizontal Scroll) */}
+                    <div className="relative md:hidden w-full h-[500px]">
+                        <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full"
+                            onScroll={(e) => {
+                                const scrollLeft = e.currentTarget.scrollLeft;
+                                const width = e.currentTarget.offsetWidth;
+                                const index = Math.round(scrollLeft / width);
+                                setSelectedImage(index);
+                            }}
+                        >
+                            {product.images.map((img, index) => (
+                                <div
+                                    key={index}
+                                    className="w-full h-full flex-shrink-0 snap-center relative bg-gray-100"
+                                    onClick={() => {
+                                        setSelectedImage(index);
+                                        setShowLightbox(true);
+                                    }}
+                                >
+                                    <Image
+                                        src={img}
+                                        alt={`${product.name} view ${index + 1}`}
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        {/* Dots Indicator */}
+                        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 pointer-events-none">
+                            {product.images.map((_, index) => (
+                                <div
+                                    key={index}
+                                    className={`w-2 h-2 rounded-full transition-all ${selectedImage === index ? 'bg-[var(--brand-royal-red)] w-4' : 'bg-gray-300'
+                                        }`}
+                                ></div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Desktop Image Gallery - 2 Column Grid */}
+                    <div className="hidden md:grid grid-cols-2 gap-0.5 h-fit">
                         {product.images.map((img, index) => (
                             <div
                                 key={index}
@@ -605,31 +647,31 @@ const ProductDetailsPage = ({ productId }) => {
             {/* Image Lightbox */}
             {showLightbox && (
                 <div
-                    className="fixed inset-0 bg-gray-900/60 backdrop-blur-[3px] z-[100] flex items-center justify-center p-8"
+                    className="fixed inset-0 bg-white md:bg-gray-900/60 md:backdrop-blur-[3px] z-[100] flex items-center justify-center p-0 md:p-8"
                     onClick={() => setShowLightbox(false)}
                 >
                     {/* Shrink-wrapped Content Container */}
-                    <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative w-full h-full md:w-auto md:h-auto md:inline-block flex items-center justify-center bg-white md:bg-transparent" onClick={(e) => e.stopPropagation()}>
 
-                        {/* Close Button - Top Right Inside */}
+                        {/* Close Button - Mobile: Top Left, Desktop: Top Right */}
                         <button
                             onClick={() => setShowLightbox(false)}
-                            className="absolute top-2 right-2 z-40 bg-white/90 hover:bg-white text-gray-900 p-2 rounded-full transition-colors shadow-lg"
+                            className="absolute top-4 left-4 md:left-auto md:right-2 z-50 md:z-40 text-black md:bg-white/90 md:hover:bg-white md:text-gray-900 p-2 rounded-full transition-colors md:shadow-lg"
                             aria-label="Close"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
                             </svg>
                         </button>
 
-                        {/* Previous Button - Left Outside */}
+                        {/* Previous Button */}
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedImage((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
                             }}
-                            className="absolute -left-14 top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
+                            className="absolute left-2 md:-left-14 top-1/2 -translate-y-1/2 z-40 bg-white/80 md:bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
                             aria-label="Previous image"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -637,13 +679,13 @@ const ProductDetailsPage = ({ productId }) => {
                             </svg>
                         </button>
 
-                        {/* Next Button - Right Outside */}
+                        {/* Next Button */}
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedImage((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
                             }}
-                            className="absolute -right-14 top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
+                            className="absolute right-2 md:-right-14 top-1/2 -translate-y-1/2 z-40 bg-white/80 md:bg-white hover:bg-gray-100 text-gray-900 p-3 rounded-full transition-colors shadow-lg"
                             aria-label="Next image"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -651,9 +693,9 @@ const ProductDetailsPage = ({ productId }) => {
                             </svg>
                         </button>
 
-                        {/* Thumbnail Strip - Vertical Overlay Top Left */}
+                        {/* Thumbnail Strip - Vertical Overlay Top Left (Desktop Only) */}
                         <div
-                            className="absolute left-4 top-4 z-30 flex flex-col gap-2 max-h-[80vh] overflow-y-auto no-scrollbar"
+                            className="hidden md:flex absolute left-4 top-4 z-30 flex-col gap-2 max-h-[80vh] overflow-y-auto no-scrollbar"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {product.images.map((img, index) => (
@@ -674,12 +716,14 @@ const ProductDetailsPage = ({ productId }) => {
                             ))}
                         </div>
 
-                        {/* Main Image - Use standard img for shrink-wrapping */}
-                        <img
-                            src={product.images[selectedImage]}
-                            alt={product.name}
-                            className="h-[95vh] w-auto max-w-[90vw] object-contain rounded shadow-2xl"
-                        />
+                        {/* Main Image */}
+                        <div className="relative w-full h-full md:w-auto md:h-auto flex items-center justify-center">
+                            <img
+                                src={product.images[selectedImage]}
+                                alt={product.name}
+                                className="w-full h-auto max-h-full md:h-[95vh] md:w-auto md:max-w-[90vw] object-contain md:rounded md:shadow-2xl"
+                            />
+                        </div>
                     </div>
                 </div>
             )}

@@ -89,7 +89,7 @@ const ProductCard = ({ product, tag, categoryId }) => {
                     </button>
                     {/* Size Overlay - Clean Professional Look */}
                     <div className={`absolute bottom-2 left-2 right-2 bg-white shadow-md px-4 py-3 transform transition-all duration-300 ease-out z-10 ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
-                        <div className="flex justify-between items-center px-2">
+                        <div className="flex flex-wrap justify-center items-center gap-1.5 px-1">
                             {(product.sizes || []).map((size) => {
                                 const isUnavailable = product.unavailableSizes?.includes(size);
                                 return (
