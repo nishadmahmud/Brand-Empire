@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { megaMenuData } from "@/data/megaMenuData";
 import { useCart } from "@/context/CartContext";
-import { getCategoriesFromServer, searchProducts, getProducts, getCategoryWiseProducts } from "@/lib/api";
+import { getCategoriesFromServer, searchProducts, getProducts, getCategoryWiseProducts, getCampaigns } from "@/lib/api";
 
 import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -14,6 +14,7 @@ import ProductCard from "./ProductCard";
 const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) => {
     const [activeMegaMenu, setActiveMegaMenu] = useState(null);
     const [categories, setCategories] = useState([]);
+    const [campaigns, setCampaigns] = useState([]);
     const { toggleCart, getCartCount } = useCart();
 
     const { user, logout } = useAuth();
@@ -40,7 +41,22 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
             }
         };
 
+        const fetchCampaigns = async () => {
+            try {
+                const response = await getCampaigns();
+                if (response.success && response.campaigns?.data) {
+                    const activeCampaigns = response.campaigns.data.filter(
+                        campaign => campaign.status === 'active'
+                    );
+                    setCampaigns(activeCampaigns);
+                }
+            } catch (error) {
+                console.error("Error fetching campaigns:", error);
+            }
+        };
+
         fetchCategories();
+        fetchCampaigns();
     }, []);
 
     // Debounced Search
@@ -329,31 +345,47 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                         onMouseEnter={() => setActiveMegaMenu(activeMegaMenu)}
                         onMouseLeave={() => setActiveMegaMenu(null)}
                     >
-                        {/* Offers Mega Menu (Static for now) */}
-                        {activeMegaMenu === 'offers' && megaMenuData['offers'] && (
-                            <div className="max-w-[1400px] mx-auto px-8 py-8">
-                                <div className="flex justify-center items-center gap-12">
-                                    {megaMenuData['offers']?.categories[0]?.items.map((brand, index) => (
+                        {/* Offers Mega Menu - Dynamic Campaigns */}
+                        {activeMegaMenu === 'offers' && (
+                            <div className="max-w-[1400px] mx-auto px-8 py-6">
+                                <div className="flex flex-wrap justify-center items-center gap-4">
+                                    {campaigns.length > 0 ? (
+                                        <>
+                                            {campaigns.map((campaign) => (
+                                                <Link
+                                                    key={campaign.id}
+                                                    href={`/offers/${campaign.id}`}
+                                                    className="group flex items-center gap-3 px-5 py-3 rounded-lg bg-gray-50 hover:bg-[var(--brand-royal-red)] transition-all"
+                                                    onClick={() => setActiveMegaMenu(null)}
+                                                >
+                                                    <span className="text-2xl">🔥</span>
+                                                    <div>
+                                                        <span className="block text-sm font-bold text-gray-900 group-hover:text-white transition-colors">
+                                                            {campaign.name}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500 group-hover:text-white/80 transition-colors">
+                                                            Up to {campaign.discount}% OFF
+                                                        </span>
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                            <Link
+                                                href="/offers"
+                                                className="px-5 py-3 text-sm font-bold text-[var(--brand-royal-red)] hover:underline"
+                                                onClick={() => setActiveMegaMenu(null)}
+                                            >
+                                                View All Offers →
+                                            </Link>
+                                        </>
+                                    ) : (
                                         <Link
-                                            key={index}
-                                            href={`/offers?brand=${brand.toLowerCase()}`}
-                                            className="group flex flex-col items-center gap-2 px-6 py-4 rounded-lg hover:bg-gray-50 transition-all"
+                                            href="/offers"
+                                            className="px-5 py-3 text-sm font-bold text-[var(--brand-royal-red)] hover:underline"
+                                            onClick={() => setActiveMegaMenu(null)}
                                         >
-                                            <div className="w-24 h-24 flex items-center justify-center bg-white rounded-lg shadow-md group-hover:shadow-xl transition-all p-3">
-                                                <Image
-                                                    src={`/brands/${brand.toLowerCase().replace(/[&']/g, "")}.png`}
-                                                    alt={`${brand} logo`}
-                                                    width={80}
-                                                    height={80}
-                                                    className="object-contain w-full h-full"
-                                                    unoptimized
-                                                />
-                                            </div>
-                                            <span className="text-sm font-bold text-gray-900 group-hover:text-[var(--brand-royal-red)] transition-colors">
-                                                {brand}
-                                            </span>
+                                            View All Offers →
                                         </Link>
-                                    ))}
+                                    )}
                                 </div>
                             </div>
                         )}

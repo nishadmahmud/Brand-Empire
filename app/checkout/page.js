@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
-import { saveSalesOrder, applyCoupon } from "../../lib/api";
+import { saveSalesOrder, getCouponList } from "../../lib/api";
 import {
     MapPin,
     CreditCard,
@@ -102,24 +102,59 @@ export default function CheckoutPage() {
         setCouponError("");
 
         try {
-            const response = await applyCoupon(couponCode.trim());
+            const response = await getCouponList();
 
-            if (response.success) {
-                // Calculate discount based on response
-                const couponData = response.data || response;
-                let discount = 0;
+            if (response.success && response.data) {
+                // Find matching coupon (case-insensitive)
+                const matchingCoupon = response.data.find(
+                    coupon => coupon.coupon_code.toUpperCase() === couponCode.trim().toUpperCase()
+                );
 
-                if (couponData.discount_type === "percentage") {
-                    discount = Math.round(subTotal * (couponData.discount_value / 100));
+                if (matchingCoupon) {
+                    // Check if coupon is expired
+                    const now = new Date();
+                    const expireDate = new Date(matchingCoupon.expire_date);
+
+                    if (expireDate < now) {
+                        setCouponError("This coupon has expired");
+                        setCouponDiscount(0);
+                        setAppliedCoupon(null);
+                        return;
+                    }
+
+                    // Check minimum order amount
+                    const minOrderAmount = parseFloat(matchingCoupon.minimum_order_amount) || 0;
+                    if (minOrderAmount > 0 && subTotal < minOrderAmount) {
+                        setCouponError(`Minimum order amount is ৳${minOrderAmount}`);
+                        setCouponDiscount(0);
+                        setAppliedCoupon(null);
+                        return;
+                    }
+
+                    // Calculate discount based on coupon_amount_type
+                    const couponAmount = parseFloat(matchingCoupon.amount) || 0;
+                    let discount = 0;
+
+                    if (matchingCoupon.coupon_amount_type === "percentage") {
+                        discount = Math.round(subTotal * (couponAmount / 100));
+                    } else {
+                        // fixed amount
+                        discount = couponAmount;
+                    }
+
+                    // Don't let discount exceed subtotal
+                    discount = Math.min(discount, subTotal);
+
+                    setCouponDiscount(discount);
+                    setAppliedCoupon(matchingCoupon);
+                    toast.success(`Coupon applied! You saved ৳${discount}`);
                 } else {
-                    discount = couponData.discount_value || couponData.discount || 0;
+                    setCouponError("Invalid coupon code");
+                    setCouponDiscount(0);
+                    setAppliedCoupon(null);
                 }
-
-                setCouponDiscount(discount);
-                setAppliedCoupon(couponData);
-                toast.success(`Coupon applied! You saved ৳${discount}`);
             } else {
-                setCouponError(response.message || "Invalid coupon code");
+                setCouponError("Unable to validate coupon");
                 setCouponDiscount(0);
                 setAppliedCoupon(null);
             }

@@ -1,283 +1,112 @@
 "use client";
 
-import React, { useState } from "react";
-import ProductCard from "@/components/ProductCard";
-
-// Dummy product data for offers
-const dummyProducts = [
-    {
-        id: 1,
-        name: "Men's 505 Mid Indigo Straight Fit Mid Rise Jeans",
-        brand: "Levi's",
-        price: 1835,
-        originalPrice: 3999,
-        discount: 46,
-        images: ["/products/jeans1.png", "/products/jeans1.png"],
-        colors: ["#1e3a8a", "#475569", "#64748b"],
-        rating: 4.5,
-        reviews: 234,
-        sizes: ["S", "M", "L", "XL"]
-    },
-    {
-        id: 2,
-        name: "Men's Brand Logo Black Crew Neck Sweatshirt",
-        brand: "Nike",
-        price: 1181,
-        originalPrice: 2149,
-        discount: 45,
-        images: ["/products/sweatshirt_black.png", "/products/sweatshirt_black.png"],
-        colors: ["#000000", "#1e3a8a"],
-        rating: 4.3,
-        reviews: 156,
-        sizes: ["S", "M", "L", "XL"]
-    },
-    {
-        id: 3,
-        name: "Men's Typographic Print Light Grey Slim Fit Sweatshirt",
-        brand: "Adidas",
-        price: 1181,
-        originalPrice: 2149,
-        discount: 45,
-        images: ["/products/sweatshirt_grey.png", "/products/sweatshirt_grey.png"],
-        colors: ["#9ca3af", "#ffffff"],
-        rating: 4.4,
-        reviews: 189,
-        sizes: ["S", "M", "L", "XL"]
-    },
-    {
-        id: 4,
-        name: "Men's Tinted 568 Blue Loose Fit Mid Rise Jeans",
-        brand: "Levi's",
-        price: 1933,
-        originalPrice: 3579,
-        discount: 45,
-        images: ["/products/jeans2.png", "/products/jeans2.png"],
-        colors: ["#1e40af", "#475569"],
-        rating: 4.6,
-        reviews: 312,
-        sizes: ["S", "M", "L", "XL"]
-    },
-    {
-        id: 5,
-        name: "Men's Slim Fit Casual Shirt",
-        brand: "H&M",
-        price: 899,
-        originalPrice: 1999,
-        discount: 55,
-        images: ["/products/shirt.png", "/products/shirt.png"],
-        colors: ["#ffffff", "#1e3a8a", "#dc2626"],
-        rating: 4.2,
-        reviews: 98,
-        sizes: ["S", "M", "L", "XL"]
-    },
-    {
-        id: 6,
-        name: "Women's Floral Print Dress",
-        brand: "Zara",
-        price: 1499,
-        originalPrice: 2999,
-        discount: 50,
-        images: ["/products/dress.png", "/products/dress.png"],
-        colors: ["#ec4899", "#ffffff"],
-        rating: 4.7,
-        reviews: 267,
-        sizes: ["S", "M", "L", "XL"]
-    },
-    {
-        id: 7,
-        name: "Men's Running Shoes",
-        brand: "Nike",
-        price: 2499,
-        originalPrice: 4999,
-        discount: 50,
-        images: ["/products/shoes.png", "/products/shoes.png"],
-        colors: ["#000000", "#ffffff", "#dc2626"],
-        rating: 4.8,
-        reviews: 445,
-        sizes: ["7", "8", "9", "10"]
-    },
-    {
-        id: 8,
-        name: "Women's Denim Jacket",
-        brand: "Levi's",
-        price: 2199,
-        originalPrice: 4499,
-        discount: 51,
-        images: ["/products/jacket.png", "/products/jacket.png"],
-        colors: ["#1e40af", "#000000"],
-        rating: 4.5,
-        reviews: 178,
-        sizes: ["S", "M", "L", "XL"]
-    }
-];
-
-const quickFilters = ["BAGS", "BELTS", "CARGOS", "CHINOS", "JACKETS", "JEANS"];
-const filterTabs = ["CATEGORIES", "STYLE", "SIZE", "PATTERN", "COLOR", "DISCOUNT"];
-const preferenceOptions = ["CASUAL", "TAILORED"];
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { getCampaigns } from "@/lib/api";
 
 export default function OffersPage() {
-    const [activeTab, setActiveTab] = useState("CATEGORIES");
-    const [preferenceTab, setPreferenceTab] = useState("STYLE");
-    const [sortBy, setSortBy] = useState("featured");
+    const [campaigns, setCampaigns] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCampaigns = async () => {
+            try {
+                const response = await getCampaigns();
+                if (response.success && response.campaigns?.data) {
+                    // Filter only active campaigns
+                    const activeCampaigns = response.campaigns.data.filter(
+                        campaign => campaign.status === 'active'
+                    );
+                    setCampaigns(activeCampaigns);
+                }
+            } catch (error) {
+                console.error("Error fetching campaigns:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCampaigns();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand-royal-red)]"></div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-white">
-            <div className="w-full">
-                {/* Top Bar */}
-                <div className="border-b border-gray-200">
-                    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4">
-                        {/* Mobile: Title on top, controls below */}
-                        <h1 className="text-xl md:text-3xl font-bold text-center mb-4 md:mb-0 md:hidden">
-                            END OF SEASON SALE - MEN
-                        </h1>
+        <div className="min-h-screen bg-gray-50">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[var(--brand-royal-red)] to-red-700 text-white py-8 md:py-12">
+                <div className="max-w-[1400px] mx-auto px-4 md:px-8 text-center">
+                    <h1 className="text-3xl md:text-5xl font-bold mb-2">🔥 HOT DEALS & OFFERS</h1>
+                    <p className="text-lg md:text-xl opacity-90">Don't miss out on these amazing discounts!</p>
+                </div>
+            </div>
 
-                        <div className="flex items-center justify-between gap-4">
-                            <button className="flex items-center gap-2 border border-gray-300 px-3 py-2 rounded hover:border-gray-400 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <line x1="4" y1="21" x2="4" y2="14"></line>
-                                    <line x1="4" y1="10" x2="4" y2="3"></line>
-                                    <line x1="12" y1="21" x2="12" y2="12"></line>
-                                    <line x1="12" y1="8" x2="12" y2="3"></line>
-                                    <line x1="20" y1="21" x2="20" y2="16"></line>
-                                    <line x1="20" y1="12" x2="20" y2="3"></line>
-                                    <line x1="1" y1="14" x2="7" y2="14"></line>
-                                    <line x1="9" y1="8" x2="15" y2="8"></line>
-                                    <line x1="17" y1="16" x2="23" y2="16"></line>
-                                </svg>
-                                <span className="font-bold text-sm uppercase">Filters</span>
-                            </button>
-
-                            {/* Desktop: Title in center */}
-                            <h1 className="hidden md:block text-2xl md:text-3xl font-bold text-center flex-1">
-                                END OF SEASON SALE - MEN
-                            </h1>
-
-                            <select
-                                className="border border-gray-300 px-3 py-2 rounded text-sm focus:outline-none focus:border-gray-400"
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
+            {/* Campaigns Grid */}
+            <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
+                {campaigns.length === 0 ? (
+                    <div className="text-center py-20">
+                        <p className="text-gray-500 text-lg">No active offers at the moment.</p>
+                        <Link href="/" className="text-[var(--brand-royal-red)] font-semibold hover:underline mt-4 inline-block">
+                            Continue Shopping →
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {campaigns.map((campaign) => (
+                            <Link
+                                key={campaign.id}
+                                href={`/offers/${campaign.id}`}
+                                className="group relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300"
                             >
-                                <option value="featured">Sort By: Featured</option>
-                                <option value="price-low">Price: Low to High</option>
-                                <option value="price-high">Price: High to Low</option>
-                                <option value="discount">Discount</option>
-                                <option value="newest">Newest First</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="text-center md:text-right max-w-[1400px] mx-auto px-4 md:px-8 pb-3">
-                        <p className="text-sm text-gray-600">Showing {dummyProducts.length} products</p>
-                    </div>
-                </div>
-
-                {/* Filter For You Section */}
-                <div className="bg-[#f5f3ef] border-b border-gray-200">
-                    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4">
-                        {/* Mobile: Stack vertically, Desktop: Row */}
-                        <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
-                            {/* Title */}
-                            <h2 className="font-bold text-base uppercase whitespace-nowrap">Filter For You</h2>
-
-                            {/* Tabs and Pills */}
-                            <div className="flex-1 flex flex-col gap-3">
-                                {/* Filter Tabs - Horizontally scrollable on mobile */}
-                                <div className="flex items-center gap-4 md:gap-6 overflow-x-auto pb-2 md:pb-0 no-scrollbar md:justify-center">
-                                    {filterTabs.map((tab) => (
-                                        <button
-                                            key={tab}
-                                            onClick={() => setActiveTab(tab)}
-                                            className={`text-sm font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${activeTab === tab
-                                                ? "text-[var(--brand-royal-red)]"
-                                                : "text-gray-600 hover:text-gray-900"
-                                                }`}
-                                        >
-                                            {tab}
-                                        </button>
-                                    ))}
+                                {/* Campaign Banner */}
+                                <div className="relative h-48 md:h-56 overflow-hidden">
+                                    {campaign.bg_image ? (
+                                        <Image
+                                            src={campaign.bg_image}
+                                            alt={campaign.name}
+                                            fill
+                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                            unoptimized
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 flex items-center justify-center">
+                                            <span className="text-white text-4xl">🎉</span>
+                                        </div>
+                                    )}
+                                    {/* Discount Badge */}
+                                    <div className="absolute top-4 right-4 bg-[var(--brand-royal-red)] text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                                        Up to {campaign.discount}% OFF
+                                    </div>
                                 </div>
 
-                                {/* Category Pills - Horizontally scrollable on mobile */}
-                                <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-2 md:pb-0 no-scrollbar md:flex-wrap md:justify-center">
-                                    {quickFilters.map((filter) => (
-                                        <button
-                                            key={filter}
-                                            className="px-3 md:px-4 py-1.5 md:py-2 bg-white border border-gray-300 rounded text-xs md:text-sm font-medium hover:border-gray-400 transition-colors whitespace-nowrap flex-shrink-0"
-                                        >
-                                            {filter}
-                                        </button>
-                                    ))}
-                                    <button className="px-3 md:px-4 py-1.5 md:py-2 bg-white border border-gray-300 rounded text-xs md:text-sm font-semibold text-[var(--brand-royal-red)] hover:border-gray-400 transition-colors whitespace-nowrap flex-shrink-0">
-                                        +More
-                                    </button>
+                                {/* Campaign Info */}
+                                <div className="p-5">
+                                    <h3 className="text-xl font-bold text-gray-900 group-hover:text-[var(--brand-royal-red)] transition-colors mb-2">
+                                        {campaign.name}
+                                    </h3>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-gray-500">
+                                            {campaign.products?.length || 0} Products
+                                        </span>
+                                        <span className="text-[var(--brand-royal-red)] font-semibold text-sm group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                                            Shop Now
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M5 12h14M12 5l7 7-7 7" />
+                                            </svg>
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Products Grid */}
-                <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {dummyProducts.slice(0, 4).map((product) => (
-                            <ProductCard key={product.id} product={product} />
+                            </Link>
                         ))}
                     </div>
-                </div>
-
-                {/* Tell Your Preference Section */}
-                <div className="bg-[#f5f3ef] border-y border-gray-200">
-                    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4">
-                        <div className="flex items-center gap-8">
-                            <h2 className="font-bold text-base uppercase whitespace-nowrap">Tell Your Preference</h2>
-
-                            <div className="flex-1 flex flex-col items-center gap-3">
-                                {/* Preference Tabs */}
-                                <div className="flex items-center gap-6">
-                                    <button
-                                        onClick={() => setPreferenceTab("STYLE")}
-                                        className={`text-sm font-semibold transition-colors ${preferenceTab === "STYLE"
-                                            ? "text-[var(--brand-royal-red)]"
-                                            : "text-gray-600"
-                                            } `}
-                                    >
-                                        STYLE
-                                    </button>
-                                    <button
-                                        onClick={() => setPreferenceTab("PATTERN")}
-                                        className={`text-sm font-semibold transition-colors ${preferenceTab === "PATTERN"
-                                            ? "text-[var(--brand-royal-red)]"
-                                            : "text-gray-600"
-                                            } `}
-                                    >
-                                        PATTERN
-                                    </button>
-                                </div>
-
-                                {/* Preference Options */}
-                                <div className="flex items-center gap-3">
-                                    {preferenceOptions.map((option) => (
-                                        <button
-                                            key={option}
-                                            className="px-4 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:border-gray-400 transition-colors"
-                                        >
-                                            {option}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* More Products */}
-                <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {dummyProducts.slice(4).map((product) => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
-                </div>
+                )}
             </div>
         </div>
     );
