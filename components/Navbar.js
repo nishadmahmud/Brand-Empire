@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { megaMenuData } from "@/data/megaMenuData";
 import { useCart } from "@/context/CartContext";
-import { getCategoriesFromServer, searchProducts } from "@/lib/api";
+import { getCategoriesFromServer, searchProducts, getProducts, getCategoryWiseProducts } from "@/lib/api";
 
 import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -56,22 +56,51 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
             setShowDropdown(true);
 
             try {
-                const res = await searchProducts(searchQuery);
-                if (res.success && res.data && res.data.data) {
-                    const products = res.data.data.map(p => ({
-                        ...p,
-                        images: [p.image_path, p.image_path1, p.image_path2, p.image_path3].filter(Boolean),
-                        brand: p.brands?.name || "Brand Empire",
-                        price: `৳ ${p.retails_price}`,
-                        originalPrice: p.regular_price > 0 ? `৳ ${p.regular_price}` : null,
-                        discount: p.discount > 0 ? `${p.discount}% OFF` : null,
-                        sizes: p.items?.map(item => item.size) || [],
-                        unavailableSizes: p.items?.filter(item => item.quantity === 0).map(item => item.size) || []
-                    }));
-                    setSearchResults(products);
+                // Check if query matches a category exactly (case-insensitive)
+                const matchedCategory = categories.find(
+                    cat => cat.name.toLowerCase() === searchQuery.trim().toLowerCase()
+                );
+
+                let products = [];
+                let res;
+
+                if (matchedCategory) {
+                    // Fetch products by category
+                    // getCategoryWiseProducts return structure: { success: true, data: [ ...products ] }
+                    res = await getCategoryWiseProducts(matchedCategory.category_id);
+
+                    if (res.success && res.data) {
+                        products = res.data.map(p => ({
+                            ...p,
+                            images: p.image_paths && p.image_paths.length > 0 ? p.image_paths : [p.image_path, p.image_path1, p.image_path2, p.image_path3].filter(Boolean),
+                            brand: p.brand_name || p.brands?.name || "Brand Empire",
+                            price: `৳ ${p.retails_price || p.price || 0}`,
+                            originalPrice: p.regular_price > 0 ? `৳ ${p.regular_price}` : null,
+                            discount: p.discount > 0 ? `${p.discount}% OFF` : null,
+                            sizes: p.product_variants ? p.product_variants.map(v => v.name) : (p.items?.map(item => item.size) || []),
+                            unavailableSizes: p.product_variants ? p.product_variants.filter(v => v.quantity === 0).map(v => v.name) : (p.items?.filter(item => item.quantity === 0).map(item => item.size) || [])
+                        }));
+                    }
                 } else {
-                    setSearchResults([]);
+                    // Default search
+                    // searchProducts return structure: { success: true, data: { data: [ ...products ] } }
+                    res = await searchProducts(searchQuery);
+
+                    if (res.success && res.data && res.data.data) {
+                        products = res.data.data.map(p => ({
+                            ...p,
+                            images: [p.image_path, p.image_path1, p.image_path2, p.image_path3].filter(Boolean),
+                            brand: p.brands?.name || "Brand Empire",
+                            price: `৳ ${p.retails_price}`,
+                            originalPrice: p.regular_price > 0 ? `৳ ${p.regular_price}` : null,
+                            discount: p.discount > 0 ? `${p.discount}% OFF` : null,
+                            sizes: p.items?.map(item => item.size) || [],
+                            unavailableSizes: p.items?.filter(item => item.quantity === 0).map(item => item.size) || []
+                        }));
+                    }
                 }
+
+                setSearchResults(products);
             } catch (error) {
                 console.error("Search error:", error);
                 setSearchResults([]);
@@ -189,22 +218,34 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                                 <Link
                                                     key={product.id}
                                                     href={`/product/${product.id}`}
-                                                    className="px-4 py-3 hover:bg-gray-50 flex items-center justify-between group transition-colors border-b border-gray-50 last:border-0"
+                                                    className="px-4 py-3 hover:bg-gray-50 flex items-center gap-4 group transition-colors border-b border-gray-50 last:border-0"
                                                     onClick={() => {
                                                         setShowDropdown(false);
                                                         setSearchQuery("");
                                                     }}
                                                 >
-                                                    <div>
-                                                        <h4 className="text-sm font-medium text-gray-700 group-hover:text-[var(--brand-royal-red)]">
+                                                    {/* Product Image */}
+                                                    <div className="w-10 h-10 relative flex-shrink-0 bg-gray-100 rounded overflow-hidden border border-gray-200">
+                                                        <Image
+                                                            src={product.images && product.images[0] ? product.images[0] : "/placeholder.png"} // Fallback image needed? Or check if images array is valid
+                                                            alt={product.name}
+                                                            fill
+                                                            sizes="40px"
+                                                            className="object-cover"
+                                                            unoptimized
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-sm font-medium text-gray-700 group-hover:text-[var(--brand-royal-red)] truncate">
                                                             {product.name}
                                                         </h4>
-                                                        <p className="text-xs text-gray-400 mt-0.5">
+                                                        <p className="text-xs text-gray-400 mt-0.5 truncate">
                                                             {product.category_name || product.brand || "Product"}
                                                         </p>
                                                     </div>
-                                                    <div className="text-xs font-bold text-gray-900">
-                                                        ৳{product.price}
+                                                    <div className="text-xs font-bold text-gray-900 whitespace-nowrap">
+                                                        {product.price}
                                                     </div>
                                                 </Link>
                                             ))}
