@@ -1,10 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { getCategoriesFromServer } from "@/lib/api";
 
 const Footer = () => {
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await getCategoriesFromServer();
+                if (response.success && response.data) {
+                    setCategories(response.data);
+                }
+            } catch (error) {
+                console.error("Error fetching categories for footer:", error);
+            }
+        };
+
+        fetchCategories();
+    }, []);
+
     return (
         <footer className="section-full bg-[#1a1a1a] text-white mt-16 md:mt-20 py-20">
             <div className="section-content py-8 md:py-12">
@@ -53,11 +71,14 @@ const Footer = () => {
                     <div>
                         <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Shop</h3>
                         <ul className="space-y-2">
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">New Arrivals</a></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Men</a></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Women</a></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Accessories</a></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Sale</a></li>
+                            <li><Link href="/#new-arrivals" className="text-gray-400 hover:text-white text-sm transition-colors">New Arrivals</Link></li>
+                            {categories.map((category) => (
+                                <li key={category.category_id}>
+                                    <Link href={`/category/${category.category_id}`} className="text-gray-400 hover:text-white text-sm transition-colors">
+                                        {category.name}
+                                    </Link>
+                                </li>
+                            ))}
                         </ul>
                     </div>
 
@@ -65,11 +86,11 @@ const Footer = () => {
                     <div>
                         <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Customer Service</h3>
                         <ul className="space-y-2">
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Contact Us</a></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Shipping Info</a></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Returns</a></li>
+                            <li><Link href="/contact" className="text-gray-400 hover:text-white text-sm transition-colors">Contact Us</Link></li>
+                            <li><Link href="/shipping" className="text-gray-400 hover:text-white text-sm transition-colors">Shipping Info</Link></li>
+                            <li><Link href="/returns" className="text-gray-400 hover:text-white text-sm transition-colors">Returns</Link></li>
                             <li><Link href="/track-order" className="text-gray-400 hover:text-white text-sm transition-colors">Track Order</Link></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Size Guide</a></li>
+                            <li><Link href="/size-guide" className="text-gray-400 hover:text-white text-sm transition-colors">Size Guide</Link></li>
                         </ul>
                     </div>
 
@@ -77,11 +98,11 @@ const Footer = () => {
                     <div>
                         <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Company</h3>
                         <ul className="space-y-2">
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">About Us</a></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Careers</a></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Terms & Conditions</a></li>
-                            <li><a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Sitemap</a></li>
+                            <li><Link href="/about" className="text-gray-400 hover:text-white text-sm transition-colors">About Us</Link></li>
+                            <li><Link href="/careers" className="text-gray-400 hover:text-white text-sm transition-colors">Careers</Link></li>
+                            <li><Link href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</Link></li>
+                            <li><Link href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors">Terms & Conditions</Link></li>
+                            <li><Link href="/sitemap" className="text-gray-400 hover:text-white text-sm transition-colors">Sitemap</Link></li>
                         </ul>
                     </div>
                 </div>
@@ -98,20 +119,21 @@ const Footer = () => {
                                 <span className="text-xs font-bold text-orange-600">Mastercard</span>
                             </div>
                             <div className="bg-white rounded px-2 py-1">
-                                <span className="text-xs font-bold text-blue-700">PayPal</span>
+                                <span className="text-xs font-bold text-blue-800">Amex</span>
                             </div>
                             <div className="bg-white rounded px-2 py-1">
-                                <span className="text-xs font-bold text-purple-600">bKash</span>
+                                <span className="text-xs font-bold text-pink-600">bKash</span>
+                            </div>
+                            <div className="bg-white rounded px-2 py-1">
+                                <span className="text-xs font-bold text-orange-500">Nagad</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Copyright */}
-                <div className="border-t border-gray-800 pt-6 text-center">
-                    <p className="text-gray-400 text-sm">
-                        © {new Date().getFullYear()} Brand Empire. All rights reserved.
-                    </p>
+                <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
+                    <p>&copy; {new Date().getFullYear()} Brand Empire. All rights reserved.</p>
                 </div>
             </div>
         </footer>

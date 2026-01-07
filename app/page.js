@@ -40,7 +40,7 @@ export default function Home() {
       </div>
 
       {/* New Arrivals */}
-      <div className="mt-8 md:mt-12">
+      <div id="new-arrivals" className="mt-8 md:mt-12">
         <NewArrivals />
       </div>
 

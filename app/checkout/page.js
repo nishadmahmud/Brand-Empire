@@ -44,7 +44,9 @@ export default function CheckoutPage() {
     const [couponDiscount, setCouponDiscount] = useState(0);
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponLoading, setCouponLoading] = useState(false);
+
     const [couponError, setCouponError] = useState("");
+    const [donationAmount, setDonationAmount] = useState(0);
 
     const formRef = useRef(null);
 
@@ -87,7 +89,7 @@ export default function CheckoutPage() {
         updateDeliveryFee(fee);
     }, [selectedDistrict, selectedCity, updateDeliveryFee]);
 
-    const grandTotal = subTotal + deliveryFee - couponDiscount;
+    const grandTotal = subTotal + deliveryFee - couponDiscount + donationAmount;
 
     // Handle coupon application
     const handleApplyCoupon = async () => {
@@ -166,6 +168,7 @@ export default function CheckoutPage() {
             paid_amount: 0,
             user_id: process.env.NEXT_PUBLIC_USER_ID, // Store/Sales ID
             sub_total: subTotal,
+            donation: donationAmount,
             vat: 0,
             tax: 0, // Assuming 0 for now
             discount: 0, // Coupon discount if any
@@ -503,6 +506,16 @@ export default function CheckoutPage() {
                                         })</span>
                                         <span>৳{deliveryFee}</span>
                                     </div>
+                                    <div className="flex justify-between text-sm text-gray-600">
+                                        <span>Discount</span>
+                                        <span className="text-red-500">-৳{couponDiscount}</span>
+                                    </div>
+                                    {donationAmount > 0 && (
+                                        <div className="flex justify-between text-sm text-[var(--brand-royal-red)] font-medium">
+                                            <span>Donation</span>
+                                            <span>+৳{donationAmount}</span>
+                                        </div>
+                                    )}
                                     {/* Coupon Input UI */}
                                     <div className="pt-2">
                                         {appliedCoupon ? (
@@ -557,6 +570,46 @@ export default function CheckoutPage() {
                                     )}
                                 </div>
 
+                                {/* Donation Section */}
+                                <div className="mb-6 rounded-lg bg-white p-4 border border-gray-200 shadow-sm">
+                                    <div className="flex items-start gap-3 mb-3">
+                                        <div className="p-2 bg-red-50 rounded-full text-[var(--brand-royal-red)] shadow-sm">
+                                            <ShoppingBag size={18} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900 text-sm">Donation</h3>
+                                            <p className="text-xs text-gray-500">Your donated money will be distributed among the poor and needy.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                        {[0, 10, 20, 30, 50].map((amount) => (
+                                            <button
+                                                type="button"
+                                                key={amount}
+                                                onClick={() => setDonationAmount(amount)}
+                                                className={`px-3 py-1 text-xs rounded-full border transition-all ${donationAmount === amount
+                                                    ? "bg-[var(--brand-royal-red)] text-white border-[var(--brand-royal-red)]"
+                                                    : "bg-white text-gray-600 border-gray-200 hover:border-red-300 hover:text-red-600"
+                                                    }`}
+                                            >
+                                                {amount === 0 ? "Tk Not now" : `Tk ${amount}`}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <input
+                                        type="number"
+                                        placeholder="Enter custom amount"
+                                        value={donationAmount > 0 ? donationAmount : ''}
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            setDonationAmount(isNaN(val) ? 0 : val);
+                                        }}
+                                        className="w-full text-xs rounded-full border border-gray-200 px-4 py-2 focus:outline-none focus:border-[var(--brand-royal-red)]"
+                                    />
+                                </div>
+
                                 <div className="flex items-center justify-between border-t border-gray-100 pt-4">
                                     <span className="text-base font-bold text-gray-900">
                                         Grand Total
@@ -576,7 +629,7 @@ export default function CheckoutPage() {
                                         <>Processing...</>
                                     ) : (
                                         <>
-                                            Pay ৳{grandTotal}
+                                            Complete Order
                                             <Truck className="h-4 w-4" />
                                         </>
                                     )}
@@ -588,11 +641,24 @@ export default function CheckoutPage() {
                                 </div>
                             </section>
 
-                            <div className="flex justify-center gap-4 opacity-50 grayscale transition hover:grayscale-0">
-                                {/* Delivery Partner Logos Placeholders */}
-                                <div className="h-8 w-12 rounded bg-gray-200"></div>
-                                <div className="h-8 w-12 rounded bg-gray-200"></div>
-                                <div className="h-8 w-12 rounded bg-gray-200"></div>
+                            <div className="flex justify-center items-center gap-6 mt-8">
+                                {/* Delivery Partner Logos (Inline SVG for reliability) */}
+                                {/* Pathao Logo */}
+                                <svg viewBox="0 0 120 30" className="h-7 w-auto opacity-70 grayscale transition hover:grayscale-0 hover:opacity-100">
+                                    <text x="0" y="20" fontFamily="sans-serif" fontWeight="900" fontStyle="italic" fontSize="24" fill="#E11220">Pathao</text>
+                                </svg>
+
+                                {/* FedEx Logo */}
+                                <svg viewBox="0 0 110 30" className="h-7 w-auto opacity-70 grayscale transition hover:grayscale-0 hover:opacity-100">
+                                    <text x="0" y="20" fontFamily="sans-serif" fontWeight="900" fontSize="24" fill="#4D148C">Fed</text>
+                                    <text x="42" y="20" fontFamily="sans-serif" fontWeight="900" fontSize="24" fill="#FF6600">Ex</text>
+                                </svg>
+
+                                {/* DHL Logo */}
+                                <svg viewBox="0 0 80 30" className="h-7 w-auto opacity-70 grayscale transition hover:grayscale-0 hover:opacity-100">
+                                    <rect width="60" height="24" fill="#FFCC00" rx="2" className="hidden" /> {/* Optional background */}
+                                    <text x="0" y="20" fontFamily="sans-serif" fontWeight="900" fontStyle="italic" fontSize="26" fill="#D40511">DHL</text>
+                                </svg>
                             </div>
 
                             <div className="text-center text-xs text-gray-400">

@@ -23,7 +23,9 @@ export default function CategoryPage() {
     // Breadcrumb data
     const [categoryName, setCategoryName] = useState("");
     const [subcategoryName, setSubcategoryName] = useState("");
+
     const [childName, setChildName] = useState("");
+    const [bannerImage, setBannerImage] = useState(null);
 
     const [filters, setFilters] = useState({
         categories: [],
@@ -59,20 +61,31 @@ export default function CategoryPage() {
                     const category = response.data.find(c => c.category_id == categoryId);
                     if (category) {
                         setCategoryName(category.name);
+                        let currentBanner = category.banner;
 
                         if (subcategoryId && category.sub_category) {
                             const subcat = category.sub_category.find(s => s.id == subcategoryId);
                             if (subcat) {
                                 setSubcategoryName(subcat.name);
+                                // Update banner from subcategory (singular 'banner' or first item of 'banners' array)
+                                if (subcat.banner) {
+                                    currentBanner = subcat.banner;
+                                } else if (subcat.banners && subcat.banners.length > 0) {
+                                    currentBanner = subcat.banners[0];
+                                }
 
                                 if (childId && subcat.child_categories) {
                                     const child = subcat.child_categories.find(c => c.id == childId);
                                     if (child) {
                                         setChildName(child.name);
+                                        if (child.banner) {
+                                            currentBanner = child.banner;
+                                        }
                                     }
                                 }
                             }
                         }
+                        setBannerImage(currentBanner);
                     }
                 }
             } catch (error) {
@@ -219,6 +232,16 @@ export default function CategoryPage() {
     return (
         <>
             <div className="min-h-screen bg-gray-50 pt-4 md:pt-4">
+                {/* Category Banner */}
+                {bannerImage && (
+                    <div className="w-full mb-0">
+                        <img
+                            src={bannerImage}
+                            alt={childName || subcategoryName || categoryName}
+                            className="w-full h-auto max-h-[200px] md:max-h-[350px] object-cover"
+                        />
+                    </div>
+                )}
                 {/* Breadcrumb */}
                 <div className="bg-white border-b border-gray-200">
                     <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3">
