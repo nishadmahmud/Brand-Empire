@@ -16,23 +16,7 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products }) => {
         return brands;
     }, [products]);
 
-    // Extract unique sizes from products
-    const availableSizes = useMemo(() => {
-        const sizes = products
-            .flatMap(p => p.sizes || [])
-            .filter((size, index, self) => self.indexOf(size) === index)
-            .sort((a, b) => {
-                // Try to sort numerically if both are numbers
-                const aNum = parseInt(a);
-                const bNum = parseInt(b);
-                if (!isNaN(aNum) && !isNaN(bNum)) {
-                    return aNum - bNum;
-                }
-                // Otherwise sort alphabetically
-                return a.localeCompare(b);
-            });
-        return sizes;
-    }, [products]);
+
 
     // Extract unique colors from products
     const availableColors = useMemo(() => {

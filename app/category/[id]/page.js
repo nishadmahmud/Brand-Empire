@@ -1,14 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import React, { useState, useEffect, useMemo } from "react";
+import { useParams, useSearchParams, useRouter, usePathname } from "next/navigation";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
-import { getProducts, getProductsBySubcategory, getProductsByChildCategory, getCategoriesFromServer } from "@/lib/api";
+import CategoryTopFilters from "@/components/CategoryTopFilters";
+import { getProducts, getProductsBySubcategory, getProductsByChildCategory, getCategoriesFromServer, getCategoryWiseProducts } from "@/lib/api";
 
 export default function CategoryPage() {
     const params = useParams();
     const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
     const categoryId = params.id;
     const subcategoryId = searchParams.get('subcategory');
     const childId = searchParams.get('child');
@@ -23,6 +26,7 @@ export default function CategoryPage() {
     // Breadcrumb data
     const [categoryName, setCategoryName] = useState("");
     const [subcategoryName, setSubcategoryName] = useState("");
+    const [currentCategoryData, setCurrentCategoryData] = useState(null);
 
     const [childName, setChildName] = useState("");
     const [bannerImage, setBannerImage] = useState(null);
@@ -37,7 +41,7 @@ export default function CategoryPage() {
     });
 
     // Extract unique sizes from products
-    const availableSizes = React.useMemo(() => {
+    const availableSizes = useMemo(() => {
         const sizes = products
             .flatMap(p => p.sizes || [])
             .filter((size, index, self) => self.indexOf(size) === index)
@@ -52,7 +56,7 @@ export default function CategoryPage() {
         return sizes;
     }, [products]);
 
-    // Fetch category names for breadcrumbs
+    // Fetch category names and data for filters
     useEffect(() => {
         const fetchCategoryNames = async () => {
             try {
@@ -61,6 +65,7 @@ export default function CategoryPage() {
                     const category = response.data.find(c => c.category_id == categoryId);
                     if (category) {
                         setCategoryName(category.name);
+                        setCurrentCategoryData(category);
                         let currentBanner = category.banner;
 
                         if (subcategoryId && category.sub_category) {
@@ -108,7 +113,7 @@ export default function CategoryPage() {
                 } else if (subcategoryId) {
                     response = await getProductsBySubcategory(subcategoryId, page);
                 } else {
-                    response = await getProducts(page, categoryId);
+                    response = await getCategoryWiseProducts(categoryId, page);
                 }
 
                 if (response.success && response.data) {
@@ -229,222 +234,245 @@ export default function CategoryPage() {
         });
     };
 
+    const handleSubCategoryChange = (subId) => {
+        const params = new URLSearchParams(searchParams);
+        if (subId) {
+            params.set('subcategory', subId);
+        } else {
+            params.delete('subcategory');
+        }
+        params.delete('child'); // Reset child when sub changes
+        router.push(`${pathname}?${params.toString()}`);
+    };
+
+    const handleChildCategoryChange = (childId) => {
+        const params = new URLSearchParams(searchParams);
+        if (childId) {
+            params.set('child', childId);
+        } else {
+            params.delete('child');
+        }
+        router.push(`${pathname}?${params.toString()}`);
+    };
+
+    const subCategories = currentCategoryData?.sub_category || [];
+    const childCategories = subcategoryId
+        ? currentCategoryData?.sub_category?.find(s => s.id == subcategoryId)?.child_categories || []
+        : [];
+
     return (
-        <>
-            <div className="min-h-screen bg-gray-50 pt-4 md:pt-4">
-                {/* Category Banner */}
-                {bannerImage && (
-                    <div className="w-full mb-0">
-                        <img
-                            src={bannerImage}
-                            alt={childName || subcategoryName || categoryName}
-                            className="w-full h-auto max-h-[200px] md:max-h-[350px] object-cover"
+        <div className="min-h-screen bg-gray-50 pt-4 md:pt-4">
+
+            {/* Banner */}
+            {bannerImage && (
+                <div className="w-full h-[200px] md:h-[300px] relative">
+                    <img
+                        src={bannerImage}
+                        alt={categoryName}
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <h1 className="text-4xl font-bold text-white uppercase tracking-wider">{childName || subcategoryName || categoryName}</h1>
+                    </div>
+                </div>
+            )}
+
+            {/* Breadcrumb */}
+            <div className="bg-white border-b border-gray-200">
+                <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
+                        <a href="/" className="hover:text-[var(--brand-royal-red)]">Home</a>
+                        <span>/</span>
+                        {categoryName ? (
+                            <>
+                                <a
+                                    href={`/category/${categoryId}`}
+                                    className={`hover:text-[var(--brand-royal-red)] ${!subcategoryName ? 'text-gray-900 font-medium' : ''}`}
+                                >
+                                    {categoryName}
+                                </a>
+                                {subcategoryName && (
+                                    <>
+                                        <span>/</span>
+                                        <a
+                                            href={`/category/${categoryId}?subcategory=${subcategoryId}`}
+                                            className={`hover:text-[var(--brand-royal-red)] ${!childName ? 'text-gray-900 font-medium' : ''}`}
+                                        >
+                                            {subcategoryName}
+                                        </a>
+                                    </>
+                                )}
+                                {childName && (
+                                    <>
+                                        <span>/</span>
+                                        <span className="text-gray-900 font-medium">{childName}</span>
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <span className="text-gray-900 font-medium">Products</span>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">
+
+                <div className="flex gap-6">
+                    {/* Filter Sidebar - Desktop */}
+                    <div className="hidden lg:block w-64 flex-shrink-0">
+                        <FilterSidebar
+                            filters={filters}
+                            onFilterChange={handleFilterChange}
+                            onClearAll={handleClearAll}
+                            products={products}
                         />
                     </div>
-                )}
-                {/* Breadcrumb */}
-                <div className="bg-white border-b border-gray-200">
-                    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
-                            <a href="/" className="hover:text-[var(--brand-royal-red)]">Home</a>
-                            <span>/</span>
-                            {categoryName ? (
-                                <>
-                                    <a
-                                        href={`/category/${categoryId}`}
-                                        className={`hover:text-[var(--brand-royal-red)] ${!subcategoryName ? 'text-gray-900 font-medium' : ''}`}
+
+                    {/* Products Section */}
+                    <div className="flex-1">
+                        {/* Header with Sort */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 md:gap-0">
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900">
+                                    Products
+                                </h1>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    {loading ? "Loading..." : `${filteredAndSortedProducts.length} products`}
+                                </p>
+                            </div>
+
+                            <div className="flex items-center justify-between w-full md:w-auto gap-4">
+                                {/* Mobile Filter Button */}
+                                <button
+                                    onClick={() => setMobileFiltersOpen(true)}
+                                    className="lg:hidden flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex-1 md:flex-none bg-white font-medium"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="4" y1="21" x2="4" y2="14"></line>
+                                        <line x1="4" y1="10" x2="4" y2="3"></line>
+                                        <line x1="12" y1="21" x2="12" y2="12"></line>
+                                        <line x1="12" y1="8" x2="12" y2="3"></line>
+                                        <line x1="20" y1="21" x2="20" y2="16"></line>
+                                        <line x1="20" y1="12" x2="20" y2="3"></line>
+                                        <line x1="1" y1="14" x2="7" y2="14"></line>
+                                        <line x1="9" y1="8" x2="15" y2="8"></line>
+                                        <line x1="17" y1="16" x2="23" y2="16"></line>
+                                    </svg>
+                                    Filters
+                                </button>
+
+                                {/* Sort Dropdown */}
+                                <div className="relative flex-1 md:w-auto">
+                                    <select
+                                        value={sortBy}
+                                        onChange={(e) => setSortBy(e.target.value)}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] appearance-none font-medium h-full"
                                     >
-                                        {categoryName}
-                                    </a>
-                                    {subcategoryName && (
-                                        <>
-                                            <span>/</span>
-                                            <a
-                                                href={`/category/${categoryId}?subcategory=${subcategoryId}`}
-                                                className={`hover:text-[var(--brand-royal-red)] ${!childName ? 'text-gray-900 font-medium' : ''}`}
-                                            >
-                                                {subcategoryName}
-                                            </a>
-                                        </>
-                                    )}
-                                    {childName && (
-                                        <>
-                                            <span>/</span>
-                                            <span className="text-gray-900 font-medium">{childName}</span>
-                                        </>
-                                    )}
-                                </>
-                            ) : (
-                                <span className="text-gray-900 font-medium">Products</span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Content */}
-                <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">
-                    <div className="flex gap-6">
-                        {/* Filter Sidebar - Desktop */}
-                        <div className="hidden lg:block w-64 flex-shrink-0">
-                            <FilterSidebar
-                                filters={filters}
-                                onFilterChange={handleFilterChange}
-                                onClearAll={handleClearAll}
-                                products={products}
-                            />
-                        </div>
-
-                        {/* Products Section */}
-                        <div className="flex-1">
-                            {/* Top Size Filter (Horizontal) */}
-                            {availableSizes.length > 0 && (
-                                <div className="mb-6 bg-white p-4 border border-gray-200 rounded-lg">
-                                    <h3 className="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500">Filter By Size</h3>
-                                    <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-                                        {availableSizes.map((size) => (
-                                            <button
-                                                key={size}
-                                                onClick={() => {
-                                                    const newSizes = filters.sizes.includes(size)
-                                                        ? filters.sizes.filter(s => s !== size)
-                                                        : [...filters.sizes, size];
-                                                    handleFilterChange('sizes', newSizes);
-                                                }}
-                                                className={`px-4 py-2 text-sm border rounded transition-colors whitespace-nowrap font-medium ${filters.sizes.includes(size)
-                                                    ? 'bg-[var(--brand-royal-red)] text-white border-[var(--brand-royal-red)]'
-                                                    : 'bg-white text-gray-700 border-gray-300 hover:border-[var(--brand-royal-red)]'
-                                                    }`}
-                                            >
-                                                {size}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Header with Sort */}
-                            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 md:gap-0">
-                                <div>
-                                    <h1 className="text-2xl font-bold text-gray-900">
-                                        Products
-                                    </h1>
-                                    <p className="text-sm text-gray-600 mt-1">
-                                        {loading ? "Loading..." : `${filteredAndSortedProducts.length} products`}
-                                    </p>
-                                </div>
-
-                                <div className="flex items-center justify-between w-full md:w-auto gap-4">
-                                    {/* Mobile Filter Button */}
-                                    <button
-                                        onClick={() => setMobileFiltersOpen(true)}
-                                        className="lg:hidden flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 flex-1 md:flex-none bg-white font-medium"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <line x1="4" y1="21" x2="4" y2="14"></line>
-                                            <line x1="4" y1="10" x2="4" y2="3"></line>
-                                            <line x1="12" y1="21" x2="12" y2="12"></line>
-                                            <line x1="12" y1="8" x2="12" y2="3"></line>
-                                            <line x1="20" y1="21" x2="20" y2="16"></line>
-                                            <line x1="20" y1="12" x2="20" y2="3"></line>
-                                            <line x1="1" y1="14" x2="7" y2="14"></line>
-                                            <line x1="9" y1="8" x2="15" y2="8"></line>
-                                            <line x1="17" y1="16" x2="23" y2="16"></line>
-                                        </svg>
-                                        Filters
-                                    </button>
-
-                                    {/* Sort Dropdown */}
-                                    <div className="relative flex-1 md:w-auto">
-                                        <select
-                                            value={sortBy}
-                                            onChange={(e) => setSortBy(e.target.value)}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] appearance-none font-medium h-full"
-                                        >
-                                            <option value="recommended">Recommended</option>
-                                            <option value="newest">Newest First</option>
-                                            <option value="price-low">Price: Low to High</option>
-                                            <option value="price-high">Price: High to Low</option>
-                                        </select>
-                                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                        </div>
+                                        <option value="recommended">Recommended</option>
+                                        <option value="newest">Newest First</option>
+                                        <option value="price-low">Price: Low to High</option>
+                                        <option value="price-high">Price: High to Low</option>
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Products Grid */}
-                            {loading ? (
-                                <div className="flex justify-center items-center py-20">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand-royal-red)]"></div>
-                                </div>
-                            ) : filteredAndSortedProducts.length > 0 ? (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
-                                    {filteredAndSortedProducts.map((product) => (
-                                        <ProductCard key={product.id} product={product} categoryId={categoryId} />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-20">
-                                    <p className="text-gray-500 text-lg">No products found matching your filters.</p>
-                                    <button
-                                        onClick={handleClearAll}
-                                        className="mt-4 text-[var(--brand-royal-red)] font-semibold hover:underline"
-                                    >
-                                        Clear all filters
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Pagination */}
-                            {totalPages > 1 && (
-                                <div className="flex justify-center items-center gap-4 mt-12">
-                                    <button
-                                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                                        disabled={page === 1}
-                                        className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Previous
-                                    </button>
-                                    <span className="text-gray-700">
-                                        Page {page} of {totalPages}
-                                    </span>
-                                    <button
-                                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={page === totalPages}
-                                        className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Next
-                                    </button>
-                                </div>
-                            )}
                         </div>
-                    </div>
-                </div>
 
-                {/* Mobile Filter Modal */}
-                {mobileFiltersOpen && (
-                    <div className="fixed inset-0 z-50 lg:hidden">
-                        <div className="absolute inset-0 bg-black/50" onClick={() => setMobileFiltersOpen(false)}></div>
-                        <div className="absolute right-0 top-0 bottom-0 w-80 bg-white overflow-y-auto">
-                            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                                <h2 className="text-lg font-bold">Filters</h2>
-                                <button onClick={() => setMobileFiltersOpen(false)}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                                    </svg>
+                        {/* Top Filter Bar (Myntra Style) */}
+                        <CategoryTopFilters
+                            subCategories={subCategories}
+                            childCategories={childCategories}
+                            selectedSubId={subcategoryId}
+                            selectedChildId={childId}
+                            availableSizes={availableSizes}
+                            selectedSizes={filters.sizes}
+                            onSubChange={handleSubCategoryChange}
+                            onChildChange={handleChildCategoryChange}
+                            onSizeChange={(size) => {
+                                const newSizes = filters.sizes.includes(size)
+                                    ? filters.sizes.filter(s => s !== size)
+                                    : [...filters.sizes, size];
+                                handleFilterChange('sizes', newSizes);
+                            }}
+                        />
+
+                        {/* Products Grid */}
+                        {loading ? (
+                            <div className="flex justify-center items-center py-20">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand-royal-red)]"></div>
+                            </div>
+                        ) : filteredAndSortedProducts.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
+                                {filteredAndSortedProducts.map((product) => (
+                                    <ProductCard key={product.id} product={product} categoryId={categoryId} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-20">
+                                <p className="text-gray-500 text-lg">No products found matching your filters.</p>
+                                <button
+                                    onClick={handleClearAll}
+                                    className="mt-4 text-[var(--brand-royal-red)] font-semibold hover:underline"
+                                >
+                                    Clear all filters
                                 </button>
                             </div>
-                            <FilterSidebar
-                                filters={filters}
-                                onFilterChange={handleFilterChange}
-                                onClearAll={handleClearAll}
-                                products={products}
-                            />
-                        </div>
+                        )}
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="flex justify-center items-center gap-4 mt-12">
+                                <button
+                                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-gray-700">
+                                    Page {page} of {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={page === totalPages}
+                                    className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
-        </>
+
+            {/* Mobile Filter Modal */}
+            {mobileFiltersOpen && (
+                <div className="fixed inset-0 z-50 lg:hidden">
+                    <div className="absolute inset-0 bg-black/50" onClick={() => setMobileFiltersOpen(false)}></div>
+                    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white overflow-y-auto">
+                        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                            <h2 className="text-lg font-bold">Filters</h2>
+                            <button onClick={() => setMobileFiltersOpen(false)}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <FilterSidebar
+                            filters={filters}
+                            onFilterChange={handleFilterChange}
+                            onClearAll={handleClearAll}
+                            products={products}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+
     );
 }
