@@ -1,14 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
-import { getProducts } from "@/lib/api";
+import { getProducts, getProductsBySubcategory, getCategoriesFromServer } from "@/lib/api";
 
 export default function CategoryPage() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const categoryId = params.id;
+    const subcategoryId = searchParams.get('subcategory');
+    const childId = searchParams.get('child');
 
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -16,6 +19,12 @@ export default function CategoryPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
     const [sortBy, setSortBy] = useState("recommended");
+
+    // Breadcrumb data
+    const [categoryName, setCategoryName] = useState("");
+    const [subcategoryName, setSubcategoryName] = useState("");
+    const [childName, setChildName] = useState("");
+
     const [filters, setFilters] = useState({
         categories: [],
         brands: [],
@@ -25,11 +34,48 @@ export default function CategoryPage() {
         discount: 0,
     });
 
+    // Fetch category names for breadcrumbs
+    useEffect(() => {
+        const fetchCategoryNames = async () => {
+            try {
+                const response = await getCategoriesFromServer();
+                if (response.success && response.data) {
+                    const category = response.data.find(c => c.category_id == categoryId);
+                    if (category) {
+                        setCategoryName(category.name);
+
+                        if (subcategoryId && category.sub_category) {
+                            const subcat = category.sub_category.find(s => s.id == subcategoryId);
+                            if (subcat) {
+                                setSubcategoryName(subcat.name);
+
+                                if (childId && subcat.child_categories) {
+                                    const child = subcat.child_categories.find(c => c.id == childId);
+                                    if (child) {
+                                        setChildName(child.name);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching category names:", error);
+            }
+        };
+
+        if (categoryId) {
+            fetchCategoryNames();
+        }
+    }, [categoryId, subcategoryId, childId]);
+
     useEffect(() => {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                const response = await getProducts(page, categoryId);
+                const response = subcategoryId
+                    ? await getProductsBySubcategory(page, categoryId, subcategoryId)
+                    : await getProducts(page, categoryId);
 
                 if (response.success && response.data) {
                     // Transform API data to ProductCard format
@@ -79,7 +125,7 @@ export default function CategoryPage() {
         if (categoryId) {
             fetchProducts();
         }
-    }, [categoryId, page]);
+    }, [categoryId, subcategoryId, page]);
 
     // Apply filters and sorting
     const filteredAndSortedProducts = React.useMemo(() => {
@@ -155,10 +201,38 @@ export default function CategoryPage() {
                 {/* Breadcrumb */}
                 <div className="bg-white border-b border-gray-200">
                     <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
                             <a href="/" className="hover:text-[var(--brand-royal-red)]">Home</a>
                             <span>/</span>
-                            <span className="text-gray-900 font-medium">Products</span>
+                            {categoryName ? (
+                                <>
+                                    <a
+                                        href={`/category/${categoryId}`}
+                                        className={`hover:text-[var(--brand-royal-red)] ${!subcategoryName ? 'text-gray-900 font-medium' : ''}`}
+                                    >
+                                        {categoryName}
+                                    </a>
+                                    {subcategoryName && (
+                                        <>
+                                            <span>/</span>
+                                            <a
+                                                href={`/category/${categoryId}?subcategory=${subcategoryId}`}
+                                                className={`hover:text-[var(--brand-royal-red)] ${!childName ? 'text-gray-900 font-medium' : ''}`}
+                                            >
+                                                {subcategoryName}
+                                            </a>
+                                        </>
+                                    )}
+                                    {childName && (
+                                        <>
+                                            <span>/</span>
+                                            <span className="text-gray-900 font-medium">{childName}</span>
+                                        </>
+                                    )}
+                                </>
+                            ) : (
+                                <span className="text-gray-900 font-medium">Products</span>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -8,13 +8,20 @@ import { searchLocation } from "@/data/deliveryData";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useToast } from "@/context/ToastContext";
-import { getProductById, getRelatedProduct, getProducts } from "@/lib/api";
+import { getProductById, getRelatedProduct, getProducts, getCategoriesFromServer } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
 import SizeChartModal from "./SizeChartModal";
 
 const ProductDetailsPage = ({ productId }) => {
     const searchParams = useSearchParams();
-    const categoryIdFromUrl = searchParams.get('category'); // Get category from URL
+    const categoryIdFromUrl = searchParams.get('category');
+    const subcategoryIdFromUrl = searchParams.get('subcategory');
+    const childIdFromUrl = searchParams.get('child');
+
+    // Breadcrumb state
+    const [categoryName, setCategoryName] = useState("");
+    const [subcategoryName, setSubcategoryName] = useState("");
+    const [childName, setChildName] = useState("");
 
     const [selectedImage, setSelectedImage] = useState(0);
     const [selectedSize, setSelectedSize] = useState("");
@@ -39,6 +46,41 @@ const ProductDetailsPage = ({ productId }) => {
 
     const { toggleWishlist, isInWishlist } = useWishlist();
     const { showToast } = useToast();
+
+    // Fetch category names for breadcrumb
+    useEffect(() => {
+        const fetchCategoryNames = async () => {
+            if (!categoryIdFromUrl) return;
+
+            try {
+                const response = await getCategoriesFromServer();
+                if (response.success && response.data) {
+                    const category = response.data.find(c => c.category_id == categoryIdFromUrl);
+                    if (category) {
+                        setCategoryName(category.name);
+
+                        if (subcategoryIdFromUrl && category.sub_category) {
+                            const subcat = category.sub_category.find(s => s.id == subcategoryIdFromUrl);
+                            if (subcat) {
+                                setSubcategoryName(subcat.name);
+
+                                if (childIdFromUrl && subcat.child_categories) {
+                                    const child = subcat.child_categories.find(c => c.id == childIdFromUrl);
+                                    if (child) {
+                                        setChildName(child.name);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching category names:", error);
+            }
+        };
+
+        fetchCategoryNames();
+    }, [categoryIdFromUrl, subcategoryIdFromUrl, childIdFromUrl]);
 
     // Fetch product data from API
     useEffect(() => {
@@ -283,16 +325,34 @@ const ProductDetailsPage = ({ productId }) => {
         <div className="min-h-screen bg-white">
             {/* Breadcrumb */}
             <div className="w-[90%] max-w-[1600px] mx-auto py-4 border-b border-gray-200">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
                     <a href="/" className="hover:text-black">Home</a>
+                    {categoryName && (
+                        <>
+                            <span>/</span>
+                            <a href={`/category/${categoryIdFromUrl}`} className="hover:text-black">
+                                {categoryName}
+                            </a>
+                        </>
+                    )}
+                    {subcategoryName && (
+                        <>
+                            <span>/</span>
+                            <a href={`/category/${categoryIdFromUrl}?subcategory=${subcategoryIdFromUrl}`} className="hover:text-black">
+                                {subcategoryName}
+                            </a>
+                        </>
+                    )}
+                    {childName && (
+                        <>
+                            <span>/</span>
+                            <a href={`/category/${categoryIdFromUrl}?subcategory=${subcategoryIdFromUrl}&child=${childIdFromUrl}`} className="hover:text-black">
+                                {childName}
+                            </a>
+                        </>
+                    )}
                     <span>/</span>
-                    <a href="/category/men" className="hover:text-black">Clothing</a>
-                    <span>/</span>
-                    <a href="/category/men" className="hover:text-black">Men Clothing</a>
-                    <span>/</span>
-                    <a href="/category/men" className="hover:text-black">Shirts</a>
-                    <span>/</span>
-                    <span className="text-black font-medium">{product.brand} Shirts</span>
+                    <span className="text-black font-medium truncate max-w-[200px]">{product.name}</span>
                 </div>
             </div>
 

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
-import { saveSalesOrder } from "../../lib/api";
+import { saveSalesOrder, applyCoupon } from "../../lib/api";
 import {
     MapPin,
     CreditCard,
@@ -40,6 +40,10 @@ export default function CheckoutPage() {
     const [paymentMethod, setPaymentMethod] = useState("Cash");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [couponCode, setCouponCode] = useState("");
+    const [couponDiscount, setCouponDiscount] = useState(0);
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [couponError, setCouponError] = useState("");
 
     const formRef = useRef(null);
 
@@ -82,7 +86,57 @@ export default function CheckoutPage() {
         updateDeliveryFee(fee);
     }, [selectedDistrict, selectedCity, updateDeliveryFee]);
 
-    const grandTotal = subTotal + deliveryFee;
+    const grandTotal = subTotal + deliveryFee - couponDiscount;
+
+    // Handle coupon application
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) {
+            setCouponError("Please enter a coupon code");
+            return;
+        }
+
+        setCouponLoading(true);
+        setCouponError("");
+
+        try {
+            const response = await applyCoupon(couponCode.trim());
+
+            if (response.success) {
+                // Calculate discount based on response
+                const couponData = response.data || response;
+                let discount = 0;
+
+                if (couponData.discount_type === "percentage") {
+                    discount = Math.round(subTotal * (couponData.discount_value / 100));
+                } else {
+                    discount = couponData.discount_value || couponData.discount || 0;
+                }
+
+                setCouponDiscount(discount);
+                setAppliedCoupon(couponData);
+                toast.success(`Coupon applied! You saved ৳${discount}`);
+            } else {
+                setCouponError(response.message || "Invalid coupon code");
+                setCouponDiscount(0);
+                setAppliedCoupon(null);
+            }
+        } catch (error) {
+            console.error("Coupon error:", error);
+            setCouponError("Failed to apply coupon");
+            setCouponDiscount(0);
+            setAppliedCoupon(null);
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    // Remove applied coupon
+    const handleRemoveCoupon = () => {
+        setCouponCode("");
+        setCouponDiscount(0);
+        setAppliedCoupon(null);
+        setCouponError("");
+    };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -420,19 +474,58 @@ export default function CheckoutPage() {
                                         })</span>
                                         <span>৳{deliveryFee}</span>
                                     </div>
-                                    {/* Coupon Input UI - Placeholder */}
-                                    <div className="flex gap-2 pt-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Coupon Code"
-                                            value={couponCode}
-                                            onChange={(e) => setCouponCode(e.target.value)}
-                                            className="flex-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs focus:border-black focus:outline-none"
-                                        />
-                                        <button className="rounded-md bg-gray-900 px-3 py-2 text-xs font-medium text-white transition hover:bg-gray-800">
-                                            Apply
-                                        </button>
+                                    {/* Coupon Input UI */}
+                                    <div className="pt-2">
+                                        {appliedCoupon ? (
+                                            <div className="flex items-center justify-between rounded-md border border-green-200 bg-green-50 px-3 py-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-medium text-green-700">
+                                                        🎉 {couponCode} applied
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    onClick={handleRemoveCoupon}
+                                                    className="text-xs text-red-600 hover:underline"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Coupon Code"
+                                                    value={couponCode}
+                                                    onChange={(e) => {
+                                                        setCouponCode(e.target.value.toUpperCase());
+                                                        setCouponError("");
+                                                    }}
+                                                    className={`flex-1 rounded-md border px-3 py-2 text-xs focus:outline-none ${couponError
+                                                            ? "border-red-300 bg-red-50 focus:border-red-500"
+                                                            : "border-gray-200 bg-gray-50 focus:border-black"
+                                                        }`}
+                                                />
+                                                <button
+                                                    onClick={handleApplyCoupon}
+                                                    disabled={couponLoading}
+                                                    className="rounded-md bg-gray-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-gray-800 disabled:opacity-50"
+                                                >
+                                                    {couponLoading ? "..." : "Apply"}
+                                                </button>
+                                            </div>
+                                        )}
+                                        {couponError && (
+                                            <p className="mt-1 text-xs text-red-600">{couponError}</p>
+                                        )}
                                     </div>
+
+                                    {/* Discount Line */}
+                                    {couponDiscount > 0 && (
+                                        <div className="flex justify-between text-sm text-green-600">
+                                            <span>Coupon Discount</span>
+                                            <span>-৳{couponDiscount}</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center justify-between border-t border-gray-100 pt-4">
