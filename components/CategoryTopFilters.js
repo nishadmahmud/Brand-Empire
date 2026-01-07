@@ -36,19 +36,19 @@ export default function CategoryTopFilters({
     };
 
     return (
-        <div className="flex flex-wrap gap-3 py-4 border-b border-gray-100 mb-6 relative z-30" ref={dropdownRef}>
+        <div className="flex gap-2 md:gap-3 py-2 md:py-4 border-b border-gray-100 mb-3 md:mb-6 relative z-30 overflow-x-auto scrollbar-hide" ref={dropdownRef}>
 
             {/* Subcategory Filter - Always visible */}
-            <div className="relative">
+            <div className="relative flex-shrink-0">
                 <button
                     onClick={() => toggleDropdown('subcategory')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${selectedSubId
+                    className={`flex items-center gap-1 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium border transition-colors whitespace-nowrap ${selectedSubId
                         ? 'bg-[var(--brand-royal-red)] text-white border-[var(--brand-royal-red)]'
                         : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                         }`}
                 >
                     <span>Subcategory</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${openDropdown === 'subcategory' ? 'rotate-180' : ''}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${openDropdown === 'subcategory' ? 'rotate-180' : ''}`}>
                         <path d="m6 9 6 6 6-6" />
                     </svg>
                 </button>
@@ -89,16 +89,16 @@ export default function CategoryTopFilters({
             </div>
 
             {/* Child Category Filter - Always visible */}
-            <div className="relative">
+            <div className="relative flex-shrink-0">
                 <button
                     onClick={() => toggleDropdown('child')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${selectedChildId
+                    className={`flex items-center gap-1 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium border transition-colors whitespace-nowrap ${selectedChildId
                         ? 'bg-[var(--brand-royal-red)] text-white border-[var(--brand-royal-red)]'
                         : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                         }`}
                 >
                     <span>Child Category</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${openDropdown === 'child' ? 'rotate-180' : ''}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${openDropdown === 'child' ? 'rotate-180' : ''}`}>
                         <path d="m6 9 6 6 6-6" />
                     </svg>
                 </button>
@@ -139,16 +139,16 @@ export default function CategoryTopFilters({
             </div>
 
             {/* Size Filter - Always visible */}
-            <div className="relative">
+            <div className="relative flex-shrink-0">
                 <button
                     onClick={() => toggleDropdown('size')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${selectedSizes.length > 0
+                    className={`flex items-center gap-1 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium border transition-colors whitespace-nowrap ${selectedSizes.length > 0
                         ? 'bg-gray-100 text-[var(--brand-royal-red)] border-[var(--brand-royal-red)] border-opacity-30'
                         : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                         }`}
                 >
                     <span>Size {selectedSizes.length > 0 ? `(${selectedSizes.length})` : ''}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${openDropdown === 'size' ? 'rotate-180' : ''}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${openDropdown === 'size' ? 'rotate-180' : ''}`}>
                         <path d="m6 9 6 6 6-6" />
                     </svg>
                 </button>
