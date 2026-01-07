@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 
-const FilterSidebar = ({ filters, onFilterChange, onClearAll, products }) => {
+const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBrandFilter = false }) => {
     const [brandSearch, setBrandSearch] = useState("");
     const [priceRange, setPriceRange] = useState(filters.priceRange || [0, 10000]);
 
@@ -71,8 +71,8 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products }) => {
                 </button>
             </div>
 
-            {/* Brand */}
-            {availableBrands.length > 0 && (
+            {/* Brand - Hidden on brand pages */}
+            {!hideBrandFilter && availableBrands.length > 0 && (
                 <div className="mb-6 pb-6 border-b border-gray-200">
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Brand</h4>
 
