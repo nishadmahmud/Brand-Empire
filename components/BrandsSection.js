@@ -6,15 +6,15 @@ import Link from "next/link";
 import { getTopBrands } from "@/lib/api";
 
 const BrandRow = ({ title, brands }) => (
-    <div className="mb-12 md:mb-16">
+    <div className="mb-8 md:mb-16">
         <h3 className="text-lg md:text-2xl font-bold text-center mb-6 md:mb-10 tracking-[0.1em] md:tracking-[0.2em] text-[#282c3f] uppercase relative inline-block w-full">
             {title}
             <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 md:w-20 h-1 bg-[var(--brand-royal-red)] rounded-full mt-4 block translate-y-4"></span>
         </h3>
-        <div className="flex flex-wrap justify-center gap-4 md:gap-8 lg:gap-12">
+        <div className="flex flex-wrap justify-center gap-5 md:gap-8 lg:gap-12 px-1 md:px-0">
             {brands.map((brand, index) => (
                 <Link key={brand.id || index} href={`/brand/${brand.id}`} className="flex flex-col items-center group cursor-pointer">
-                    <div className="relative w-20 h-20 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full overflow-hidden shadow-lg border-2 md:border-4 border-transparent group-hover:border-[var(--brand-royal-red)] transition-all duration-300 transform group-hover:scale-105">
+                    <div className="relative w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full overflow-hidden shadow-lg border-2 md:border-4 border-transparent group-hover:border-[var(--brand-royal-red)] transition-all duration-300 transform group-hover:scale-105">
                         <Image
                             src={brand.image_path || brand.image}
                             alt={brand.name}

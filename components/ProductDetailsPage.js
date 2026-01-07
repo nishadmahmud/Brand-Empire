@@ -788,16 +788,16 @@ const ProductDetailsPage = ({ productId }) => {
 
                         {/* Thumbnail Strip - Vertical Overlay Top Left (Desktop Only) */}
                         <div
-                            className="hidden md:flex absolute left-4 top-4 z-30 flex-col gap-2 max-h-[80vh] overflow-y-auto no-scrollbar"
+                            className="hidden md:flex absolute left-4 top-4 z-30 flex-col max-h-[80vh] overflow-y-auto no-scrollbar"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {product.images.map((img, index) => (
                                 <button
                                     key={index}
                                     onClick={() => setSelectedImage(index)}
-                                    className={`relative w-14 h-16 flex-shrink-0 rounded overflow-hidden transition-all shadow-sm ${selectedImage === index
-                                        ? 'ring-2 ring-white opacity-100'
-                                        : 'opacity-60 hover:opacity-100'
+                                    className={`relative w-14 h-16 flex-shrink-0 overflow-hidden transition-all ${selectedImage === index
+                                        ? 'ring-2 ring-[var(--brand-royal-red)] opacity-100 z-10'
+                                        : 'opacity-70 hover:opacity-100'
                                         }`}
                                 >
                                     <img

@@ -9,6 +9,7 @@ import NewArrivals from "@/components/NewArrivals";
 import AppPromoSection from "@/components/AppPromoSection";
 import WelcomePopup from "@/components/WelcomePopup";
 import BlogSection from "@/components/BlogSection";
+import FullWidthBanner from "@/components/FullWidthBanner";
 
 export default function Home() {
   return (
@@ -48,6 +49,11 @@ export default function Home() {
       {/* App Promotion */}
       <div className="mt-8 md:mt-12">
         <AppPromoSection />
+      </div>
+
+      {/* Full Width Banner */}
+      <div className="mt-8 md:mt-12">
+        <FullWidthBanner />
       </div>
 
       {/* Blog Section */}

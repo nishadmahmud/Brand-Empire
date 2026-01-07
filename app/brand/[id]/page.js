@@ -20,6 +20,7 @@ export default function BrandPage() {
     // Brand name for display
     const [brandName, setBrandName] = useState("");
     const [brandImage, setBrandImage] = useState(null);
+    const [bannerImage, setBannerImage] = useState(null);
 
     const [filters, setFilters] = useState({
         categories: [],
@@ -66,6 +67,19 @@ export default function BrandPage() {
                         productsArray = response.data;
                     } else if (response.data.data && Array.isArray(response.data.data)) {
                         productsArray = response.data.data;
+                    }
+
+                    // Extract banner image from the first product's brands data if available
+                    if (productsArray.length > 0 && productsArray[0].brands && productsArray[0].brands.banner_image) {
+                        setBannerImage(productsArray[0].brands.banner_image);
+                        // Also update brand name if not already set
+                        if (!brandName) {
+                            setBrandName(productsArray[0].brands.name);
+                        }
+                        // Update brand logo if not set
+                        if (!brandImage && productsArray[0].brands.image_path) {
+                            setBrandImage(productsArray[0].brands.image_path);
+                        }
                     }
                 }
 
@@ -178,11 +192,23 @@ export default function BrandPage() {
             colors: [],
             sizes: [],
             discount: 0,
+
         });
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pt-4 md:pt-4">
+        <div className="min-h-screen bg-gray-50 pt-0 md:pt-0">
+            {/* Banner */}
+            {bannerImage && (
+                <div className="w-full h-[200px] md:h-[300px] relative">
+                    <img
+                        src={bannerImage}
+                        alt={brandName}
+                        className="w-full h-full object-cover"
+                    />
+                </div>
+            )}
+
             {/* Breadcrumb */}
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3">
