@@ -36,7 +36,7 @@ const WishlistPage = () => {
                         </div>
                         <h2 className="text-xl font-bold text-gray-800 mb-2">Your wishlist is empty</h2>
                         <p className="text-gray-500 mb-8 max-w-md">Save items that you like in your wishlist. Review them anytime and easily move them to the bag.</p>
-                        <Link href="/offers" className="px-8 py-3 bg-[var(--brand-royal-red)] text-white font-bold uppercase tracking-wider rounded hover:bg-[#a01830] transition-colors">
+                        <Link href="/category/0" className="px-8 py-3 bg-[var(--brand-royal-red)] text-white font-bold uppercase tracking-wider rounded hover:bg-[#a01830] transition-colors">
                             Continue Shopping
                         </Link>
                     </div>

@@ -158,31 +158,7 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products }) => {
                 </div>
             </div>
 
-            {/* Sizes */}
-            {availableSizes.length > 0 && (
-                <div className="mb-6 pb-6 border-b border-gray-200">
-                    <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Size</h4>
-                    <div className="grid grid-cols-4 gap-2">
-                        {availableSizes.map((size) => (
-                            <button
-                                key={size}
-                                onClick={() => {
-                                    const newSizes = filters.sizes.includes(size)
-                                        ? filters.sizes.filter(s => s !== size)
-                                        : [...filters.sizes, size];
-                                    onFilterChange('sizes', newSizes);
-                                }}
-                                className={`px-3 py-2 text-sm border rounded transition-colors ${filters.sizes.includes(size)
-                                        ? 'bg-[var(--brand-royal-red)] text-white border-[var(--brand-royal-red)]'
-                                        : 'bg-white text-gray-700 border-gray-300 hover:border-[var(--brand-royal-red)]'
-                                    }`}
-                            >
-                                {size}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
+
 
             {/* Color */}
             {availableColors.length > 0 && (

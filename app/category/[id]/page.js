@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
-import { getProducts, getProductsBySubcategory, getCategoriesFromServer } from "@/lib/api";
+import { getProducts, getProductsBySubcategory, getProductsByChildCategory, getCategoriesFromServer } from "@/lib/api";
 
 export default function CategoryPage() {
     const params = useParams();
@@ -33,6 +33,22 @@ export default function CategoryPage() {
         sizes: [],
         discount: 0,
     });
+
+    // Extract unique sizes from products
+    const availableSizes = React.useMemo(() => {
+        const sizes = products
+            .flatMap(p => p.sizes || [])
+            .filter((size, index, self) => self.indexOf(size) === index)
+            .sort((a, b) => {
+                const aNum = parseInt(a);
+                const bNum = parseInt(b);
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return aNum - bNum;
+                }
+                return a.localeCompare(b);
+            });
+        return sizes;
+    }, [products]);
 
     // Fetch category names for breadcrumbs
     useEffect(() => {
@@ -73,9 +89,14 @@ export default function CategoryPage() {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                const response = subcategoryId
-                    ? await getProductsBySubcategory(page, categoryId, subcategoryId)
-                    : await getProducts(page, categoryId);
+                let response;
+                if (childId) {
+                    response = await getProductsByChildCategory(childId, page);
+                } else if (subcategoryId) {
+                    response = await getProductsBySubcategory(subcategoryId, page);
+                } else {
+                    response = await getProducts(page, categoryId);
+                }
 
                 if (response.success && response.data) {
                     // Transform API data to ProductCard format
@@ -252,6 +273,32 @@ export default function CategoryPage() {
 
                         {/* Products Section */}
                         <div className="flex-1">
+                            {/* Top Size Filter (Horizontal) */}
+                            {availableSizes.length > 0 && (
+                                <div className="mb-6 bg-white p-4 border border-gray-200 rounded-lg">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500">Filter By Size</h3>
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+                                        {availableSizes.map((size) => (
+                                            <button
+                                                key={size}
+                                                onClick={() => {
+                                                    const newSizes = filters.sizes.includes(size)
+                                                        ? filters.sizes.filter(s => s !== size)
+                                                        : [...filters.sizes, size];
+                                                    handleFilterChange('sizes', newSizes);
+                                                }}
+                                                className={`px-4 py-2 text-sm border rounded transition-colors whitespace-nowrap font-medium ${filters.sizes.includes(size)
+                                                    ? 'bg-[var(--brand-royal-red)] text-white border-[var(--brand-royal-red)]'
+                                                    : 'bg-white text-gray-700 border-gray-300 hover:border-[var(--brand-royal-red)]'
+                                                    }`}
+                                            >
+                                                {size}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Header with Sort */}
                             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 md:gap-0">
                                 <div>

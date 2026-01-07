@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { useAuth } from "@/context/AuthContext";
 
 const ProductCard = ({ product, tag, categoryId, onClick }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
+
     const { addToCart } = useCart();
     const { toggleWishlist, isInWishlist } = useWishlist();
+    const { user } = useAuth();
+    const router = useRouter();
     const inWishlist = isInWishlist(product.id);
 
     const handleAddToCart = (e) => {
@@ -75,6 +80,10 @@ const ProductCard = ({ product, tag, categoryId, onClick }) => {
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation(); // detailed prevents navigation
+                            if (!user) {
+                                router.push(`/login?redirect=/product/${product.id}`);
+                                return;
+                            }
                             toggleWishlist(product);
                         }}
                         className={`absolute top-2 right-2 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md transition-all duration-300 z-10 hover:scale-110 ${inWishlist ? "opacity-100 text-[var(--brand-royal-red)]" : "opacity-0 group-hover:opacity-100 text-gray-400 hover:text-[var(--brand-royal-red)]"
@@ -130,13 +139,15 @@ const ProductCard = ({ product, tag, categoryId, onClick }) => {
                         )}
                     </div>
 
-                    {/* Color Dot */}
-                    <div className="flex items-center gap-2">
-                        <div className={`w-4 h-4 rounded-full border border-gray-200 p-[2px]`}>
-                            <div className="w-full h-full rounded-full" style={{ backgroundColor: product.color }}></div>
+                    {/* Color Dot - Hide if Default */}
+                    {product.color && product.color !== 'Default' && (
+                        <div className="flex items-center gap-2">
+                            <div className={`w-4 h-4 rounded-full border border-gray-200 p-[2px]`}>
+                                <div className="w-full h-full rounded-full" style={{ backgroundColor: product.color }}></div>
+                            </div>
+                            <span className="text-[10px] text-gray-500 uppercase">{product.color}</span>
                         </div>
-                        <span className="text-[10px] text-gray-500 uppercase">{product.color}</span>
-                    </div>
+                    )}
                 </div>
             </div>
         </Link>

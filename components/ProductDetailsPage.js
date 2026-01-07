@@ -9,7 +9,8 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useToast } from "@/context/ToastContext";
 import { getProductById, getRelatedProduct, getProducts, getCategoriesFromServer } from "@/lib/api";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import SizeChartModal from "./SizeChartModal";
 
 const ProductDetailsPage = ({ productId }) => {
@@ -33,7 +34,11 @@ const ProductDetailsPage = ({ productId }) => {
     const [product, setProduct] = useState(dummyProduct); // Start with dummy data
     const [loading, setLoading] = useState(true);
     const [relatedProducts, setRelatedProducts] = useState([]);
+
     const [categoryProducts, setCategoryProducts] = useState([]);
+
+    const { user } = useAuth();
+    const router = useRouter();
 
     // Delivery autocomplete states
     const [deliveryQuery, setDeliveryQuery] = useState("");
@@ -379,6 +384,7 @@ const ProductDetailsPage = ({ productId }) => {
                                         setSelectedImage(index);
                                         setShowLightbox(true);
                                     }}
+                                    onContextMenu={(e) => e.preventDefault()} // Disable right-click
                                 >
                                     <Image
                                         src={img}
@@ -386,6 +392,7 @@ const ProductDetailsPage = ({ productId }) => {
                                         fill
                                         className="object-cover"
                                         unoptimized
+                                        draggable={false} // Disable drag
                                     />
                                 </div>
                             ))}
@@ -412,6 +419,7 @@ const ProductDetailsPage = ({ productId }) => {
                                     setSelectedImage(index);
                                     setShowLightbox(true);
                                 }}
+                                onContextMenu={(e) => e.preventDefault()} // Disable right-click
                             >
                                 <Image
                                     src={img}
@@ -419,6 +427,7 @@ const ProductDetailsPage = ({ productId }) => {
                                     fill
                                     className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
                                     unoptimized
+                                    draggable={false} // Disable drag
                                 />
                             </div>
                         ))}
@@ -508,7 +517,13 @@ const ProductDetailsPage = ({ productId }) => {
                                 Add to Bag
                             </button>
                             <button
-                                onClick={() => toggleWishlist(product)}
+                                onClick={() => {
+                                    if (!user) {
+                                        router.push(`/login?redirect=/product/${productId}`);
+                                        return;
+                                    }
+                                    toggleWishlist(product);
+                                }}
                                 className={`px-6 py-4 border-2 rounded font-bold text-sm uppercase transition-colors flex items-center justify-center gap-2 ${isInWishlist(product.id)
                                     ? 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-red-50'
                                     : 'border-gray-300 hover:border-gray-400'

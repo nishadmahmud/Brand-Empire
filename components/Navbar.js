@@ -184,16 +184,29 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
                                         </div>
                                     ) : searchResults.length > 0 ? (
-                                        <div className="p-4 grid grid-cols-3 gap-4 overflow-y-auto">
+                                        <div className="py-2 flex flex-col overflow-y-auto">
                                             {searchResults.map((product) => (
-                                                <ProductCard
+                                                <Link
                                                     key={product.id}
-                                                    product={product}
+                                                    href={`/product/${product.id}`}
+                                                    className="px-4 py-3 hover:bg-gray-50 flex items-center justify-between group transition-colors border-b border-gray-50 last:border-0"
                                                     onClick={() => {
                                                         setShowDropdown(false);
-                                                        setSearchQuery(""); // Optional: clear search on navigation
+                                                        setSearchQuery("");
                                                     }}
-                                                />
+                                                >
+                                                    <div>
+                                                        <h4 className="text-sm font-medium text-gray-700 group-hover:text-[var(--brand-royal-red)]">
+                                                            {product.name}
+                                                        </h4>
+                                                        <p className="text-xs text-gray-400 mt-0.5">
+                                                            {product.category_name || product.brand || "Product"}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-xs font-bold text-gray-900">
+                                                        ৳{product.price}
+                                                    </div>
+                                                </Link>
                                             ))}
                                         </div>
                                     ) : (
@@ -306,7 +319,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
 
                         {/* Dynamic Category Mega Menus */}
                         {activeMegaMenu !== 'offers' && (
-                            <div className="max-w-[1400px] mx-auto px-8 py-8">
+                            <div className="max-w-[1000px] mx-auto px-8 py-8">
                                 <div className="grid grid-cols-5 gap-8">
                                     {categories.find(c => c.category_id === activeMegaMenu)?.sub_category?.length > 0 ? (
                                         categories.find(c => c.category_id === activeMegaMenu)?.sub_category.map((subCat) => (

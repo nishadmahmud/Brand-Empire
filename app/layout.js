@@ -4,7 +4,6 @@ import { CartProvider } from "@/context/CartContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { WishlistProvider } from "@/context/WishlistContext";
-import CartModal from "@/components/CartModal";
 import ClientLayout from "@/components/ClientLayout";
 
 const geistSans = Geist({
@@ -36,7 +35,6 @@ export default function RootLayout({ children }) {
             <WishlistProvider>
               <CartProvider>
                 <ClientLayout>
-                  <CartModal />
                   {children}
                 </ClientLayout>
               </CartProvider>
