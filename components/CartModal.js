@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
@@ -15,6 +15,18 @@ const CartModal = () => {
         getSubtotal,
         getCartCount
     } = useCart();
+
+    // Prevent body scroll when cart is open
+    useEffect(() => {
+        if (isCartOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isCartOpen]);
 
     if (!isCartOpen) return null;
 

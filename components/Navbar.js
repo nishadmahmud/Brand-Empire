@@ -26,6 +26,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
     const [showDropdown, setShowDropdown] = useState(false);
     const searchContainerRef = useRef(null);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const [expandedCategory, setExpandedCategory] = useState(null);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -395,10 +396,10 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 {user ? (
                                     <>
                                         <p className="font-bold text-gray-800 text-sm">Welcome Back</p>
-                                        <Link href="/profile" className="text-xs text-[var(--brand-royal-red)] font-bold">View Profile</Link>
+                                        <Link href="/profile" className="text-xs text-[var(--brand-royal-red)] font-bold" onClick={() => setMobileMenuOpen(false)}>View Profile</Link>
                                     </>
                                 ) : (
-                                    <Link href="/login" className="font-bold text-gray-800 text-sm flex flex-col">
+                                    <Link href="/login" className="font-bold text-gray-800 text-sm flex flex-col" onClick={() => setMobileMenuOpen(false)}>
                                         <span>Login / Signup</span>
                                         <span className="text-xs text-[var(--brand-royal-red)] font-normal">To access account & orders</span>
                                     </Link>
@@ -420,17 +421,70 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                             </Link>
 
                             {categories.map((category) => (
-                                <Link
-                                    key={category.category_id}
-                                    href={`/category/${category.category_id}`}
-                                    className="px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 border-b border-gray-50 flex justify-between items-center"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                >
-                                    <span>{category.name}</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
-                                        <polyline points="9 18 15 12 9 6"></polyline>
-                                    </svg>
-                                </Link>
+                                <div key={category.category_id} className="border-b border-gray-50">
+                                    <div className="flex items-center">
+                                        <Link
+                                            href={`/category/${category.category_id}`}
+                                            className="flex-1 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            {category.name}
+                                        </Link>
+                                        {category.sub_category && category.sub_category.length > 0 && (
+                                            <button
+                                                onClick={() => setExpandedCategory(expandedCategory === category.category_id ? null : category.category_id)}
+                                                className="px-4 py-3 text-gray-400 hover:bg-gray-50"
+                                            >
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="16"
+                                                    height="16"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className={`transition-transform duration-200 ${expandedCategory === category.category_id ? 'rotate-90' : ''}`}
+                                                >
+                                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Subcategories Dropdown */}
+                                    {expandedCategory === category.category_id && category.sub_category && (
+                                        <div className="bg-gray-50 py-2">
+                                            {category.sub_category.map((subCat) => (
+                                                <div key={subCat.id}>
+                                                    <Link
+                                                        href={`/category/${category.category_id}?subcategory=${subCat.id}`}
+                                                        className="block px-8 py-2 text-sm text-[var(--brand-royal-red)] font-medium hover:bg-gray-100"
+                                                        onClick={() => setMobileMenuOpen(false)}
+                                                    >
+                                                        {subCat.name}
+                                                    </Link>
+                                                    {/* Child categories */}
+                                                    {subCat.child_categories && subCat.child_categories.length > 0 && (
+                                                        <div className="pl-4">
+                                                            {subCat.child_categories.map((child) => (
+                                                                <Link
+                                                                    key={child.id}
+                                                                    href={`/category/${category.category_id}?subcategory=${subCat.id}&child=${child.id}`}
+                                                                    className="block px-8 py-1.5 text-xs text-gray-600 hover:text-[var(--brand-royal-red)] hover:bg-gray-100"
+                                                                    onClick={() => setMobileMenuOpen(false)}
+                                                                >
+                                                                    {child.name}
+                                                                </Link>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     </div>

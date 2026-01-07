@@ -34,6 +34,7 @@ export default function CheckoutPage() {
     const [formData, setFormData] = useState({
         firstName: "",
         phone: "",
+        email: "",
         address: "",
     });
 
@@ -305,7 +306,7 @@ export default function CheckoutPage() {
 
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium text-gray-700">
-                                                Phone Number
+                                                Phone Number <span className="text-red-500">*</span>
                                             </label>
                                             <div className="relative">
                                                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -326,6 +327,34 @@ export default function CheckoutPage() {
                                                     Invalid phone number format.
                                                 </p>
                                             )}
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                Format: 01XXXXXXXXX (11 digits, starting with 01)
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Optional Email Field */}
+                                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                                        <div className="space-y-2 md:col-span-2">
+                                            <label className="text-sm font-medium text-gray-700">
+                                                Email <span className="text-gray-400 font-normal">(Optional)</span>
+                                            </label>
+                                            <div className="relative">
+                                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                                        <polyline points="22,6 12,13 2,6"></polyline>
+                                                    </svg>
+                                                </div>
+                                                <input
+                                                    type="email"
+                                                    name="email"
+                                                    value={formData.email}
+                                                    onChange={handleChange}
+                                                    className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                                                    placeholder="email@example.com"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
@@ -501,14 +530,14 @@ export default function CheckoutPage() {
                                                         setCouponError("");
                                                     }}
                                                     className={`flex-1 rounded-md border px-3 py-2 text-xs focus:outline-none ${couponError
-                                                            ? "border-red-300 bg-red-50 focus:border-red-500"
-                                                            : "border-gray-200 bg-gray-50 focus:border-black"
+                                                        ? "border-red-300 bg-red-50 focus:border-red-500"
+                                                        : "border-gray-200 bg-gray-50 focus:border-black"
                                                         }`}
                                                 />
                                                 <button
                                                     onClick={handleApplyCoupon}
                                                     disabled={couponLoading}
-                                                    className="rounded-md bg-gray-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-gray-800 disabled:opacity-50"
+                                                    className="rounded-md bg-[var(--brand-royal-red)] px-4 py-2 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
                                                 >
                                                     {couponLoading ? "..." : "Apply"}
                                                 </button>
@@ -541,7 +570,7 @@ export default function CheckoutPage() {
                                     type="submit"
                                     form="checkout-form"
                                     disabled={isSubmitting}
-                                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-6 py-4 text-sm font-bold text-white shadow-lg transition hover:translate-y-[-1px] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
+                                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-royal-red)] px-6 py-4 text-sm font-bold text-white shadow-lg transition hover:opacity-90 hover:translate-y-[-1px] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
                                 >
                                     {isSubmitting ? (
                                         <>Processing...</>

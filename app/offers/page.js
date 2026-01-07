@@ -125,80 +125,89 @@ export default function OffersPage() {
             <div className="w-full">
                 {/* Top Bar */}
                 <div className="border-b border-gray-200">
-                    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
-                        <button className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded hover:border-gray-400 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <line x1="4" y1="21" x2="4" y2="14"></line>
-                                <line x1="4" y1="10" x2="4" y2="3"></line>
-                                <line x1="12" y1="21" x2="12" y2="12"></line>
-                                <line x1="12" y1="8" x2="12" y2="3"></line>
-                                <line x1="20" y1="21" x2="20" y2="16"></line>
-                                <line x1="20" y1="12" x2="20" y2="3"></line>
-                                <line x1="1" y1="14" x2="7" y2="14"></line>
-                                <line x1="9" y1="8" x2="15" y2="8"></line>
-                                <line x1="17" y1="16" x2="23" y2="16"></line>
-                            </svg>
-                            <span className="font-bold text-sm uppercase">Filters</span>
-                        </button>
-
-                        <h1 className="text-2xl md:text-3xl font-bold text-center flex-1">
+                    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4">
+                        {/* Mobile: Title on top, controls below */}
+                        <h1 className="text-xl md:text-3xl font-bold text-center mb-4 md:mb-0 md:hidden">
                             END OF SEASON SALE - MEN
                         </h1>
 
-                        <select
-                            className="border border-gray-300 px-4 py-2 rounded text-sm focus:outline-none focus:border-gray-400"
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                        >
-                            <option value="featured">Sort By: Featured</option>
-                            <option value="price-low">Price: Low to High</option>
-                            <option value="price-high">Price: High to Low</option>
-                            <option value="discount">Discount</option>
-                            <option value="newest">Newest First</option>
-                        </select>
+                        <div className="flex items-center justify-between gap-4">
+                            <button className="flex items-center gap-2 border border-gray-300 px-3 py-2 rounded hover:border-gray-400 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                                </svg>
+                                <span className="font-bold text-sm uppercase">Filters</span>
+                            </button>
+
+                            {/* Desktop: Title in center */}
+                            <h1 className="hidden md:block text-2xl md:text-3xl font-bold text-center flex-1">
+                                END OF SEASON SALE - MEN
+                            </h1>
+
+                            <select
+                                className="border border-gray-300 px-3 py-2 rounded text-sm focus:outline-none focus:border-gray-400"
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                            >
+                                <option value="featured">Sort By: Featured</option>
+                                <option value="price-low">Price: Low to High</option>
+                                <option value="price-high">Price: High to Low</option>
+                                <option value="discount">Discount</option>
+                                <option value="newest">Newest First</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div className="text-right max-w-[1400px] mx-auto px-4 md:px-8 pb-3">
+                    <div className="text-center md:text-right max-w-[1400px] mx-auto px-4 md:px-8 pb-3">
                         <p className="text-sm text-gray-600">Showing {dummyProducts.length} products</p>
                     </div>
                 </div>
 
-                {/* Filter For You Section - Single Row */}
+                {/* Filter For You Section */}
                 <div className="bg-[#f5f3ef] border-b border-gray-200">
                     <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4">
-                        <div className="flex items-center gap-8">
-                            {/* Left: Title */}
+                        {/* Mobile: Stack vertically, Desktop: Row */}
+                        <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                            {/* Title */}
                             <h2 className="font-bold text-base uppercase whitespace-nowrap">Filter For You</h2>
 
-                            {/* Center: Tabs and Pills */}
-                            <div className="flex-1 flex flex-col items-center gap-3">
-                                {/* Filter Tabs */}
-                                <div className="flex items-center gap-6">
+                            {/* Tabs and Pills */}
+                            <div className="flex-1 flex flex-col gap-3">
+                                {/* Filter Tabs - Horizontally scrollable on mobile */}
+                                <div className="flex items-center gap-4 md:gap-6 overflow-x-auto pb-2 md:pb-0 no-scrollbar md:justify-center">
                                     {filterTabs.map((tab) => (
                                         <button
                                             key={tab}
                                             onClick={() => setActiveTab(tab)}
-                                            className={`text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === tab
-                                                    ? "text-[var(--brand-royal-red)]"
-                                                    : "text-gray-600 hover:text-gray-900"
-                                                } `}
+                                            className={`text-sm font-semibold whitespace-nowrap transition-colors flex-shrink-0 ${activeTab === tab
+                                                ? "text-[var(--brand-royal-red)]"
+                                                : "text-gray-600 hover:text-gray-900"
+                                                }`}
                                         >
                                             {tab}
                                         </button>
                                     ))}
                                 </div>
 
-                                {/* Category Pills */}
-                                <div className="flex items-center gap-3 flex-wrap justify-center">
+                                {/* Category Pills - Horizontally scrollable on mobile */}
+                                <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-2 md:pb-0 no-scrollbar md:flex-wrap md:justify-center">
                                     {quickFilters.map((filter) => (
                                         <button
                                             key={filter}
-                                            className="px-4 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:border-gray-400 transition-colors"
+                                            className="px-3 md:px-4 py-1.5 md:py-2 bg-white border border-gray-300 rounded text-xs md:text-sm font-medium hover:border-gray-400 transition-colors whitespace-nowrap flex-shrink-0"
                                         >
                                             {filter}
                                         </button>
                                     ))}
-                                    <button className="px-4 py-2 bg-white border border-gray-300 rounded text-sm font-semibold text-[var(--brand-royal-red)] hover:border-gray-400 transition-colors">
+                                    <button className="px-3 md:px-4 py-1.5 md:py-2 bg-white border border-gray-300 rounded text-xs md:text-sm font-semibold text-[var(--brand-royal-red)] hover:border-gray-400 transition-colors whitespace-nowrap flex-shrink-0">
                                         +More
                                     </button>
                                 </div>
@@ -228,8 +237,8 @@ export default function OffersPage() {
                                     <button
                                         onClick={() => setPreferenceTab("STYLE")}
                                         className={`text-sm font-semibold transition-colors ${preferenceTab === "STYLE"
-                                                ? "text-[var(--brand-royal-red)]"
-                                                : "text-gray-600"
+                                            ? "text-[var(--brand-royal-red)]"
+                                            : "text-gray-600"
                                             } `}
                                     >
                                         STYLE
@@ -237,8 +246,8 @@ export default function OffersPage() {
                                     <button
                                         onClick={() => setPreferenceTab("PATTERN")}
                                         className={`text-sm font-semibold transition-colors ${preferenceTab === "PATTERN"
-                                                ? "text-[var(--brand-royal-red)]"
-                                                : "text-gray-600"
+                                            ? "text-[var(--brand-royal-red)]"
+                                            : "text-gray-600"
                                             } `}
                                     >
                                         PATTERN
