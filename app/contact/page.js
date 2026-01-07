@@ -14,7 +14,6 @@ export default function ContactUs() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Contact Info Cards */}
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex items-start gap-4 transition hover:shadow-md">
                             <div className="p-3 bg-red-50 text-[var(--brand-royal-red)] rounded-lg">
@@ -23,7 +22,7 @@ export default function ContactUs() {
                             <div>
                                 <h3 className="font-bold text-gray-900 mb-1">Phone</h3>
                                 <p className="text-gray-600 text-sm mb-2">Mon-Sat from 9am to 6pm</p>
-                                <a href="tel:+8801234567890" className="text-[var(--brand-royal-red)] font-semibold hover:underline">+880 1234 567 890</a>
+                                <a href="tel:+8801927708280" className="text-[var(--brand-royal-red)] font-semibold hover:underline">+880 1927-708280</a>
                             </div>
                         </div>
 
@@ -34,7 +33,7 @@ export default function ContactUs() {
                             <div>
                                 <h3 className="font-bold text-gray-900 mb-1">Email</h3>
                                 <p className="text-gray-600 text-sm mb-2">Our team will get back to you within 24 hours.</p>
-                                <a href="mailto:support@brandempire.com" className="text-[var(--brand-royal-red)] font-semibold hover:underline">support@brandempire.com</a>
+                                <a href="mailto:info@brandempirebd.com" className="text-[var(--brand-royal-red)] font-semibold hover:underline">info@brandempirebd.com</a>
                             </div>
                         </div>
 
@@ -45,9 +44,9 @@ export default function ContactUs() {
                             <div>
                                 <h3 className="font-bold text-gray-900 mb-1">Office</h3>
                                 <p className="text-gray-600 text-sm">
-                                    Level 4, Brand Empire Tower<br />
-                                    Banani, Dhaka 1213<br />
-                                    Bangladesh
+                                    Level 3, Block- C, Shop- 42B,<br />
+                                    Jamuna Future Park,<br />
+                                    Dhaka
                                 </p>
                             </div>
                         </div>

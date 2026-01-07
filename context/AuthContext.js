@@ -10,6 +10,8 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [authModalOpen, setAuthModalOpen] = useState(false);
+    const [authModalMode, setAuthModalMode] = useState('login'); // 'login' or 'register'
     const router = useRouter();
 
     // Load user/token from localStorage on mount
@@ -24,16 +26,25 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
+    const openAuthModal = (mode = 'login') => {
+        setAuthModalMode(mode);
+        setAuthModalOpen(true);
+    };
+
+    const closeAuthModal = () => {
+        setAuthModalOpen(false);
+    };
+
     const login = async (email, password) => {
         try {
             const data = await customerLogin(email, password);
-            // const data = await customerLogin(email, password); // Removing duplicate
             if (data.token) {
                 setToken(data.token);
                 setUser(data.customer);
 
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("customer", JSON.stringify(data.customer));
+                closeAuthModal(); // Close modal on success
                 return { success: true };
             } else {
                 return { success: false, message: data.message || "Invalid credentials" };
@@ -48,19 +59,12 @@ export const AuthProvider = ({ children }) => {
         try {
             const data = await customerRegister(userData);
             if (data.success) {
-                // If registration returns a token/user immediately, log them in
-                // Based on API spec, it returns "customer" object.
-                // It MIGHT not return a token immediately based on the provided spec example (just says "Registration successful" and customer obj).
-                // If no token, we might need to ask them to login or auto-login.
-                // Assuming for now we might need to auto-login separately or if the backend sends token (often they do).
-                // Spec says response success has "customer" but doesn't explicitly show "token" in the example response.
-                // Let's assume we redirect to login or auto-login if token is present.
-
                 if (data.token) {
                     setToken(data.token);
                     setUser(data.customer);
                     localStorage.setItem("token", data.token);
                     localStorage.setItem("customer", JSON.stringify(data.customer));
+                    closeAuthModal(); // Close modal on success
                     return { success: true };
                 }
 
@@ -98,11 +102,24 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
         localStorage.removeItem("token");
         localStorage.removeItem("customer");
-        router.push("/login");
+        router.push("/"); // Redirect to home (was login page, but now modal based so home is better)
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateProfile }}>
+        <AuthContext.Provider value={{
+            user,
+            token,
+            loading,
+            login,
+            register,
+            logout,
+            updateProfile,
+            authModalOpen,
+            authModalMode,
+            openAuthModal,
+            closeAuthModal,
+            setAuthModalMode
+        }}>
             {children}
         </AuthContext.Provider>
     );

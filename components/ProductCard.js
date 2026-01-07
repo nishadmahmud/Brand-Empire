@@ -12,7 +12,7 @@ const ProductCard = ({ product, tag, categoryId, onClick }) => {
 
     const { addToCart } = useCart();
     const { toggleWishlist, isInWishlist } = useWishlist();
-    const { user } = useAuth();
+    const { user, openAuthModal } = useAuth();
     const router = useRouter();
     const inWishlist = isInWishlist(product.id);
 
@@ -81,7 +81,7 @@ const ProductCard = ({ product, tag, categoryId, onClick }) => {
                             e.preventDefault();
                             e.stopPropagation(); // detailed prevents navigation
                             if (!user) {
-                                router.push(`/login?redirect=/product/${product.id}`);
+                                openAuthModal('login');
                                 return;
                             }
                             toggleWishlist(product);

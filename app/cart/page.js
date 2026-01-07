@@ -20,7 +20,8 @@ const CartPage = () => {
         getTotal
     } = useCart();
 
-    const { user } = useAuth();
+    const { user, openAuthModal } = useAuth();
+    const router = useRouter();
 
     const [openSizeModal, setOpenSizeModal] = React.useState(null); // stores item ID to show modal for
 
@@ -96,9 +97,12 @@ const CartPage = () => {
                                 <div>
                                     <p className="text-sm font-semibold text-gray-700">Login to see items from your existing bag and wishlist.</p>
                                 </div>
-                                <Link href="/login" className="text-[var(--brand-royal-red)] font-bold text-xs uppercase hover:underline">
+                                <button
+                                    onClick={() => openAuthModal('login')}
+                                    className="text-[var(--brand-royal-red)] font-bold text-xs uppercase hover:underline"
+                                >
                                     Login Now
-                                </Link>
+                                </button>
                             </div>
                         )}
 
@@ -256,12 +260,15 @@ const CartPage = () => {
                             </div>
 
                             <button
-                                // Use a link or button, but maybe validate selection first
                                 onClick={() => {
-                                    if (selectedCount > 0) {
-                                        window.location.href = '/checkout';
-                                    } else {
+                                    if (selectedCount === 0) {
                                         alert("Please select at least one item to proceed.");
+                                        return;
+                                    }
+                                    if (!user) {
+                                        openAuthModal('login');
+                                    } else {
+                                        router.push('/checkout');
                                     }
                                 }}
                                 className={`block w-full py-3 text-center font-bold text-sm uppercase rounded shadow-md transition-colors ${selectedCount > 0 ? 'bg-[var(--brand-royal-red)] text-white hover:bg-red-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}

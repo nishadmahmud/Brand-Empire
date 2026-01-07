@@ -17,7 +17,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
     const [campaigns, setCampaigns] = useState([]);
     const { toggleCart, getCartCount } = useCart();
 
-    const { user, logout } = useAuth();
+    const { user, logout, openAuthModal } = useAuth();
     const { wishlist } = useWishlist();
 
     // Search State
@@ -296,13 +296,16 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 <span className="text-[10px] font-medium">Profile</span>
                             </Link>
                         ) : (
-                            <Link href="/login" className="hidden lg:flex flex-col items-center gap-0.5 text-gray-700 hover:text-[var(--brand-royal-red)] transition-colors">
+                            <button
+                                onClick={() => openAuthModal('login')}
+                                className="hidden lg:flex flex-col items-center gap-0.5 text-gray-700 hover:text-[var(--brand-royal-red)] transition-colors"
+                            >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                     <circle cx="12" cy="7" r="4"></circle>
                                 </svg>
                                 <span className="text-[10px] font-medium">Login</span>
-                            </Link>
+                            </button>
                         )}
 
                         {/* Wishlist Icon - Visible on Mobile too per user request */}
@@ -485,10 +488,16 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                         <Link href="/profile" className="text-xs text-[var(--brand-royal-red)] font-bold" onClick={() => setMobileMenuOpen(false)}>View Profile</Link>
                                     </>
                                 ) : (
-                                    <Link href="/login" className="font-bold text-gray-800 text-sm flex flex-col" onClick={() => setMobileMenuOpen(false)}>
+                                    <button
+                                        className="font-bold text-gray-800 text-sm flex flex-col items-start"
+                                        onClick={() => {
+                                            setMobileMenuOpen(false);
+                                            openAuthModal('login');
+                                        }}
+                                    >
                                         <span>Login / Signup</span>
-                                        <span className="text-xs text-[var(--brand-royal-red)] font-normal">To access account & orders</span>
-                                    </Link>
+                                        <span className="text-xs text-[var(--brand-royal-red)] font-normal text-left">To access account & orders</span>
+                                    </button>
                                 )}
                             </div>
                         </div>

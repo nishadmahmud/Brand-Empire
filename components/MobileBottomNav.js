@@ -2,14 +2,23 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 const MobileBottomNav = ({ onOpenCategories }) => {
     const pathname = usePathname();
-    const { user } = useAuth();
+    const router = useRouter();
+    const { user, openAuthModal } = useAuth();
 
     const isActive = (path) => pathname === path;
+
+    const handleProfileClick = () => {
+        if (user) {
+            router.push('/profile');
+        } else {
+            openAuthModal('login');
+        }
+    };
 
     return (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[60] lg:hidden h-16 safe-area-pb">
@@ -45,13 +54,16 @@ const MobileBottomNav = ({ onOpenCategories }) => {
                 </Link>
 
                 {/* Profile */}
-                <Link href={user ? "/profile" : "/login"} className={`flex flex-col items-center justify-center gap-1 ${isActive('/profile') || isActive('/login') ? 'text-[var(--brand-royal-red)]' : 'text-gray-500'}`}>
+                <button
+                    onClick={handleProfileClick}
+                    className={`flex flex-col items-center justify-center gap-1 ${isActive('/profile') || (user && isActive('/login')) ? 'text-[var(--brand-royal-red)]' : 'text-gray-500'}`}
+                >
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isActive('/profile') || isActive('/login') ? "2.5" : "2"} strokeLinecap="round" strokeLinejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                     </svg>
-                    <span className="text-[10px] font-bold uppercase">Profile</span>
-                </Link>
+                    <span className="text-[10px] font-bold uppercase">{user ? "Profile" : "Login"}</span>
+                </button>
             </div>
         </div>
     );

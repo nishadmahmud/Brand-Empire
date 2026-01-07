@@ -37,7 +37,7 @@ const ProductDetailsPage = ({ productId }) => {
 
     const [categoryProducts, setCategoryProducts] = useState([]);
 
-    const { user } = useAuth();
+    const { user, openAuthModal } = useAuth();
     const router = useRouter();
 
     // Delivery autocomplete states
@@ -519,7 +519,7 @@ const ProductDetailsPage = ({ productId }) => {
                             <button
                                 onClick={() => {
                                     if (!user) {
-                                        router.push(`/login?redirect=/product/${productId}`);
+                                        openAuthModal('login');
                                         return;
                                     }
                                     toggleWishlist(product);

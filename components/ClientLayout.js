@@ -7,6 +7,7 @@ import MobileBottomNav from "./MobileBottomNav";
 import Navbar from "./Navbar";
 import TopMarquee from "./TopMarquee";
 import Footer from "./Footer";
+import AuthModal from "./AuthModal";
 import CartModal from "./CartModal";
 import FloatingIcons from "./FloatingIcons";
 
@@ -38,6 +39,7 @@ export default function ClientLayout({ children }) {
 
             {/* Global Floating Elements */}
             <CartModal />
+            <AuthModal />
             <FloatingIcons />
 
             <Navbar
