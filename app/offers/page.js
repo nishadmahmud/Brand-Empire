@@ -82,7 +82,10 @@ export default function OffersPage() {
                                     )}
                                     {/* Discount Badge */}
                                     <div className="absolute top-4 right-4 bg-[var(--brand-royal-red)] text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                                        Up to {campaign.discount}% OFF
+                                        {campaign.discount_type === 'amount'
+                                            ? `Up to ${campaign.discount} TAKA OFF`
+                                            : `Up to ${campaign.discount}% OFF`
+                                        }
                                     </div>
                                 </div>
 
