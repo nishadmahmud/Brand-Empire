@@ -8,6 +8,7 @@ import FeaturedCollections from "@/components/FeaturedCollections";
 import NewArrivals from "@/components/NewArrivals";
 import AppPromoSection from "@/components/AppPromoSection";
 import WelcomePopup from "@/components/WelcomePopup";
+import BlogSection from "@/components/BlogSection";
 
 export default function Home() {
   return (
@@ -47,6 +48,11 @@ export default function Home() {
       {/* App Promotion */}
       <div className="mt-8 md:mt-12">
         <AppPromoSection />
+      </div>
+
+      {/* Blog Section */}
+      <div className="mt-8 md:mt-12">
+        <BlogSection />
       </div>
     </div>
   );
