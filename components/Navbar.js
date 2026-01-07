@@ -139,7 +139,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                             onMouseEnter={() => setActiveMegaMenu('offers')}
                             onMouseLeave={() => setActiveMegaMenu(null)}
                         >
-                            <Link href="/offers" className="text-[var(--brand-royal-red)] font-extrabold">
+                            <Link href="/offers" className="text-[var(--brand-royal-red)] font-extrabold" onClick={() => setActiveMegaMenu(null)}>
                                 OFFERS
                             </Link>
                         </div>
@@ -152,7 +152,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 onMouseEnter={() => setActiveMegaMenu(category.category_id)}
                                 onMouseLeave={() => setActiveMegaMenu(null)}
                             >
-                                <Link href={`/category/${category.category_id}`}>
+                                <Link href={`/category/${category.category_id}`} onClick={() => setActiveMegaMenu(null)}>
                                     {category.name.toUpperCase()}
                                 </Link>
                             </div>
@@ -310,7 +310,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                     {categories.find(c => c.category_id === activeMegaMenu)?.sub_category?.length > 0 ? (
                                         categories.find(c => c.category_id === activeMegaMenu)?.sub_category.map((subCat) => (
                                             <div key={subCat.id}>
-                                                <Link href={`/category/${activeMegaMenu}?subcategory=${subCat.id}`}>
+                                                <Link href={`/category/${activeMegaMenu}?subcategory=${subCat.id}`} onClick={() => setActiveMegaMenu(null)}>
                                                     <h3 className="font-bold text-[var(--brand-royal-red)] mb-4 text-sm uppercase tracking-wider hover:underline">
                                                         {subCat.name}
                                                     </h3>
@@ -322,6 +322,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                                                 <Link
                                                                     href={`/category/${activeMegaMenu}?subcategory=${subCat.id}&child=${child.id}`}
                                                                     className="text-sm text-gray-600 hover:text-[var(--brand-royal-red)] transition-colors"
+                                                                    onClick={() => setActiveMegaMenu(null)}
                                                                 >
                                                                     {child.name}
                                                                 </Link>

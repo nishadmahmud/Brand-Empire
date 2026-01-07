@@ -10,6 +10,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import { useToast } from "@/context/ToastContext";
 import { getProductById, getRelatedProduct, getProducts } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
+import SizeChartModal from "./SizeChartModal";
 
 const ProductDetailsPage = ({ productId }) => {
     const searchParams = useSearchParams();
@@ -20,6 +21,7 @@ const ProductDetailsPage = ({ productId }) => {
     const [pincode, setPincode] = useState("");
     const [showOffers, setShowOffers] = useState(false);
     const [showLightbox, setShowLightbox] = useState(false);
+    const [showSizeChart, setShowSizeChart] = useState(false);
     const [sizeError, setSizeError] = useState(false);
     const [product, setProduct] = useState(dummyProduct); // Start with dummy data
     const [loading, setLoading] = useState(true);
@@ -396,7 +398,10 @@ const ProductDetailsPage = ({ productId }) => {
                         <div id="size-selector" className="mb-6">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-sm font-bold uppercase">Select Size</h3>
-                                <button className="text-sm text-[var(--brand-royal-red)] font-bold hover:underline">
+                                <button
+                                    onClick={() => setShowSizeChart(true)}
+                                    className="text-sm text-[var(--brand-royal-red)] font-bold hover:underline"
+                                >
                                     SIZE CHART →
                                 </button>
                             </div>
@@ -740,6 +745,13 @@ const ProductDetailsPage = ({ productId }) => {
                     </div>
                 </div>
             )}
+
+            {/* Size Chart Modal */}
+            <SizeChartModal
+                isOpen={showSizeChart}
+                onClose={() => setShowSizeChart(false)}
+                product={product}
+            />
         </div>
     );
 };
