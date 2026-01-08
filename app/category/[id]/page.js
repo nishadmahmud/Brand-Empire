@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useSearchParams, useRouter, usePathname } from "next/navigation";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
@@ -22,6 +22,8 @@ export default function CategoryPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
     const [sortBy, setSortBy] = useState("recommended");
+    const [mobileSortOpen, setMobileSortOpen] = useState(false);
+    const sortDropdownRef = useRef(null);
 
     // Breadcrumb data
     const [categoryName, setCategoryName] = useState("");
@@ -55,6 +57,17 @@ export default function CategoryPage() {
             });
         return sizes;
     }, [products]);
+
+    // Close sort dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target)) {
+                setMobileSortOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     // Fetch category names and data for filters
     useEffect(() => {
@@ -321,7 +334,7 @@ export default function CategoryPage() {
                         <div className="flex items-center gap-2 lg:hidden">
                             <button
                                 onClick={() => setMobileFiltersOpen(true)}
-                                className="flex items-center justify-center gap-1 px-2 py-1 border border-gray-300 rounded-md hover:bg-gray-50 bg-white text-xs font-medium"
+                                className="flex items-center justify-center gap-1 px-3 py-1.5 border border-gray-200 rounded-full hover:bg-gray-50 bg-white text-xs font-medium transition-colors"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="4" y1="21" x2="4" y2="14"></line>
@@ -333,20 +346,95 @@ export default function CategoryPage() {
                                 </svg>
                                 <span>Filter</span>
                             </button>
-                            <div className="relative">
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
-                                    className="px-2 py-1 border border-gray-300 rounded-md bg-white text-xs focus:outline-none appearance-none font-medium pr-5"
+                            <div className="relative" ref={sortDropdownRef}>
+                                <button
+                                    onClick={() => setMobileSortOpen(!mobileSortOpen)}
+                                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
                                 >
-                                    <option value="recommended">Sort</option>
-                                    <option value="newest">New</option>
-                                    <option value="price-low">Low</option>
-                                    <option value="price-high">High</option>
-                                </select>
-                                <div className="absolute inset-y-0 right-0 flex items-center px-1 pointer-events-none text-gray-500">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
+                                    <span>
+                                        {sortBy === "recommended" ? "Sort" :
+                                         sortBy === "newest" ? "New" :
+                                         sortBy === "price-low" ? "Low" :
+                                         sortBy === "price-high" ? "High" : "Sort"}
+                                    </span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${mobileSortOpen ? 'rotate-180' : ''}`}>
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
+                                </button>
+
+                                {mobileSortOpen && (
+                                    <>
+                                        <div className="fixed inset-0 bg-black/50 z-[100] md:hidden" onClick={() => setMobileSortOpen(false)}></div>
+                                        <div className="fixed inset-x-0 bottom-0 z-[101] w-full rounded-t-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-xl md:rounded-lg md:absolute md:top-full md:left-0 md:right-auto md:bottom-auto md:w-56 md:mt-2 bg-white border-t md:border border-gray-100 py-2 pb-20 md:pb-2 max-h-[60vh] md:max-h-96 overflow-y-auto">
+                                            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 md:hidden">
+                                                <span className="font-bold text-gray-900">Sort By</span>
+                                                <button onClick={() => setMobileSortOpen(false)} className="p-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                </button>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setSortBy("recommended");
+                                                    setMobileSortOpen(false);
+                                                }}
+                                                className={`w-full text-left px-4 py-3 md:py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortBy === "recommended" ? 'text-[var(--brand-royal-red)] font-bold' : 'text-gray-700'
+                                                    }`}
+                                            >
+                                                Recommended
+                                                {sortBy === "recommended" && (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--brand-royal-red)]">
+                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                    </svg>
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setSortBy("newest");
+                                                    setMobileSortOpen(false);
+                                                }}
+                                                className={`w-full text-left px-4 py-3 md:py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortBy === "newest" ? 'text-[var(--brand-royal-red)] font-bold' : 'text-gray-700'
+                                                    }`}
+                                            >
+                                                Newest First
+                                                {sortBy === "newest" && (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--brand-royal-red)]">
+                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                    </svg>
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setSortBy("price-low");
+                                                    setMobileSortOpen(false);
+                                                }}
+                                                className={`w-full text-left px-4 py-3 md:py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortBy === "price-low" ? 'text-[var(--brand-royal-red)] font-bold' : 'text-gray-700'
+                                                    }`}
+                                            >
+                                                Price: Low to High
+                                                {sortBy === "price-low" && (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--brand-royal-red)]">
+                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                    </svg>
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setSortBy("price-high");
+                                                    setMobileSortOpen(false);
+                                                }}
+                                                className={`w-full text-left px-4 py-3 md:py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortBy === "price-high" ? 'text-[var(--brand-royal-red)] font-bold' : 'text-gray-700'
+                                                    }`}
+                                            >
+                                                Price: High to Low
+                                                {sortBy === "price-high" && (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--brand-royal-red)]">
+                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -469,9 +557,9 @@ export default function CategoryPage() {
 
             {/* Mobile Filter Modal */}
             {mobileFiltersOpen && (
-                <div className="fixed inset-0 z-50 lg:hidden">
+                <div className="fixed inset-0 z-[70] lg:hidden">
                     <div className="absolute inset-0 bg-black/50" onClick={() => setMobileFiltersOpen(false)}></div>
-                    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white overflow-y-auto">
+                    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white overflow-y-auto pb-20">
                         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                             <h2 className="text-lg font-bold">Filters</h2>
                             <button onClick={() => setMobileFiltersOpen(false)}>
