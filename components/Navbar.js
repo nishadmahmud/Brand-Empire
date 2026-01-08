@@ -6,6 +6,7 @@ import Link from "next/link";
 import { megaMenuData } from "@/data/megaMenuData";
 import { useCart } from "@/context/CartContext";
 import { getCategoriesFromServer, searchProducts, getProducts, getCategoryWiseProducts, getCampaigns } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -28,6 +29,17 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
     const searchContainerRef = useRef(null);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [expandedCategory, setExpandedCategory] = useState(null);
+    const router = useRouter();
+
+    // Handle search submit (Enter key)
+    const handleSearchSubmit = (e) => {
+        if (e.key === 'Enter' && searchQuery.trim()) {
+            e.preventDefault();
+            setShowDropdown(false);
+            setMobileSearchOpen(false);
+            router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        }
+    };
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -219,6 +231,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 className="ml-2 bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none w-full"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={handleSearchSubmit}
                             />
 
                             {/* Dropdown Results */}
@@ -633,6 +646,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 placeholder="Search..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={handleSearchSubmit}
                                 className="ml-2 bg-transparent w-full text-base text-gray-900 placeholder-gray-500 focus:outline-none"
                             />
                             {searchQuery && (
