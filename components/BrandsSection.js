@@ -54,10 +54,13 @@ const BrandsSection = () => {
             try {
                 const response = await getTopBrands();
                 if (response.success && response.data && response.data.length > 0) {
-                    // First 6 brands are International
-                    const international = response.data.slice(0, 5);
-                    // Remaining brands (after first 6) are Bangladeshi
-                    const bangladeshi = response.data.slice(5);
+                    // Filter brands by description field
+                    const international = response.data.filter(brand => 
+                        brand.description === "International"
+                    );
+                    const bangladeshi = response.data.filter(brand => 
+                        brand.description === "Local"
+                    );
 
                     setInternationalBrands(international);
                     setLocalBrands(bangladeshi);

@@ -266,16 +266,12 @@ const CartPage = () => {
                                         alert("Please select at least one item to proceed.");
                                         return;
                                     }
-                                    if (!user) {
-                                        openAuthModal('login');
-                                    } else {
-                                        router.push('/checkout');
-                                    }
+                                    router.push('/checkout');
                                 }}
                                 className={`block w-full py-3 text-center font-bold text-sm uppercase rounded shadow-md transition-colors ${selectedCount > 0 ? 'bg-[var(--brand-royal-red)] text-white hover:bg-red-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                                 disabled={selectedCount === 0}
                             >
-                                Place Order
+                                Checkout
                             </button>
                         </div>
                     </div>

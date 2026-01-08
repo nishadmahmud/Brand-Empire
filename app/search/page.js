@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
-import CategoryTopFilters from "@/components/CategoryTopFilters";
 import { searchProducts } from "@/lib/api";
 
 function SearchPageContent() {
@@ -21,25 +20,8 @@ function SearchPageContent() {
         brands: [],
         priceRange: [0, 50000],
         colors: [],
-        sizes: [],
         discount: 0,
     });
-
-    // Extract unique sizes from products
-    const availableSizes = useMemo(() => {
-        const sizes = products
-            .flatMap(p => p.sizes || [])
-            .filter((size, index, self) => self.indexOf(size) === index)
-            .sort((a, b) => {
-                const aNum = parseInt(a);
-                const bNum = parseInt(b);
-                if (!isNaN(aNum) && !isNaN(bNum)) {
-                    return aNum - bNum;
-                }
-                return a.localeCompare(b);
-            });
-        return sizes;
-    }, [products]);
 
     // Fetch search results
     useEffect(() => {
@@ -98,31 +80,30 @@ function SearchPageContent() {
         fetchSearchResults();
     }, [query]);
 
+
     // Apply filters and sorting
     const filteredAndSortedProducts = useMemo(() => {
+        if (!products || !Array.isArray(products)) {
+            return [];
+        }
         let result = [...products];
 
         // Apply brand filter
-        if (filters.brands.length > 0) {
+        if (filters.brands && filters.brands.length > 0) {
             result = result.filter(p => filters.brands.includes(p.brand));
         }
 
         // Apply price range filter
-        result = result.filter(p =>
-            p.rawPrice >= filters.priceRange[0] &&
-            p.rawPrice <= filters.priceRange[1]
-        );
-
-        // Apply color filter
-        if (filters.colors.length > 0) {
-            result = result.filter(p => filters.colors.includes(p.color));
+        if (filters.priceRange && filters.priceRange.length === 2) {
+            result = result.filter(p =>
+                p.rawPrice >= filters.priceRange[0] &&
+                p.rawPrice <= filters.priceRange[1]
+            );
         }
 
-        // Apply size filter
-        if (filters.sizes.length > 0) {
-            result = result.filter(p =>
-                p.sizes.some(size => filters.sizes.includes(size))
-            );
+        // Apply color filter
+        if (filters.colors && filters.colors.length > 0) {
+            result = result.filter(p => filters.colors.includes(p.color));
         }
 
         // Apply discount filter
@@ -161,7 +142,6 @@ function SearchPageContent() {
             brands: [],
             priceRange: [0, 50000],
             colors: [],
-            sizes: [],
             discount: 0,
         });
     };
@@ -228,7 +208,6 @@ function SearchPageContent() {
 
             {/* Main Content */}
             <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-6">
-
                 <div className="flex gap-6">
                     {/* Filter Sidebar - Desktop */}
                     <div className="hidden lg:block w-64 flex-shrink-0">
@@ -272,24 +251,6 @@ function SearchPageContent() {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Top Filter Bar (Same as Category Page) */}
-                        <CategoryTopFilters
-                            subCategories={[]}
-                            childCategories={[]}
-                            selectedSubId={null}
-                            selectedChildId={null}
-                            availableSizes={availableSizes}
-                            selectedSizes={filters.sizes}
-                            onSubChange={() => { }}
-                            onChildChange={() => { }}
-                            onSizeChange={(size) => {
-                                const newSizes = filters.sizes.includes(size)
-                                    ? filters.sizes.filter(s => s !== size)
-                                    : [...filters.sizes, size];
-                                handleFilterChange('sizes', newSizes);
-                            }}
-                        />
 
                         {/* Products Grid */}
                         {loading ? (
