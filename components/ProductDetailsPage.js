@@ -286,6 +286,18 @@ const ProductDetailsPage = ({ productId }) => {
         showToast(product); // Show toast notification
     };
 
+    const handleOrderNow = () => {
+        if (!selectedSize) {
+            setSizeError(true);
+            // Scroll to size selector
+            document.getElementById('size-selector')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        setSizeError(false);
+        addToCart(product, 1, selectedSize);
+        router.push('/checkout');
+    };
+
     // Keyboard navigation for lightbox
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -439,7 +451,28 @@ const ProductDetailsPage = ({ productId }) => {
                         {/* Brand & Title */}
                         <div>
                             <h2 className="text-xl font-bold text-gray-800 mb-1">{product.brand}</h2>
-                            <h1 className="text-lg text-gray-600">{product.name}</h1>
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-lg text-gray-600 flex-1">{product.name}</h1>
+                                <button
+                                    onClick={() => {
+                                        if (!user) {
+                                            openAuthModal('login');
+                                            return;
+                                        }
+                                        toggleWishlist(product);
+                                    }}
+                                    className={`p-2 rounded-full transition-colors flex-shrink-0 ${
+                                        isInWishlist(product.id)
+                                            ? 'text-[var(--brand-royal-red)] bg-red-50'
+                                            : 'text-gray-400 hover:text-[var(--brand-royal-red)] hover:bg-red-50'
+                                    }`}
+                                    aria-label={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isInWishlist(product.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Rating */}
@@ -504,7 +537,7 @@ const ProductDetailsPage = ({ productId }) => {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex gap-4">
+                        <div className="flex flex-col sm:flex-row gap-3">
                             <button
                                 onClick={handleAddToBag}
                                 className="flex-1 bg-[var(--brand-royal-red)] text-white py-4 rounded font-bold text-sm uppercase hover:bg-[#a01830] transition-colors flex items-center justify-center gap-2"
@@ -517,22 +550,14 @@ const ProductDetailsPage = ({ productId }) => {
                                 Add to Bag
                             </button>
                             <button
-                                onClick={() => {
-                                    if (!user) {
-                                        openAuthModal('login');
-                                        return;
-                                    }
-                                    toggleWishlist(product);
-                                }}
-                                className={`px-6 py-4 border-2 rounded font-bold text-sm uppercase transition-colors flex items-center justify-center gap-2 ${isInWishlist(product.id)
-                                    ? 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-red-50'
-                                    : 'border-gray-300 hover:border-gray-400'
-                                    }`}
+                                onClick={handleOrderNow}
+                                className="flex-1 px-6 py-4 border-2 border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-red-50 rounded font-bold text-sm uppercase hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={isInWishlist(product.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M5 12h14"></path>
+                                    <path d="M12 5l7 7-7 7"></path>
                                 </svg>
-                                {isInWishlist(product.id) ? "Wishlisted" : "Wishlist"}
+                                Order Now
                             </button>
                         </div>
 

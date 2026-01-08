@@ -200,12 +200,20 @@ export default function ProfileDashboard() {
     const userName = user.first_name || user.name?.split(" ")[0] || "User";
 
     return (
-        <div className="min-h-screen bg-gray-50 pt-16 md:pt-20">
-            <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">
+        <div className="min-h-screen bg-gray-50 pt-4 md:pt-6">
+            {/* Mobile Backdrop */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                ></div>
+            )}
+
+            <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-4 md:py-6">
                 {/* Mobile Menu Button */}
                 <button
                     onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="lg:hidden mb-4 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border"
+                    className="lg:hidden mb-4 flex items-center gap-2 px-4 py-2.5 bg-white rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50"
                 >
                     <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                         <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -216,10 +224,36 @@ export default function ProfileDashboard() {
                 </button>
 
                 <div className="flex gap-6">
-                    {/* Sidebar (visible on desktop, toggleable on mobile) */}
-                    <aside className={`${sidebarOpen ? 'block' : 'hidden'} lg:block w-64 flex-shrink-0`}>
-                        <div className="bg-white rounded-xl shadow-sm border sticky top-24">
-                            <div className="p-6 border-b">
+                    {/* Sidebar - Hidden on mobile, overlay when opened */}
+                    <aside className={`
+                        fixed lg:static
+                        top-16 lg:top-auto left-0 lg:left-auto bottom-0 lg:bottom-auto
+                        w-64
+                        bg-white
+                        z-50 lg:z-auto
+                        transform lg:transform-none transition-transform duration-300
+                        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                        lg:block
+                        flex-shrink-0
+                        overflow-y-auto
+                        h-[calc(100vh-4rem)] lg:h-auto
+                    `}>
+                        <div className="bg-white lg:rounded-xl shadow-sm border lg:sticky lg:top-24 h-full lg:h-auto">
+                            {/* Mobile Close Button */}
+                            <div className="lg:hidden flex items-center justify-between p-4 border-b">
+                                <span className="font-semibold text-gray-900">Menu</span>
+                                <button
+                                    onClick={() => setSidebarOpen(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="p-6 border-b hidden lg:block">
                                 <Link href="/" className="flex items-center">
                                     <div className="relative h-10 w-32">
                                         <Image src="/logo.png" alt="Brand Empire" fill className="object-contain" unoptimized />
@@ -284,32 +318,32 @@ export default function ProfileDashboard() {
                         </div>
                     </aside>
 
-                    {/* Main Content Area */}
-                    <div className="flex-1">
+                    {/* Main Content Area - Full width on mobile */}
+                    <div className="flex-1 w-full lg:w-auto min-w-0">
                         {/* Dashboard */}
                         {activeSection === "dashboard" && (
                             <>
-                                <div className="bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-2xl p-8 mb-8 text-white">
-                                    <h1 className="text-3xl font-bold mb-2">Hello, {userName}</h1>
-                                    <p className="text-white/90">Welcome back to Brand Empire</p>
+                                <div className="bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-2xl p-6 md:p-8 mb-6 md:mb-8 text-white">
+                                    <h1 className="text-2xl md:text-3xl font-bold mb-2">Hello, {userName}</h1>
+                                    <p className="text-white/90 text-sm">Welcome back to Brand Empire</p>
                                 </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                                     {[
                                         { label: "Track Orders", icon: "📦", action: () => setActiveSection("orders") },
-                                        { label: "My Wishlist", icon: "❤️", href: "/wishlist" },
-                                        { label: "Customer Service", icon: "🎧", href: "/contact" },
+                                        { label: "My Wishlist", icon: "❤️", action: () => setActiveSection("wishlist") },
+                                        { label: "Profile Settings", icon: "👤", action: () => setActiveSection("profile") },
                                         { label: "My Coupons", icon: "🏷️", action: () => setActiveSection("coupons") }
                                     ].map((item, i) => (
                                         item.href ? (
-                                            <Link key={i} href={item.href} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
-                                                <div className="text-3xl mb-2">{item.icon}</div>
-                                                <p className="text-sm font-medium">{item.label}</p>
+                                            <Link key={i} href={item.href} className="bg-white p-4 md:p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
+                                                <div className="text-2xl md:text-3xl mb-2">{item.icon}</div>
+                                                <p className="text-xs md:text-sm font-medium">{item.label}</p>
                                             </Link>
                                         ) : (
-                                            <button key={i} onClick={item.action} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
-                                                <div className="text-3xl mb-2">{item.icon}</div>
-                                                <p className="text-sm font-medium">{item.label}</p>
+                                            <button key={i} onClick={item.action} className="bg-white p-4 md:p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
+                                                <div className="text-2xl md:text-3xl mb-2">{item.icon}</div>
+                                                <p className="text-xs md:text-sm font-medium">{item.label}</p>
                                             </button>
                                         )
                                     ))}
