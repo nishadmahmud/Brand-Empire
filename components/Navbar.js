@@ -357,13 +357,19 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                 {/* Mega Menu Dropdown */}
                 {activeMegaMenu && (
                     <div
-                        className="hidden lg:block absolute left-0 right-0 top-full bg-white shadow-lg border-t border-gray-200"
+                        className="hidden lg:block absolute left-0 top-full bg-white shadow-lg border-t border-gray-200"
+                        style={{ 
+                            left: '50%', 
+                            transform: 'translateX(-50%)',
+                            width: '900px',
+                            maxWidth: '90vw'
+                        }}
                         onMouseEnter={() => setActiveMegaMenu(activeMegaMenu)}
                         onMouseLeave={() => setActiveMegaMenu(null)}
                     >
                         {/* Offers Mega Menu - Dynamic Campaigns */}
                         {activeMegaMenu === 'offers' && (
-                            <div className="max-w-[1400px] mx-auto px-8 py-6">
+                            <div className="px-8 py-6">
                                 <div className="flex flex-wrap justify-center items-center gap-4">
                                     {campaigns.length > 0 ? (
                                         <>
@@ -408,8 +414,8 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
 
                         {/* Dynamic Category Mega Menus */}
                         {activeMegaMenu !== 'offers' && (
-                            <div className="max-w-[1000px] mx-auto px-8 py-8">
-                                <div className="grid grid-cols-5 gap-8">
+                            <div className="px-8 py-8">
+                                <div className="grid grid-cols-5 gap-6">
                                     {categories.find(c => c.category_id === activeMegaMenu)?.sub_category?.length > 0 ? (
                                         categories.find(c => c.category_id === activeMegaMenu)?.sub_category.map((subCat) => (
                                             <div key={subCat.id}>

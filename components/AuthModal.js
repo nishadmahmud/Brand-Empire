@@ -151,6 +151,7 @@ const AuthModal = () => {
                                     required
                                     placeholder="Enter your email"
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
+                                    style={{ fontSize: '16px' }}
                                 />
                             </div>
                             <div>
@@ -163,6 +164,7 @@ const AuthModal = () => {
                                     required
                                     placeholder="Enter your password"
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
+                                    style={{ fontSize: '16px' }}
                                 />
                                 <div className="flex justify-end mt-1">
                                     <button type="button" className="text-xs text-gray-500 hover:text-[var(--brand-royal-red)]">
@@ -213,6 +215,7 @@ const AuthModal = () => {
                                         required
                                         placeholder="John"
                                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
+                                        style={{ fontSize: '16px' }}
                                     />
                                 </div>
                                 <div>
@@ -225,6 +228,7 @@ const AuthModal = () => {
                                         required
                                         placeholder="Doe"
                                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
+                                        style={{ fontSize: '16px' }}
                                     />
                                 </div>
                             </div>
@@ -239,6 +243,7 @@ const AuthModal = () => {
                                     required
                                     placeholder="john@example.com"
                                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
+                                    style={{ fontSize: '16px' }}
                                 />
                             </div>
 
@@ -256,6 +261,7 @@ const AuthModal = () => {
                                         required
                                         placeholder="01712345678"
                                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
+                                        style={{ fontSize: '16px' }}
                                     />
                                 </div>
                             </div>
@@ -270,6 +276,7 @@ const AuthModal = () => {
                                     required
                                     placeholder="••••••••"
                                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
+                                    style={{ fontSize: '16px' }}
                                 />
                             </div>
 
@@ -283,6 +290,7 @@ const AuthModal = () => {
                                     required
                                     placeholder="••••••••"
                                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
+                                    style={{ fontSize: '16px' }}
                                 />
                             </div>
 

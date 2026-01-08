@@ -298,6 +298,14 @@ export default function ProfileDashboard() {
                                     {wishlist.length > 0 && <span className="ml-auto bg-[var(--brand-royal-red)] text-white text-xs px-2 py-0.5 rounded-full font-semibold">{wishlist.length}</span>}
                                 </button>
 
+                                <button onClick={() => { setActiveSection("benefits"); setSidebarOpen(false); }}
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSection === "benefits" ? "bg-red-50 text-[var(--brand-royal-red)] shadow-sm" : "text-gray-700 hover:bg-gray-50"}`}>
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                                    </svg>
+                                    <span>My Benefits</span>
+                                </button>
+
                                 <button onClick={() => { setActiveSection("coupons"); setSidebarOpen(false); }}
                                     className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSection === "coupons" ? "bg-red-50 text-[var(--brand-royal-red)] shadow-sm" : "text-gray-700 hover:bg-gray-50"}`}>
                                     <Tag size={20} />
@@ -473,6 +481,213 @@ export default function ProfileDashboard() {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+                        )}
+
+                        {/* My Benefits */}
+                        {activeSection === "benefits" && (
+                            <div className="space-y-6">
+                                {/* Points & Credit Cards */}
+                                <div className="grid md:grid-cols-3 gap-4">
+                                    {/* Your Points */}
+                                    <div className="bg-white rounded-xl shadow-sm border p-6">
+                                        <div className="flex items-start gap-4">
+                                            <div className="bg-[var(--brand-royal-red)] p-3 rounded-xl">
+                                                <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
+                                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                                                </svg>
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs text-gray-500 mb-1">Your Points Now:</p>
+                                                <p className="text-3xl font-bold text-gray-900">283,000</p>
+                                                <p className="text-xs text-gray-500 mt-1">Equal: 1,504 BDT credit</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Shop Now */}
+                                    <div className="bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-xl shadow-sm p-6 flex flex-col items-center justify-center">
+                                        <div className="bg-white p-3 rounded-xl mb-3">
+                                            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <circle cx="9" cy="21" r="1"></circle>
+                                                <circle cx="20" cy="21" r="1"></circle>
+                                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                                            </svg>
+                                        </div>
+                                        <Link href="/" className="bg-white text-[var(--brand-royal-red)] px-6 py-2 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors">
+                                            Shop now
+                                        </Link>
+                                    </div>
+
+                                    {/* Your Credit */}
+                                    <div className="bg-white rounded-xl shadow-sm border p-6">
+                                        <div className="flex items-start gap-4">
+                                            <div className="bg-blue-600 p-3 rounded-xl">
+                                                <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
+                                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                                                </svg>
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs text-gray-500 mb-1">Your Credit Now:</p>
+                                                <p className="text-3xl font-bold text-gray-900">৳500</p>
+                                                <p className="text-xs text-gray-500 mt-1">📅 Exp in: 30 Dec 2026</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Membership Tier Progress */}
+                                <div className="bg-white rounded-xl shadow-sm border p-6">
+                                    <h3 className="font-bold text-lg mb-6">Membership Tier</h3>
+                                    <div className="relative">
+                                        <div className="flex justify-between items-start mb-4">
+                                            {[
+                                                { name: "Basic", points: "0", active: true, color: "bg-green-500" },
+                                                { name: "Silver", points: "3,000", active: true, color: "bg-green-500" },
+                                                { name: "Gold", points: "15,000", active: true, color: "bg-blue-600" },
+                                                { name: "VIP", points: "30,000", active: false, color: "bg-gray-300" },
+                                            ].map((tier, i) => (
+                                                <div key={i} className="flex flex-col items-center flex-1">
+                                                    <div className={`w-12 h-12 rounded-full ${tier.color} flex items-center justify-center mb-2 relative z-10`}>
+                                                        {tier.active ? (
+                                                            <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
+                                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                                            </svg>
+                                                        ) : (
+                                                            <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
+                                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    <p className="font-semibold text-sm text-gray-900">{tier.name}</p>
+                                                    <p className="text-xs text-gray-500">{tier.points} points</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="absolute top-6 left-0 right-0 h-1 bg-gray-200 -z-0">
+                                            <div className="h-full bg-blue-600" style={{ width: "66%" }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Featured Coupons */}
+                                <div className="bg-white rounded-xl shadow-sm border p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="font-bold text-lg">Featured Coupons</h3>
+                                        <button onClick={() => setActiveSection("coupons")} className="text-sm text-[var(--brand-royal-red)] font-semibold hover:underline">View All</button>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {[
+                                            { name: "Delivery Coupon", discount: "10%", amount: "৳100", badge: "Renewal", expiry: "15 Dec 2025", color: "bg-green-500" },
+                                            { name: "Basic Coupon", discount: "75%", amount: "৳750", badge: "New", expiry: "15 Dec 2025", color: "bg-blue-600" },
+                                            { name: "Login Coupon", discount: "50%", amount: "৳500", badge: "New", expiry: "15 Dec 2025", color: "bg-indigo-700" },
+                                            { name: "Premium Coupon", discount: "50%", amount: "৳500", badge: "Renewal", expiry: "15 Dec 2025", color: "bg-orange-500" },
+                                        ].map((coupon, i) => (
+                                            <div key={i} className={`${coupon.color} rounded-xl p-4 text-white`}>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="bg-white/20 px-2 py-1 rounded text-xs font-semibold">{coupon.badge}</span>
+                                                    <span className="text-xs opacity-90">Until {coupon.expiry}</span>
+                                                </div>
+                                                <h4 className="font-bold mb-2">{coupon.name}</h4>
+                                                <div className="flex items-baseline gap-2">
+                                                    <span className="text-3xl font-bold">{coupon.discount}</span>
+                                                    <span className="text-sm opacity-90">{coupon.amount}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* My Points Summary */}
+                                <div className="bg-white rounded-xl shadow-sm border">
+                                    <details className="group">
+                                        <summary className="flex items-center justify-between p-6 cursor-pointer">
+                                            <h3 className="font-bold text-lg">My Points Summary</h3>
+                                            <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <polyline points="6 9 12 15 18 9"></polyline>
+                                            </svg>
+                                        </summary>
+                                        <div className="px-6 pb-6 space-y-3">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-600">Total Points Earned</span>
+                                                <span className="font-bold text-gray-900">283,000</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-600">Points Used</span>
+                                                <span className="font-bold text-gray-900">0</span>
+                                            </div>
+                                            <div className="flex justify-between pt-3 border-t">
+                                                <span className="font-semibold text-gray-900">Available Balance</span>
+                                                <span className="font-bold text-blue-600 text-lg">283,000</span>
+                                            </div>
+                                        </div>
+                                    </details>
+                                </div>
+
+                                {/* How to Earn Club Points */}
+                                <div className="bg-white rounded-xl shadow-sm border">
+                                    <details className="group">
+                                        <summary className="flex items-center justify-between p-6 cursor-pointer">
+                                            <h3 className="font-bold text-lg">How to Earn Club Points</h3>
+                                            <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <polyline points="6 9 12 15 18 9"></polyline>
+                                            </svg>
+                                        </summary>
+                                        <div className="px-6 pb-6 grid md:grid-cols-2 gap-4">
+                                            <div className="flex gap-3">
+                                                <div className="bg-blue-50 p-3 rounded-lg h-fit">
+                                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <circle cx="9" cy="21" r="1"></circle>
+                                                        <circle cx="20" cy="21" r="1"></circle>
+                                                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900 mb-1">Make Purchases</p>
+                                                    <p className="text-sm text-gray-600">Earn 1 point per ৳1 spent</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <div className="bg-pink-50 p-3 rounded-lg h-fit">
+                                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                                        <path d="M9 11l3 3L22 4"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900 mb-1">Complete Surveys</p>
+                                                    <p className="text-sm text-gray-600">Earn up to 100 points</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <div className="bg-purple-50 p-3 rounded-lg h-fit">
+                                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                                        <circle cx="8.5" cy="7" r="4"></circle>
+                                                        <polyline points="17 11 19 13 23 9"></polyline>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900 mb-1">Refer Friends</p>
+                                                    <p className="text-sm text-gray-600">Get 500 points per referral</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <div className="bg-orange-50 p-3 rounded-lg h-fit">
+                                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900 mb-1">Special Events</p>
+                                                    <p className="text-sm text-gray-600">Bonus points during promotions</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </details>
+                                </div>
                             </div>
                         )}
 
