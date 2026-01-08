@@ -223,7 +223,7 @@ export default function ProfileDashboard() {
                     <span className="font-medium text-sm">Menu</span>
                 </button>
 
-                <div className="flex gap-6">
+                <div className="flex gap-6 items-start">
                     {/* Sidebar - Hidden on mobile, overlay when opened */}
                     <aside className={`
                         fixed lg:static
