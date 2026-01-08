@@ -1,617 +1,428 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCustomerOrders, updateCustomerPassword } from "@/lib/api";
+import { getCustomerOrders, getCustomerCoupons, trackOrder } from "@/lib/api";
 import Image from "next/image";
 import Link from "next/link";
+import toast from "react-hot-toast";
 
-const TABS = [
-    {
-        id: "1", label: "Order Processing", icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        )
-    },
-    {
-        id: "2", label: "Order Completed", icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        )
-    },
-    {
-        id: "3", label: "Delivery Processing", icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        )
-    },
-    {
-        id: "4", label: "Delivery Completed", icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-            </svg>
-        )
-    },
-    {
-        id: "5", label: "Delivery Canceled", icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        )
-    },
+const ORDER_TABS = [
+    { id: "1", label: "Order Processing", icon: "⏱️" },
+    { id: "2", label: "Order Completed", icon: "✅" },
+    { id: "3", label: "Delivery Processing", icon: "🚚" },
+    { id: "4", label: "Delivery Completed", icon: "📦" },
+    { id: "5", label: "Delivery Canceled", icon: "❌" },
 ];
 
-export default function ProfilePage() {
-    const { user, logout, loading, updateProfile, token } = useAuth();
+export default function ProfileDashboard() {
+    const { user, logout, loading, token } = useAuth();
+    const { wishlist } = useWishlist();
     const router = useRouter();
-    const [isEditing, setIsEditing] = useState(false);
+
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [ordersExpanded, setOrdersExpanded] = useState(true);
+    const [activeSection, setActiveSection] = useState("dashboard");
+    const [activeOrderTab, setActiveOrderTab] = useState("1");
     const [orders, setOrders] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState("1"); // Default to Order Processing
+    const [coupons, setCoupons] = useState([]);
+    const [couponsLoading, setCouponsLoading] = useState(false);
 
-    const [formData, setFormData] = useState({
-        first_name: "",
-        last_name: "",
-        email: "",
-        mobile_number: "",
-        address: ""
-    });
-    const [updateStatus, setUpdateStatus] = useState({ message: "", type: "" });
-    const [isUpdating, setIsUpdating] = useState(false);
-
-    const [passwordData, setPasswordData] = useState({
-        current_password: "",
-        new_password: "",
-        new_password_confirmation: ""
-    });
-    const [passwordStatus, setPasswordStatus] = useState({ message: "", type: "" });
-    const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
-    const [isPasswordExpanded, setIsPasswordExpanded] = useState(false);
-
-
-    useEffect(() => {
-        const fetchOrders = async () => {
-            if (user && token) {
-                setOrdersLoading(true);
-                try {
-                    const customerId = user.id || user.customer_id;
-                    const data = await getCustomerOrders(token, customerId, activeTab);
-                    if (data.success) {
-                        if (Array.isArray(data.data)) {
-                            setOrders(data.data);
-                        } else if (data.data && Array.isArray(data.data.data)) {
-                            setOrders(data.data.data);
-                        } else {
-                            setOrders([]);
-                        }
-                    } else {
-                        setOrders([]);
-                    }
-                } catch (err) {
-                    console.error("Failed to fetch orders", err);
-                    setOrders([]);
-                } finally {
-                    setOrdersLoading(false);
-                }
-            }
-        };
-
-        if (user && token) {
-            fetchOrders();
-        }
-    }, [user, token, activeTab]);
+    // Track order states
+    const [trackInvoiceId, setTrackInvoiceId] = useState("");
+    const [trackOrderData, setTrackOrderData] = useState(null);
+    const [trackLoading, setTrackLoading] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
-            router.push("/login");
-        } else if (user) {
-            // Split name if first/last name not explicit
-            let first = user.first_name || "";
-            let last = user.last_name || "";
-            if (!first && user.name) {
-                const parts = user.name.split(" ");
-                first = parts[0];
-                last = parts.slice(1).join(" ");
-            }
-
-            setFormData({
-                id: user.id || user.customer_id,
-                first_name: first,
-                last_name: last,
-                email: user.email || "",
-                mobile_number: user.mobile_number || user.phone || "",
-                address: user.address || ""
-            });
+            router.push("/");
         }
     }, [user, loading, router]);
 
+    useEffect(() => {
+        const fetchOrders = async () => {
+            if (!user || !token || activeSection !== "orders") return;
 
-    const handleInputChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+            setOrdersLoading(true);
+            try {
+                const customerId = user.id || user.customer_id;
+                const data = await getCustomerOrders(token, customerId, activeOrderTab);
 
-    const handleUpdate = async (e) => {
+                if (data.success) {
+                    const orderList = data.data?.data || data.data || [];
+                    setOrders(Array.isArray(orderList) ? orderList : []);
+                } else {
+                    setOrders([]);
+                }
+            } catch (err) {
+                console.error("Failed to fetch orders", err);
+                setOrders([]);
+            } finally {
+                setOrdersLoading(false);
+            }
+        };
+
+        fetchOrders();
+    }, [user, token, activeSection, activeOrderTab]);
+
+    useEffect(() => {
+        const fetchCoupons = async () => {
+            if (!user || activeSection !== "coupons") return;
+
+            setCouponsLoading(true);
+            try {
+                const customerId = user.id || user.customer_id;
+                const data = await getCustomerCoupons(customerId);
+
+                if (data.success && data.data) {
+                    setCoupons(Array.isArray(data.data) ? data.data : []);
+                } else {
+                    setCoupons([]);
+                }
+            } catch (err) {
+                console.error("Failed to fetch coupons", err);
+                setCoupons([]);
+            } finally {
+                setCouponsLoading(false);
+            }
+        };
+
+        fetchCoupons();
+    }, [user, activeSection]);
+
+    const handleTrackOrder = async (e) => {
         e.preventDefault();
-        setIsUpdating(true);
-        setUpdateStatus({ message: "", type: "" });
-
-        const result = await updateProfile(formData);
-
-        if (result.success) {
-            setUpdateStatus({ message: "Profile updated successfully!", type: "success" });
-            setIsEditing(false);
-        } else {
-            setUpdateStatus({ message: result.message || "Failed to update profile.", type: "error" });
-        }
-        setIsUpdating(false);
-    };
-
-    const handlePasswordChange = (e) => {
-        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
-    }
-
-    const handlePasswordUpdate = async (e) => {
-        e.preventDefault();
-        setIsPasswordUpdating(true);
-        setPasswordStatus({ message: "", type: "" });
-
-        if (passwordData.new_password !== passwordData.new_password_confirmation) {
-            setPasswordStatus({ message: "New passwords do not match.", type: "error" });
-            setIsPasswordUpdating(false);
+        if (!trackInvoiceId.trim()) {
+            toast.error("Please enter Invoice ID");
             return;
         }
 
-        try {
-            const data = await updateCustomerPassword(token, {
-                email: user.email,
-                ...passwordData
-            });
+        setTrackLoading(true);
+        setTrackOrderData(null);
 
-            if (data.success) {
-                setPasswordStatus({ message: data.message || "Password updated successfully!", type: "success" });
-                setPasswordData({ current_password: "", new_password: "", new_password_confirmation: "" });
+        try {
+            const response = await trackOrder({ invoice_id: trackInvoiceId });
+            if (response.success && response.data?.data && response.data.data.length > 0) {
+                setTrackOrderData(response.data.data[0]);
+                toast.success("Order found!");
             } else {
-                setPasswordStatus({ message: data.message || "Failed to update password.", type: "error" });
+                toast.error("Order not found");
+                setTrackOrderData(null);
             }
         } catch (error) {
-            setPasswordStatus({ message: "An error occurred.", type: "error" });
+            console.error("Error tracking order:", error);
+            toast.error("Something went wrong");
+            setTrackOrderData(null);
         } finally {
-            setIsPasswordUpdating(false);
+            setTrackLoading(false);
         }
     };
 
-    // Helper for status badge color (same as track-order)
     const getStatusLabel = (status) => {
-        switch (Number(status)) {
-            case 1: return "Order Received";
-            case 2: return "Order Completed";
-            case 3: return "Delivery Processing";
-            case 4: return "Delivered";
-            case 5: return "Canceled";
-            case 6: return "Hold";
-            default: return "Pending";
-        }
+        const labels = { 1: "Order Processing", 2: "Order Completed", 3: "Delivery Processing", 4: "Delivered", 5: "Canceled" };
+        return labels[Number(status)] || "Pending";
     };
 
     const getStatusColor = (status) => {
-        const s = Number(status);
-        if (s === 1) return "border-blue-100 text-blue-700 bg-blue-50";
-        if (s === 2) return "border-green-100 text-green-700 bg-green-50";
-        if (s === 3) return "border-purple-100 text-purple-700 bg-purple-50";
-        if (s === 4) return "border-teal-100 text-teal-700 bg-teal-50";
-        if (s === 5) return "border-red-100 text-red-700 bg-red-50";
-        if (s === 6) return "border-orange-100 text-orange-700 bg-orange-50";
-        return "border-gray-200 text-gray-700 bg-gray-50";
+        const colors = {
+            1: "border-blue-100 text-blue-700 bg-blue-50",
+            2: "border-green-100 text-green-700 bg-green-50",
+            3: "border-purple-100 text-purple-700 bg-purple-50",
+            4: "border-teal-100 text-teal-700 bg-teal-50",
+            5: "border-red-100 text-red-700 bg-red-50",
+        };
+        return colors[Number(status)] || "border-gray-200 text-gray-700 bg-gray-50";
     };
 
     if (loading || !user) {
         return (
-            <main className="min-h-screen bg-gray-50">
-
-                <div className="flex justify-center items-center h-[60vh]">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
-                </div>
-
-            </main>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
+            </div>
         );
     }
 
+    const userName = user.first_name || user.name?.split(" ")[0] || "User";
+
     return (
-        <main className="min-h-screen bg-gray-50 font-sans">
+        <div className="min-h-screen bg-gray-50">
+            {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>}
 
-
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-16">
-                <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
-                    <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-                        <div>
-                            <h3 className="text-lg leading-6 font-medium text-gray-900">
-                                My Profile {isEditing && "- Edit Mode"}
-                            </h3>
-                            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                                Personal details and account settings.
-                            </p>
+            {/* Sidebar */}
+            <aside className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+                <div className="p-6 border-b">
+                    <Link href="/" className="flex items-center">
+                        <div className="relative h-10 w-32">
+                            <Image src="/logo.png" alt="Brand Empire" fill className="object-contain" unoptimized />
                         </div>
-                        <div className="flex gap-2">
-                            {isEditing ? (
-                                <button
-                                    onClick={() => setIsEditing(false)}
-                                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-                                >
-                                    Cancel
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-                                >
-                                    Edit Profile
-                                </button>
-                            )}
-                            <button
-                                onClick={logout}
-                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[var(--brand-royal-red)] hover:bg-red-700 focus:outline-none"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-
-                    {updateStatus.message && (
-                        <div className={`px-4 py-3 mb-2 ${updateStatus.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-                            {updateStatus.message}
-                        </div>
-                    )}
-
-                    <div className="border-t border-gray-200">
-                        {isEditing ? (
-                            <form onSubmit={handleUpdate} className="px-4 py-5 sm:px-6 space-y-4">
-                                <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                                    <div className="sm:col-span-3">
-                                        <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
-                                            First name
-                                        </label>
-                                        <div className="mt-1">
-                                            <input
-                                                type="text"
-                                                name="first_name"
-                                                id="first_name"
-                                                value={formData.first_name}
-                                                onChange={handleInputChange}
-                                                className="shadow-sm focus:ring-[var(--brand-royal-red)] focus:border-[var(--brand-royal-red)] block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="sm:col-span-3">
-                                        <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
-                                            Last name
-                                        </label>
-                                        <div className="mt-1">
-                                            <input
-                                                type="text"
-                                                name="last_name"
-                                                id="last_name"
-                                                value={formData.last_name}
-                                                onChange={handleInputChange}
-                                                className="shadow-sm focus:ring-[var(--brand-royal-red)] focus:border-[var(--brand-royal-red)] block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="sm:col-span-4">
-                                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                            Email address
-                                        </label>
-                                        <div className="mt-1">
-                                            <input
-                                                id="email"
-                                                name="email"
-                                                type="email"
-                                                value={formData.email}
-                                                onChange={handleInputChange}
-                                                className="shadow-sm focus:ring-[var(--brand-royal-red)] focus:border-[var(--brand-royal-red)] block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="sm:col-span-4">
-                                        <label htmlFor="mobile_number" className="block text-sm font-medium text-gray-700">
-                                            Mobile Number
-                                        </label>
-                                        <div className="mt-1">
-                                            <input
-                                                type="text"
-                                                name="mobile_number"
-                                                id="mobile_number"
-                                                value={formData.mobile_number}
-                                                onChange={handleInputChange}
-                                                className="shadow-sm focus:ring-[var(--brand-royal-red)] focus:border-[var(--brand-royal-red)] block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="sm:col-span-6">
-                                        <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                                            Address
-                                        </label>
-                                        <div className="mt-1">
-                                            <textarea
-                                                id="address"
-                                                name="address"
-                                                rows={3}
-                                                value={formData.address}
-                                                onChange={handleInputChange}
-                                                className="shadow-sm focus:ring-[var(--brand-royal-red)] focus:border-[var(--brand-royal-red)] block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex justify-end">
-                                    <button
-                                        type="submit"
-                                        disabled={isUpdating}
-                                        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[var(--brand-royal-red)] hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--brand-royal-red)] disabled:opacity-50"
-                                    >
-                                        {isUpdating ? "Saving..." : "Save Changes"}
-                                    </button>
-                                </div>
-                            </form>
-                        ) : (
-                            <dl>
-                                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                    <dt className="text-sm font-medium text-gray-500">
-                                        Full name
-                                    </dt>
-                                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                                        {user.first_name ? `${user.first_name} ${user.last_name || ""}` : user.name || "N/A"}
-                                    </dd>
-                                </div>
-                                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                    <dt className="text-sm font-medium text-gray-500">
-                                        Email address
-                                    </dt>
-                                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                                        {user.email || "N/A"}
-                                    </dd>
-                                </div>
-                                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                    <dt className="text-sm font-medium text-gray-500">
-                                        Phone number
-                                    </dt>
-                                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                                        {user.mobile_number || user.phone || "N/A"}
-                                    </dd>
-                                </div>
-                                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                                    <dt className="text-sm font-medium text-gray-500">
-                                        Address
-                                    </dt>
-                                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                                        {user.address || "No address provided"}
-                                    </dd>
-                                </div>
-                            </dl>
-                        )}
-                    </div>
+                    </Link>
                 </div>
 
-                {/* Change Password Section */}
-                <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
-                    <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-                        <div>
-                            <h3 className="text-lg leading-6 font-medium text-gray-900">
-                                Change Password
-                            </h3>
-                            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                                Update your account password.
-                            </p>
-                        </div>
-                        <button
-                            onClick={() => setIsPasswordExpanded(!isPasswordExpanded)}
-                            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-                        >
-                            {isPasswordExpanded ? "Cancel" : "Update Password"}
+                <nav className="p-4 space-y-1">
+                    <button onClick={() => { setActiveSection("dashboard"); setSidebarOpen(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${activeSection === "dashboard" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-700 hover:bg-gray-50"}`}>
+                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                        <span>Dashboard</span>
+                    </button>
+
+                    <div>
+                        <button onClick={() => setOrdersExpanded(!ordersExpanded)}
+                            className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            <div className="flex items-center gap-3">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+                                <span>My Orders</span>
+                            </div>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform ${ordersExpanded ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </button>
+                        {ordersExpanded && (
+                            <div className="ml-9 mt-1 space-y-1">
+                                <button onClick={() => { setActiveSection("orders"); setSidebarOpen(false); }}
+                                    className={`w-full text-left px-4 py-2 rounded-lg text-sm ${activeSection === "orders" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-600 hover:bg-gray-50"}`}>
+                                    Orders
+                                </button>
+                                <button onClick={() => { setActiveSection("tracking"); setSidebarOpen(false); }}
+                                    className={`w-full text-left px-4 py-2 rounded-lg text-sm ${activeSection === "tracking" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-600 hover:bg-gray-50"}`}>
+                                    Order Tracking
+                                </button>
+                            </div>
+                        )}
                     </div>
-                    {isPasswordExpanded && (
+
+                    <Link href="/wishlist" className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50" onClick={() => setSidebarOpen(false)}>
+                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        <span>Wishlist</span>
+                        {wishlist.length > 0 && <span className="ml-auto bg-[var(--brand-royal-red)] text-white text-xs px-2 py-0.5 rounded-full">{wishlist.length}</span>}
+                    </Link>
+
+                    <button onClick={() => { setActiveSection("coupons"); setSidebarOpen(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${activeSection === "coupons" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-700 hover:bg-gray-50"}`}>
+                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                        <span>My Coupons</span>
+                    </button>
+
+                    <button onClick={() => { setActiveSection("profile"); setSidebarOpen(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${activeSection === "profile" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-700 hover:bg-gray-50"}`}>
+                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <span>Profile Settings</span>
+                    </button>
+
+                    <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 mt-4 border-t pt-6">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        <span>Logout</span>
+                    </button>
+                </nav>
+            </aside>
+
+            {/* Main Content */}
+            <div className="lg:ml-64 min-h-screen">
+                <div className="lg:hidden flex items-center justify-between p-4 bg-white border-b sticky top-0 z-30">
+                    <button onClick={() => setSidebarOpen(true)}>
+                        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </button>
+                    <div className="relative h-8 w-24"><Image src="/logo.png" alt="Brand Empire" fill className="object-contain" unoptimized /></div>
+                    <div className="w-6"></div>
+                </div>
+
+                <div className="p-4 md:p-8 max-w-7xl mx-auto mt-16 lg:mt-0">
+                    {/* Dashboard */}
+                    {activeSection === "dashboard" && (
                         <>
-                            {passwordStatus.message && (
-                                <div className={`px-4 py-3 mb-2 ${passwordStatus.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-                                    {passwordStatus.message}
-                                </div>
-                            )}
-                            <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-                                <form onSubmit={handlePasswordUpdate} className="space-y-4">
-                                    <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                                        <div className="sm:col-span-2">
-                                            <label htmlFor="current_password" className="block text-sm font-medium text-gray-700">
-                                                Current Password
-                                            </label>
-                                            <div className="mt-1">
-                                                <input
-                                                    type="password"
-                                                    name="current_password"
-                                                    id="current_password"
-                                                    value={passwordData.current_password}
-                                                    onChange={handlePasswordChange}
-                                                    required
-                                                    className="shadow-sm focus:ring-[var(--brand-royal-red)] focus:border-[var(--brand-royal-red)] block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="sm:col-span-2">
-                                            <label htmlFor="new_password" className="block text-sm font-medium text-gray-700">
-                                                New Password
-                                            </label>
-                                            <div className="mt-1">
-                                                <input
-                                                    type="password"
-                                                    name="new_password"
-                                                    id="new_password"
-                                                    value={passwordData.new_password}
-                                                    onChange={handlePasswordChange}
-                                                    required
-                                                    className="shadow-sm focus:ring-[var(--brand-royal-red)] focus:border-[var(--brand-royal-red)] block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="sm:col-span-2">
-                                            <label htmlFor="new_password_confirmation" className="block text-sm font-medium text-gray-700">
-                                                Confirm New Password
-                                            </label>
-                                            <div className="mt-1">
-                                                <input
-                                                    type="password"
-                                                    name="new_password_confirmation"
-                                                    id="new_password_confirmation"
-                                                    value={passwordData.new_password_confirmation}
-                                                    onChange={handlePasswordChange}
-                                                    required
-                                                    className="shadow-sm focus:ring-[var(--brand-royal-red)] focus:border-[var(--brand-royal-red)] block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-end">
-                                        <button
-                                            type="submit"
-                                            disabled={isPasswordUpdating}
-                                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[var(--brand-royal-red)] hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--brand-royal-red)] disabled:opacity-50"
-                                        >
-                                            {isPasswordUpdating ? "Updating..." : "Update Password"}
+                            <div className="bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-2xl p-8 mb-8 text-white">
+                                <h1 className="text-3xl font-bold mb-2">Hello, {userName}</h1>
+                                <p className="text-white/90">Welcome back to Brand Empire</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {[
+                                    { label: "Track Orders", icon: "📦", action: () => setActiveSection("orders") },
+                                    { label: "My Wishlist", icon: "❤️", href: "/wishlist" },
+                                    { label: "Customer Service", icon: "🎧", href: "/contact" },
+                                    { label: "My Coupons", icon: "🏷️", action: () => setActiveSection("coupons") }
+                                ].map((item, i) => (
+                                    item.href ? (
+                                        <Link key={i} href={item.href} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
+                                            <div className="text-3xl mb-2">{item.icon}</div>
+                                            <p className="text-sm font-medium">{item.label}</p>
+                                        </Link>
+                                    ) : (
+                                        <button key={i} onClick={item.action} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
+                                            <div className="text-3xl mb-2">{item.icon}</div>
+                                            <p className="text-sm font-medium">{item.label}</p>
                                         </button>
-                                    </div>
-                                </form>
+                                    )
+                                ))}
                             </div>
                         </>
                     )}
-                </div>
 
-                {/* Tabbed Order History Section */}
-                <div className="bg-white shadow sm:rounded-lg">
-                    {/* Tabs Header */}
-                    <div className="border-b border-gray-200">
-                        <nav className="-mb-px flex overflow-x-auto" aria-label="Tabs">
-                            {TABS.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`${activeTab === tab.id
-                                        ? 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                        } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm flex items-center gap-2`}
-                                >
-                                    {tab.icon}
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </nav>
-                    </div>
-
-                    <div className="p-6">
-                        {ordersLoading ? (
-                            <div className="flex flex-col items-center justify-center py-12">
-                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-300"></div>
-                                <p className="mt-2 text-sm text-gray-500">Loading orders...</p>
+                    {/* Orders with Tabs */}
+                    {activeSection === "orders" && (
+                        <div className="bg-white rounded-xl shadow-sm border">
+                            <div className="p-6 border-b">
+                                <h2 className="text-2xl font-bold text-[var(--brand-royal-red)]">My Orders</h2>
                             </div>
-                        ) : orders.length > 0 ? (
-                            <div className="space-y-6">
-                                {orders.map((order) => (
-                                    <div key={order.id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden animate-fade-in hover:shadow-md transition-shadow">
-                                        {/* Order Header */}
-                                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
-                                            <div>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="font-mono text-sm font-bold text-gray-900">{order.invoice_id}</span>
-                                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${getStatusColor(order.status)}`}>
-                                                        {getStatusLabel(order.status)}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Placed on {new Date(order.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                </p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-sm font-medium text-gray-900">Total Amount</p>
-                                                <p className="text-lg font-bold text-[var(--brand-royal-red)]">৳{order.sub_total || order.total || order.paid_amount}</p>
-                                            </div>
-                                        </div>
 
-                                        <div className="p-6">
-                                            {/* Delivery Info */}
-                                            <div className="mb-6 pb-6 border-b border-gray-100">
-                                                <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Delivery Details</h4>
-                                                <div className="text-sm">
+                            <div className="border-b overflow-x-auto">
+                                <div className="flex">
+                                    {ORDER_TABS.map(tab => (
+                                        <button key={tab.id} onClick={() => setActiveOrderTab(tab.id)}
+                                            className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 ${activeOrderTab === tab.id ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+                                            {tab.icon} {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="p-6">
+                                {ordersLoading ? (
+                                    <div className="flex justify-center py-20">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
+                                    </div>
+                                ) : orders.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {orders.map(order => (
+                                            <div key={order.id} className="border rounded-lg p-6">
+                                                <div className="flex justify-between mb-4">
                                                     <div>
-                                                        <p className="text-gray-500">Address</p>
-                                                        <p className="font-medium text-gray-900">{order.delivery_customer_address}</p>
+                                                        <p className="font-mono font-bold">{order.invoice_id}</p>
+                                                        <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
+                                                            {getStatusLabel(order.status)}
+                                                        </span>
+                                                        <p className="text-lg font-bold text-[var(--brand-royal-red)] mt-2">৳{order.sub_total || order.total}</p>
                                                     </div>
                                                 </div>
+                                                <p className="text-sm text-gray-600">Items: {order.sales_details?.length || 0} • {order.delivery_customer_address}</p>
                                             </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-20 text-gray-400">
+                                        <p className="text-4xl mb-4">📦</p>
+                                        <p>No orders found in this category</p>
+                                        <p className="text-sm mt-2">Orders will appear here once you make a purchase</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
-                                            {/* Order Items */}
+                    {/* Order Tracking */}
+                    {activeSection === "tracking" && (
+                        <div className="bg-white rounded-xl shadow-sm p-6 border">
+                            <h2 className="text-2xl font-bold mb-6">Track Your Order</h2>
+                            <form onSubmit={handleTrackOrder} className="mb-8">
+                                <div className="flex gap-4">
+                                    <input type="text" value={trackInvoiceId} onChange={(e) => setTrackInvoiceId(e.target.value)}
+                                        placeholder="Enter Invoice ID" className="flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:outline-none" />
+                                    <button type="submit" disabled={trackLoading}
+                                        className="px-6 py-3 bg-[var(--brand-royal-red)] text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50">
+                                        {trackLoading ? "Searching..." : "Track"}
+                                    </button>
+                                </div>
+                            </form>
+
+                            {trackOrderData && (
+                                <div className="border rounded-lg p-6">
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div>
+                                            <p className="font-mono font-bold text-lg">{trackOrderData.invoice_id}</p>
+                                            <p className="text-sm text-gray-500">{new Date(trackOrderData.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                        </div>
+                                        <span className={`px-4 py-2 rounded-full text-sm font-bold border ${getStatusColor(trackOrderData.status)}`}>
+                                            {getStatusLabel(trackOrderData.status)}
+                                        </span>
+                                    </div>
+
+                                    <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                        <div className="space-y-4">
                                             <div>
-                                                <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Items ({order.sales_details?.length || 0})</h4>
-                                                <div className="space-y-4">
-                                                    {order.sales_details?.map((item, idx) => (
-                                                        <div key={idx} className="flex items-center gap-4 py-2">
-                                                            <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50 relative">
-                                                                {item.product_info?.image_path ? (
-                                                                    <Image
-                                                                        src={item.product_info.image_path}
-                                                                        alt={item.product_info.name || "Product"}
-                                                                        fill
-                                                                        unoptimized
-                                                                        className="object-cover"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="flex h-full w-full items-center justify-center text-gray-300">
-                                                                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                                        </svg>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <h5 className="text-sm font-medium text-gray-900 truncate" title={item.product_info?.name}>
-                                                                    {item.product_info?.name}
-                                                                </h5>
-                                                                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                                                                    <p>Qty: <span className="font-medium text-gray-900">{item.qty}</span></p>
-                                                                    {item.size && <p>Size: <span className="font-medium text-gray-900">{item.size}</span></p>}
-                                                                    {item.color && <p>Color: <span className="font-medium text-gray-900">{item.color}</span></p>}
-                                                                </div>
-                                                            </div>
-                                                            <div className="text-right text-sm font-medium text-gray-900">
-                                                                ৳{item.price}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                                <p className="text-sm font-medium text-gray-500">Customer</p>
+                                                <p className="text-sm">{trackOrderData.delivery_customer_name}</p>
+                                                <p className="text-sm">{trackOrderData.delivery_customer_phone}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-500">Delivery Address</p>
+                                                <p className="text-sm">{trackOrderData.delivery_customer_address}</p>
                                             </div>
                                         </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500">Total Amount</p>
+                                            <p className="text-2xl font-bold text-[var(--brand-royal-red)]">৳{trackOrderData.total || trackOrderData.sub_total}</p>
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-12 text-center">
-                                <div className="h-16 w-16 text-gray-300 mb-4 bg-gray-50 rounded-lg p-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                    </svg>
+
+                                    <div className="border-t pt-6">
+                                        <h3 className="font-semibold mb-4">Order Items</h3>
+                                        <div className="space-y-3">
+                                            {trackOrderData.sales_details?.map((item, i) => (
+                                                <div key={i} className="flex items-center gap-4">
+                                                    <div className="w-16 h-16 bg-gray-100 rounded relative">
+                                                        {item.product_info?.image_path && <Image src={item.product_info.image_path} alt={item.product_info.name} fill className="object-cover rounded" unoptimized />}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-sm">{item.product_info?.name}</p>
+                                                        <p className="text-xs text-gray-500">Qty: {item.qty} {item.size && `• Size: ${item.size}`}</p>
+                                                    </div>
+                                                    <p className="font-medium">৳{item.price * item.qty}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                                <h3 className="text-sm font-medium text-gray-900">No orders found in this category.</h3>
-                                <p className="mt-1 text-sm text-gray-500">Orders will appear here once you make a purchase.</p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Coupons */}
+                    {activeSection === "coupons" && (
+                        <div className="bg-white rounded-xl shadow-sm p-6 border">
+                            <h2 className="text-2xl font-bold mb-6">My Coupons</h2>
+                            {couponsLoading ? (
+                                <div className="flex justify-center py-20">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
+                                </div>
+                            ) : coupons.length > 0 ? (
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {coupons.map(coupon => (
+                                        <div key={coupon.customer_coupon_id} className="border-2 border-dashed border-[var(--brand-royal-red)] rounded-lg p-6 bg-red-50/30">
+                                            <p className="text-2xl font-bold text-[var(--brand-royal-red)] mb-1">৳{coupon.amount} OFF</p>
+                                            <p className="text-xs text-gray-600 mb-3">Min. order: ৳{coupon.minimum_order_amount}</p>
+                                            <div className="bg-white rounded px-4 py-2 border mb-3">
+                                                <p className="font-mono text-sm font-bold text-center">{coupon.coupon_code}</p>
+                                            </div>
+                                            <p className="text-xs text-gray-600">Expires: {new Date(coupon.expire_date).toLocaleDateString()}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 text-gray-400">
+                                    <p className="text-4xl mb-4">🏷️</p>
+                                    <p>No coupons available</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Profile */}
+                    {activeSection === "profile" && (
+                        <div className="bg-white rounded-xl shadow-sm p-6 border">
+                            <h2 className="text-2xl font-bold mb-6">Profile Settings</h2>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div><label className="block text-sm font-medium text-gray-700 mb-2">Name</label><p>{user.name || "N/A"}</p></div>
+                                <div><label className="block text-sm font-medium text-gray-700 mb-2">Email</label><p>{user.email || "N/A"}</p></div>
+                                <div><label className="block text-sm font-medium text-gray-700 mb-2">Phone</label><p>{user.mobile_number || user.phone || "N/A"}</p></div>
+                                <div><label className="block text-sm font-medium text-gray-700 mb-2">Address</label><p>{user.address || "No address"}</p></div>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
-
-        </main>
+        </div>
     );
 }

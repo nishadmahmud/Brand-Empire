@@ -166,9 +166,22 @@ export default function AddressSelect({
                         borderRadius: '0.5rem',
                         borderColor: state.isFocused ? 'var(--brand-royal-red)' : '#e5e7eb',
                         boxShadow: state.isFocused ? '0 0 0 1px var(--brand-royal-red)' : 'none',
+                        fontSize: '16px',
                         '&:hover': {
                             borderColor: '#d1d5db'
                         }
+                    }),
+                    input: (base) => ({
+                        ...base,
+                        fontSize: '16px',
+                    }),
+                    placeholder: (base) => ({
+                        ...base,
+                        fontSize: '16px',
+                    }),
+                    singleValue: (base) => ({
+                        ...base,
+                        fontSize: '16px',
                     }),
                     multiValue: (base) => ({
                         ...base,

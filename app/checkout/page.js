@@ -343,6 +343,7 @@ export default function CheckoutPage() {
                                                     onChange={handleChange}
                                                     className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
                                                     placeholder="John Doe"
+                                                    style={{ fontSize: '16px' }}
                                                 />
                                             </div>
                                         </div>
@@ -363,6 +364,7 @@ export default function CheckoutPage() {
                                                     onChange={handleChange}
                                                     className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
                                                     placeholder="01XXXXXXXXX"
+                                                    style={{ fontSize: '16px' }}
                                                 />
                                             </div>
                                             {formData.phone && !/^01[3-9]\d{8}$/.test(formData.phone) && (
@@ -396,6 +398,7 @@ export default function CheckoutPage() {
                                                     onChange={handleChange}
                                                     className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
                                                     placeholder="email@example.com"
+                                                    style={{ fontSize: '16px' }}
                                                 />
                                             </div>
                                         </div>
@@ -423,6 +426,7 @@ export default function CheckoutPage() {
                                                 onChange={handleChange}
                                                 className="block w-full rounded-lg border border-gray-200 bg-gray-50 py-3 pl-3 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
                                                 placeholder="Street address, house number, landmarks..."
+                                                style={{ fontSize: '16px' }}
                                             />
                                         </div>
                                     </div>
@@ -582,10 +586,17 @@ export default function CheckoutPage() {
                                                         setCouponCode(e.target.value.toUpperCase());
                                                         setCouponError("");
                                                     }}
-                                                    className={`flex-1 rounded-md border px-3 py-2 text-xs focus:outline-none ${couponError
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && !couponLoading && couponCode.trim()) {
+                                                            e.preventDefault();
+                                                            handleApplyCoupon();
+                                                        }
+                                                    }}
+                                                    className={`flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none ${couponError
                                                         ? "border-red-300 bg-red-50 focus:border-red-500"
                                                         : "border-gray-200 bg-gray-50 focus:border-black"
                                                         }`}
+                                                    style={{ fontSize: '16px' }}
                                                 />
                                                 <button
                                                     onClick={handleApplyCoupon}
