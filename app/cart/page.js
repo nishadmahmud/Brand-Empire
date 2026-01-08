@@ -26,6 +26,11 @@ const CartPage = () => {
 
     const [openSizeModal, setOpenSizeModal] = React.useState(null); // stores item ID to show modal for
 
+    // Format price helper function
+    const formatPrice = (amount) => {
+        return `TK ${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
     // Helper to calculate total MRP (Selected Items Only)
     const getTotalMRP = () => {
         return cartItems.reduce((total, item) => {
@@ -184,9 +189,9 @@ const CartPage = () => {
 
                                             {/* Price */}
                                             <div className="flex items-center gap-2 mb-1">
-                                                <span className="font-bold text-sm text-gray-900">৳{(item.price * item.quantity).toLocaleString()}</span>
+                                                <span className="font-bold text-sm text-gray-900">{formatPrice(item.price * item.quantity)}</span>
                                                 {item.originalPrice && (
-                                                    <span className="text-xs text-gray-400 line-through">৳{(item.originalPrice * item.quantity).toLocaleString()}</span>
+                                                    <span className="text-xs text-gray-400 line-through">{formatPrice(item.originalPrice * item.quantity)}</span>
                                                 )}
                                                 {item.discount && (
                                                     <span className="text-xs text-[var(--brand-royal-red)] font-bold">{item.discount}% OFF</span>
@@ -240,11 +245,11 @@ const CartPage = () => {
                             <div className="space-y-3 mb-4 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Total MRP</span>
-                                    <span className="text-gray-900">৳{totalMRP.toLocaleString()}</span>
+                                    <span className="text-gray-900">{formatPrice(totalMRP)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Discount on MRP</span>
-                                    <span className="text-green-600">-৳{totalDiscount.toLocaleString()}</span>
+                                    <span className="text-green-600">-{formatPrice(totalDiscount)}</span>
                                 </div>
                                 {/* Coupon Discount Skipped as requested */}
                                 <div className="flex justify-between">
@@ -256,7 +261,7 @@ const CartPage = () => {
                             <div className="border-t border-gray-200 pt-4 mb-4">
                                 <div className="flex justify-between items-center">
                                     <span className="font-bold text-gray-900">Total Amount</span>
-                                    <span className="font-bold text-gray-900 text-lg">৳{subTotal.toLocaleString()}</span>
+                                    <span className="font-bold text-gray-900 text-lg">{formatPrice(subTotal)}</span>
                                 </div>
                             </div>
 
@@ -311,7 +316,7 @@ const CartPage = () => {
                             <div>
                                 <p className="font-bold text-sm text-gray-900">{openSizeModal.brand}</p>
                                 <p className="text-xs text-gray-500 line-clamp-1">{openSizeModal.name}</p>
-                                <p className="font-bold text-sm mt-1">৳{openSizeModal.price}</p>
+                                <p className="font-bold text-sm mt-1">{formatPrice(openSizeModal.price)}</p>
                             </div>
                         </div>
 

@@ -27,6 +27,11 @@ export default function CheckoutPage() {
 
     const subTotal = getSubtotal();
 
+    // Format price helper function
+    const formatPrice = (amount) => {
+        return `TK ${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
     // We'll manage district/city separately now
     const [selectedDistrict, setSelectedDistrict] = useState(null);
     const [selectedCity, setSelectedCity] = useState(null);
@@ -125,7 +130,7 @@ export default function CheckoutPage() {
                     // Check minimum order amount
                     const minOrderAmount = parseFloat(matchingCoupon.minimum_order_amount) || 0;
                     if (minOrderAmount > 0 && subTotal < minOrderAmount) {
-                        setCouponError(`Minimum order amount is ৳${minOrderAmount}`);
+                        setCouponError(`Minimum order amount is ${formatPrice(minOrderAmount)}`);
                         setCouponDiscount(0);
                         setAppliedCoupon(null);
                         return;
@@ -147,7 +152,7 @@ export default function CheckoutPage() {
 
                     setCouponDiscount(discount);
                     setAppliedCoupon(matchingCoupon);
-                    toast.success(`Coupon applied! You saved ৳${discount}`);
+                    toast.success(`Coupon applied! You saved ${formatPrice(discount)}`);
                 } else {
                     setCouponError("Invalid coupon code");
                     setCouponDiscount(0);
@@ -511,7 +516,7 @@ export default function CheckoutPage() {
                                                         {item.name}
                                                     </h3>
                                                     <p className="text-sm font-semibold text-gray-900">
-                                                        ৳{item.price * item.quantity}
+                                                        {formatPrice(item.price * item.quantity)}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center justify-between text-xs text-gray-500">
@@ -527,7 +532,7 @@ export default function CheckoutPage() {
                                 <div className="mb-6 space-y-3 border-t border-gray-100 pt-4">
                                     <div className="flex justify-between text-sm text-gray-600">
                                         <span>Subtotal</span>
-                                        <span>৳{subTotal}</span>
+                                        <span>{formatPrice(subTotal)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-gray-600">
                                         <span>Delivery ({
@@ -539,16 +544,16 @@ export default function CheckoutPage() {
                                                     : "Outside Dhaka"
                                                 : "Pending"
                                         })</span>
-                                        <span>৳{deliveryFee}</span>
+                                        <span>{formatPrice(deliveryFee)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-gray-600">
                                         <span>Discount</span>
-                                        <span className="text-red-500">-৳{couponDiscount}</span>
+                                        <span className="text-red-500">-{formatPrice(couponDiscount)}</span>
                                     </div>
                                     {donationAmount > 0 && (
                                         <div className="flex justify-between text-sm text-[var(--brand-royal-red)] font-medium">
                                             <span>Donation</span>
-                                            <span>+৳{donationAmount}</span>
+                                            <span>+{formatPrice(donationAmount)}</span>
                                         </div>
                                     )}
                                     {/* Coupon Input UI */}
@@ -600,7 +605,7 @@ export default function CheckoutPage() {
                                     {couponDiscount > 0 && (
                                         <div className="flex justify-between text-sm text-green-600">
                                             <span>Coupon Discount</span>
-                                            <span>-৳{couponDiscount}</span>
+                                            <span>-{formatPrice(couponDiscount)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -650,7 +655,7 @@ export default function CheckoutPage() {
                                         Grand Total
                                     </span>
                                     <span className="text-xl font-bold text-gray-900">
-                                        ৳{grandTotal}
+                                        {formatPrice(grandTotal)}
                                     </span>
                                 </div>
 
