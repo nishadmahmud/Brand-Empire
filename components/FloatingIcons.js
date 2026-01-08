@@ -2,16 +2,32 @@
 
 import React, { useState } from "react";
 import { Copy, X } from "lucide-react";
-import { useToast } from "@/context/ToastContext";
+import toast from "react-hot-toast";
 
 const FloatingIcons = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const { showToast } = useToast();
+    const [isCopied, setIsCopied] = useState(false);
     const couponCode = "OFF500";
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(couponCode);
-        showToast("Coupon code copied to clipboard!", "success");
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(couponCode);
+            setIsCopied(true);
+            toast.success("Coupon code copied to clipboard!");
+            // Reset after 3 seconds
+            setTimeout(() => {
+                setIsCopied(false);
+            }, 3000);
+        } catch (error) {
+            console.error("Failed to copy:", error);
+            toast.error("Failed to copy coupon code");
+        }
+    };
+
+    // Reset copied state when modal closes
+    const handleClose = () => {
+        setIsOpen(false);
+        setIsCopied(false);
     };
 
     return (
@@ -30,7 +46,7 @@ const FloatingIcons = () => {
             >
                 <div className="bg-gradient-to-r from-pink-100 to-orange-100 p-4 md:p-6 relative overflow-y-auto">
                     <button
-                        onClick={() => setIsOpen(false)}
+                        onClick={handleClose}
                         className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 z-10"
                     >
                         <X size={18} className="md:w-5 md:h-5" />
@@ -49,10 +65,25 @@ const FloatingIcons = () => {
 
                     <button
                         onClick={handleCopy}
-                        className="w-full py-2 md:py-2.5 bg-[var(--brand-royal-red)] text-white font-bold rounded hover:bg-red-700 transition flex items-center justify-center gap-2 text-xs md:text-sm"
+                        className={`w-full py-2 md:py-2.5 font-bold rounded transition flex items-center justify-center gap-2 text-xs md:text-sm ${
+                            isCopied 
+                                ? 'bg-green-600 text-white hover:bg-green-700' 
+                                : 'bg-[var(--brand-royal-red)] text-white hover:bg-red-700'
+                        }`}
                     >
-                        <Copy size={14} className="md:w-4 md:h-4" />
-                        COPY CODE
+                        {isCopied ? (
+                            <>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:w-4 md:h-4">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                COPIED
+                            </>
+                        ) : (
+                            <>
+                                <Copy size={14} className="md:w-4 md:h-4" />
+                                COPY CODE
+                            </>
+                        )}
                     </button>
                 </div>
 

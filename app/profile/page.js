@@ -4,17 +4,19 @@ import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCustomerOrders, getCustomerCoupons, trackOrder } from "@/lib/api";
+import { getCustomerOrders, getCustomerCoupons, trackOrder, updateCustomerProfile } from "@/lib/api";
 import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { Home, Package, Heart, Tag, User, LogOut, ChevronDown, Clock, CheckCircle, Truck, PackageCheck, XCircle } from "lucide-react";
+
 
 const ORDER_TABS = [
-    { id: "1", label: "Order Processing", icon: "⏱️" },
-    { id: "2", label: "Order Completed", icon: "✅" },
-    { id: "3", label: "Delivery Processing", icon: "🚚" },
-    { id: "4", label: "Delivery Completed", icon: "📦" },
-    { id: "5", label: "Delivery Canceled", icon: "❌" },
+    { id: "1", label: "Order Processing", Icon: Clock },
+    { id: "2", label: "Order Completed", Icon: CheckCircle },
+    { id: "3", label: "Delivery Processing", Icon: Truck },
+    { id: "4", label: "Delivery Completed", Icon: PackageCheck },
+    { id: "5", label: "Delivery Canceled", Icon: XCircle },
 ];
 
 export default function ProfileDashboard() {
@@ -31,6 +33,18 @@ export default function ProfileDashboard() {
     const [coupons, setCoupons] = useState([]);
     const [couponsLoading, setCouponsLoading] = useState(false);
 
+    // Profile editing states
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({
+        id: "",
+        first_name: "",
+        last_name: "",
+        email: "",
+        mobile_number: "",
+        address: ""
+    });
+    const [isUpdating, setIsUpdating] = useState(false);
+
     // Track order states
     const [trackInvoiceId, setTrackInvoiceId] = useState("");
     const [trackOrderData, setTrackOrderData] = useState(null);
@@ -39,8 +53,46 @@ export default function ProfileDashboard() {
     useEffect(() => {
         if (!loading && !user) {
             router.push("/");
+        } else if (user) {
+            let first = user.first_name || "";
+            let last = user.last_name || "";
+            if (!first && user.name) {
+                const parts = user.name.split(" ");
+                first = parts[0];
+                last = parts.slice(1).join(" ");
+            }
+
+            setFormData({
+                id: user.id || user.customer_id,
+                first_name: first,
+                last_name: last,
+                email: user.email || "",
+                mobile_number: user.mobile_number || user.phone || "",
+                address: user.address || ""
+            });
         }
     }, [user, loading, router]);
+
+    const handleProfileUpdate = async (e) => {
+        e.preventDefault();
+        setIsUpdating(true);
+
+        try {
+            const data = await updateCustomerProfile(token, formData);
+            if (data.success) {
+                toast.success("Profile updated successfully!");
+                setIsEditing(false);
+                // Optionally refresh user data here
+            } else {
+                toast.error(data.message || "Failed to update profile");
+            }
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            toast.error("Something went wrong");
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -148,279 +200,435 @@ export default function ProfileDashboard() {
     const userName = user.first_name || user.name?.split(" ")[0] || "User";
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>}
+        <div className="min-h-screen bg-gray-50 pt-16 md:pt-20">
+            <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">
+                {/* Mobile Menu Button */}
+                <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="lg:hidden mb-4 flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border"
+                >
+                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                    <span className="font-medium text-sm">Menu</span>
+                </button>
 
-            {/* Sidebar */}
-            <aside className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-                <div className="p-6 border-b">
-                    <Link href="/" className="flex items-center">
-                        <div className="relative h-10 w-32">
-                            <Image src="/logo.png" alt="Brand Empire" fill className="object-contain" unoptimized />
-                        </div>
-                    </Link>
-                </div>
-
-                <nav className="p-4 space-y-1">
-                    <button onClick={() => { setActiveSection("dashboard"); setSidebarOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${activeSection === "dashboard" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-700 hover:bg-gray-50"}`}>
-                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                        <span>Dashboard</span>
-                    </button>
-
-                    <div>
-                        <button onClick={() => setOrdersExpanded(!ordersExpanded)}
-                            className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-                            <div className="flex items-center gap-3">
-                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
-                                <span>My Orders</span>
-                            </div>
-                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform ${ordersExpanded ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9"></polyline></svg>
-                        </button>
-                        {ordersExpanded && (
-                            <div className="ml-9 mt-1 space-y-1">
-                                <button onClick={() => { setActiveSection("orders"); setSidebarOpen(false); }}
-                                    className={`w-full text-left px-4 py-2 rounded-lg text-sm ${activeSection === "orders" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-600 hover:bg-gray-50"}`}>
-                                    Orders
-                                </button>
-                                <button onClick={() => { setActiveSection("tracking"); setSidebarOpen(false); }}
-                                    className={`w-full text-left px-4 py-2 rounded-lg text-sm ${activeSection === "tracking" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-600 hover:bg-gray-50"}`}>
-                                    Order Tracking
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    <Link href="/wishlist" className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50" onClick={() => setSidebarOpen(false)}>
-                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                        <span>Wishlist</span>
-                        {wishlist.length > 0 && <span className="ml-auto bg-[var(--brand-royal-red)] text-white text-xs px-2 py-0.5 rounded-full">{wishlist.length}</span>}
-                    </Link>
-
-                    <button onClick={() => { setActiveSection("coupons"); setSidebarOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${activeSection === "coupons" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-700 hover:bg-gray-50"}`}>
-                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                        <span>My Coupons</span>
-                    </button>
-
-                    <button onClick={() => { setActiveSection("profile"); setSidebarOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${activeSection === "profile" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-700 hover:bg-gray-50"}`}>
-                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        <span>Profile Settings</span>
-                    </button>
-
-                    <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 mt-4 border-t pt-6">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        <span>Logout</span>
-                    </button>
-                </nav>
-            </aside>
-
-            {/* Main Content */}
-            <div className="lg:ml-64 min-h-screen">
-                <div className="lg:hidden flex items-center justify-between p-4 bg-white border-b sticky top-0 z-30">
-                    <button onClick={() => setSidebarOpen(true)}>
-                        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-                    </button>
-                    <div className="relative h-8 w-24"><Image src="/logo.png" alt="Brand Empire" fill className="object-contain" unoptimized /></div>
-                    <div className="w-6"></div>
-                </div>
-
-                <div className="p-4 md:p-8 max-w-7xl mx-auto mt-16 lg:mt-0">
-                    {/* Dashboard */}
-                    {activeSection === "dashboard" && (
-                        <>
-                            <div className="bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-2xl p-8 mb-8 text-white">
-                                <h1 className="text-3xl font-bold mb-2">Hello, {userName}</h1>
-                                <p className="text-white/90">Welcome back to Brand Empire</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {[
-                                    { label: "Track Orders", icon: "📦", action: () => setActiveSection("orders") },
-                                    { label: "My Wishlist", icon: "❤️", href: "/wishlist" },
-                                    { label: "Customer Service", icon: "🎧", href: "/contact" },
-                                    { label: "My Coupons", icon: "🏷️", action: () => setActiveSection("coupons") }
-                                ].map((item, i) => (
-                                    item.href ? (
-                                        <Link key={i} href={item.href} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
-                                            <div className="text-3xl mb-2">{item.icon}</div>
-                                            <p className="text-sm font-medium">{item.label}</p>
-                                        </Link>
-                                    ) : (
-                                        <button key={i} onClick={item.action} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
-                                            <div className="text-3xl mb-2">{item.icon}</div>
-                                            <p className="text-sm font-medium">{item.label}</p>
-                                        </button>
-                                    )
-                                ))}
-                            </div>
-                        </>
-                    )}
-
-                    {/* Orders with Tabs */}
-                    {activeSection === "orders" && (
-                        <div className="bg-white rounded-xl shadow-sm border">
+                <div className="flex gap-6">
+                    {/* Sidebar (visible on desktop, toggleable on mobile) */}
+                    <aside className={`${sidebarOpen ? 'block' : 'hidden'} lg:block w-64 flex-shrink-0`}>
+                        <div className="bg-white rounded-xl shadow-sm border sticky top-24">
                             <div className="p-6 border-b">
-                                <h2 className="text-2xl font-bold text-[var(--brand-royal-red)]">My Orders</h2>
+                                <Link href="/" className="flex items-center">
+                                    <div className="relative h-10 w-32">
+                                        <Image src="/logo.png" alt="Brand Empire" fill className="object-contain" unoptimized />
+                                    </div>
+                                </Link>
                             </div>
 
-                            <div className="border-b overflow-x-auto">
-                                <div className="flex">
-                                    {ORDER_TABS.map(tab => (
-                                        <button key={tab.id} onClick={() => setActiveOrderTab(tab.id)}
-                                            className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 ${activeOrderTab === tab.id ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-                                            {tab.icon} {tab.label}
-                                        </button>
+                            <nav className="p-4 space-y-2">
+                                <button onClick={() => { setActiveSection("dashboard"); setSidebarOpen(false); }}
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSection === "dashboard" ? "bg-red-50 text-[var(--brand-royal-red)] shadow-sm" : "text-gray-700 hover:bg-gray-50"}`}>
+                                    <Home size={20} />
+                                    <span>Dashboard</span>
+                                </button>
+
+                                <div>
+                                    <button onClick={() => setOrdersExpanded(!ordersExpanded)}
+                                        className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <Package size={20} />
+                                            <span>My Orders</span>
+                                        </div>
+                                        <ChevronDown size={18} className={`transition-transform ${ordersExpanded ? "rotate-180" : ""}`} />
+                                    </button>
+                                    {ordersExpanded && (
+                                        <div className="ml-9 mt-1 space-y-1">
+                                            <button onClick={() => { setActiveSection("orders"); setSidebarOpen(false); }}
+                                                className={`w-full text-left px-4 py-2 rounded-lg text-sm ${activeSection === "orders" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-600 hover:bg-gray-50"}`}>
+                                                Orders
+                                            </button>
+                                            <button onClick={() => { setActiveSection("tracking"); setSidebarOpen(false); }}
+                                                className={`w-full text-left px-4 py-2 rounded-lg text-sm ${activeSection === "tracking" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-600 hover:bg-gray-50"}`}>
+                                                Order Tracking
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button onClick={() => { setActiveSection("wishlist"); setSidebarOpen(false); }}
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSection === "wishlist" ? "bg-red-50 text-[var(--brand-royal-red)] shadow-sm" : "text-gray-700 hover:bg-gray-50"}`}>
+                                    <Heart size={20} />
+                                    <span>Wishlist</span>
+                                    {wishlist.length > 0 && <span className="ml-auto bg-[var(--brand-royal-red)] text-white text-xs px-2 py-0.5 rounded-full font-semibold">{wishlist.length}</span>}
+                                </button>
+
+                                <button onClick={() => { setActiveSection("coupons"); setSidebarOpen(false); }}
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSection === "coupons" ? "bg-red-50 text-[var(--brand-royal-red)] shadow-sm" : "text-gray-700 hover:bg-gray-50"}`}>
+                                    <Tag size={20} />
+                                    <span>My Coupons</span>
+                                </button>
+
+                                <button onClick={() => { setActiveSection("profile"); setSidebarOpen(false); }}
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSection === "profile" ? "bg-red-50 text-[var(--brand-royal-red)] shadow-sm" : "text-gray-700 hover:bg-gray-50"}`}>
+                                    <User size={20} />
+                                    <span>Profile Settings</span>
+                                </button>
+
+                                <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all mt-4 border-t pt-6">
+                                    <LogOut size={20} />
+                                    <span>Logout</span>
+                                </button>
+                            </nav>
+                        </div>
+                    </aside>
+
+                    {/* Main Content Area */}
+                    <div className="flex-1">
+                        {/* Dashboard */}
+                        {activeSection === "dashboard" && (
+                            <>
+                                <div className="bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-2xl p-8 mb-8 text-white">
+                                    <h1 className="text-3xl font-bold mb-2">Hello, {userName}</h1>
+                                    <p className="text-white/90">Welcome back to Brand Empire</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {[
+                                        { label: "Track Orders", icon: "📦", action: () => setActiveSection("orders") },
+                                        { label: "My Wishlist", icon: "❤️", href: "/wishlist" },
+                                        { label: "Customer Service", icon: "🎧", href: "/contact" },
+                                        { label: "My Coupons", icon: "🏷️", action: () => setActiveSection("coupons") }
+                                    ].map((item, i) => (
+                                        item.href ? (
+                                            <Link key={i} href={item.href} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
+                                                <div className="text-3xl mb-2">{item.icon}</div>
+                                                <p className="text-sm font-medium">{item.label}</p>
+                                            </Link>
+                                        ) : (
+                                            <button key={i} onClick={item.action} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
+                                                <div className="text-3xl mb-2">{item.icon}</div>
+                                                <p className="text-sm font-medium">{item.label}</p>
+                                            </button>
+                                        )
                                     ))}
                                 </div>
-                            </div>
+                            </>
+                        )}
 
-                            <div className="p-6">
-                                {ordersLoading ? (
+                        {/* Orders with Tabs */}
+                        {activeSection === "orders" && (
+                            <div className="bg-white rounded-xl shadow-sm border">
+                                <div className="p-6 border-b">
+                                    <h2 className="text-2xl font-bold text-[var(--brand-royal-red)]">My Orders</h2>
+                                </div>
+
+                                <div className="border-b overflow-x-auto">
+                                    <div className="flex">
+                                        {ORDER_TABS.map(tab => {
+                                            const IconComponent = tab.Icon;
+                                            return (
+                                                <button key={tab.id} onClick={() => setActiveOrderTab(tab.id)}
+                                                    className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeOrderTab === tab.id ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-red-50/30" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}>
+                                                    <IconComponent size={18} />
+                                                    {tab.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="p-6">
+                                    {ordersLoading ? (
+                                        <div className="flex justify-center py-20">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
+                                        </div>
+                                    ) : orders.length > 0 ? (
+                                        <div className="space-y-4">
+                                            {orders.map(order => (
+                                                <div key={order.id} className="border rounded-lg p-6">
+                                                    <div className="flex justify-between mb-4">
+                                                        <div>
+                                                            <p className="font-mono font-bold">{order.invoice_id}</p>
+                                                            <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
+                                                                {getStatusLabel(order.status)}
+                                                            </span>
+                                                            <p className="text-lg font-bold text-[var(--brand-royal-red)] mt-2">৳{order.sub_total || order.total}</p>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600">Items: {order.sales_details?.length || 0} • {order.delivery_customer_address}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-20 text-gray-400">
+                                            <p className="text-4xl mb-4">📦</p>
+                                            <p>No orders found in this category</p>
+                                            <p className="text-sm mt-2">Orders will appear here once you make a purchase</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Order Tracking */}
+                        {activeSection === "tracking" && (
+                            <div className="bg-white rounded-xl shadow-sm p-6 border">
+                                <h2 className="text-2xl font-bold mb-6">Track Your Order</h2>
+                                <form onSubmit={handleTrackOrder} className="mb-8">
+                                    <div className="flex gap-4">
+                                        <input type="text" value={trackInvoiceId} onChange={(e) => setTrackInvoiceId(e.target.value)}
+                                            placeholder="Enter Invoice ID" className="flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:outline-none" />
+                                        <button type="submit" disabled={trackLoading}
+                                            className="px-6 py-3 bg-[var(--brand-royal-red)] text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50">
+                                            {trackLoading ? "Searching..." : "Track"}
+                                        </button>
+                                    </div>
+                                </form>
+
+                                {trackOrderData && (
+                                    <div className="border rounded-lg p-6">
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div>
+                                                <p className="font-mono font-bold text-lg">{trackOrderData.invoice_id}</p>
+                                                <p className="text-sm text-gray-500">{new Date(trackOrderData.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                            </div>
+                                            <span className={`px-4 py-2 rounded-full text-sm font-bold border ${getStatusColor(trackOrderData.status)}`}>
+                                                {getStatusLabel(trackOrderData.status)}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-500">Customer</p>
+                                                    <p className="text-sm">{trackOrderData.delivery_customer_name}</p>
+                                                    <p className="text-sm">{trackOrderData.delivery_customer_phone}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-500">Delivery Address</p>
+                                                    <p className="text-sm">{trackOrderData.delivery_customer_address}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-500">Total Amount</p>
+                                                <p className="text-2xl font-bold text-[var(--brand-royal-red)]">৳{trackOrderData.total || trackOrderData.sub_total}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t pt-6">
+                                            <h3 className="font-semibold mb-4">Order Items</h3>
+                                            <div className="space-y-3">
+                                                {trackOrderData.sales_details?.map((item, i) => (
+                                                    <div key={i} className="flex items-center gap-4">
+                                                        <div className="w-16 h-16 bg-gray-100 rounded relative">
+                                                            {item.product_info?.image_path && <Image src={item.product_info.image_path} alt={item.product_info.name} fill className="object-cover rounded" unoptimized />}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-medium text-sm">{item.product_info?.name}</p>
+                                                            <p className="text-xs text-gray-500">Qty: {item.qty} {item.size && `• Size: ${item.size}`}</p>
+                                                        </div>
+                                                        <p className="font-medium">৳{item.price * item.qty}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Wishlist */}
+                        {activeSection === "wishlist" && (
+                            <div className="bg-white rounded-xl shadow-sm p-6 border">
+                                <h2 className="text-2xl font-bold mb-6">My Wishlist</h2>
+                                {wishlist.length > 0 ? (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        {wishlist.map((product) => (
+                                            <Link key={product.id} href={`/product/${product.slug}`} className="group">
+                                                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                                                    <div className="relative aspect-square bg-gray-100">
+                                                        <Image
+                                                            src={product.image}
+                                                            alt={product.name}
+                                                            fill
+                                                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                            unoptimized
+                                                        />
+                                                    </div>
+                                                    <div className="p-3">
+                                                        <h3 className="font-medium text-sm text-gray-900 line-clamp-2 mb-1">
+                                                            {product.name}
+                                                        </h3>
+                                                        <p className="text-xs text-gray-500 mb-2">{product.brand}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-sm text-gray-900">৳{product.price}</span>
+                                                            {product.originalPrice && (
+                                                                <span className="text-xs text-gray-400 line-through">৳{product.originalPrice}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-20 text-gray-400">
+                                        <Heart size={64} className="mx-auto mb-4 text-gray-300" />
+                                        <h3 className="text-lg font-medium text-gray-900 mb-2">Your Wishlist is Empty</h3>
+                                        <p className="mb-6">Save items you love to your wishlist</p>
+                                        <Link href="/" className="inline-block bg-[var(--brand-royal-red)] text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                                            Start Shopping
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Coupons */}
+                        {activeSection === "coupons" && (
+                            <div className="bg-white rounded-xl shadow-sm p-6 border">
+                                <h2 className="text-2xl font-bold mb-6">My Coupons</h2>
+                                {couponsLoading ? (
                                     <div className="flex justify-center py-20">
                                         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
                                     </div>
-                                ) : orders.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {orders.map(order => (
-                                            <div key={order.id} className="border rounded-lg p-6">
-                                                <div className="flex justify-between mb-4">
-                                                    <div>
-                                                        <p className="font-mono font-bold">{order.invoice_id}</p>
-                                                        <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
-                                                            {getStatusLabel(order.status)}
-                                                        </span>
-                                                        <p className="text-lg font-bold text-[var(--brand-royal-red)] mt-2">৳{order.sub_total || order.total}</p>
-                                                    </div>
+                                ) : coupons.length > 0 ? (
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        {coupons.map(coupon => (
+                                            <div key={coupon.customer_coupon_id} className="border-2 border-dashed border-[var(--brand-royal-red)] rounded-lg p-6 bg-red-50/30">
+                                                <p className="text-2xl font-bold text-[var(--brand-royal-red)] mb-1">৳{coupon.amount} OFF</p>
+                                                <p className="text-xs text-gray-600 mb-3">Min. order: ৳{coupon.minimum_order_amount}</p>
+                                                <div className="bg-white rounded px-4 py-2 border mb-3">
+                                                    <p className="font-mono text-sm font-bold text-center">{coupon.coupon_code}</p>
                                                 </div>
-                                                <p className="text-sm text-gray-600">Items: {order.sales_details?.length || 0} • {order.delivery_customer_address}</p>
+                                                <p className="text-xs text-gray-600">Expires: {new Date(coupon.expire_date).toLocaleDateString()}</p>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
                                     <div className="text-center py-20 text-gray-400">
-                                        <p className="text-4xl mb-4">📦</p>
-                                        <p>No orders found in this category</p>
-                                        <p className="text-sm mt-2">Orders will appear here once you make a purchase</p>
+                                        <p className="text-4xl mb-4">🏷️</p>
+                                        <p>No coupons available</p>
                                     </div>
                                 )}
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Order Tracking */}
-                    {activeSection === "tracking" && (
-                        <div className="bg-white rounded-xl shadow-sm p-6 border">
-                            <h2 className="text-2xl font-bold mb-6">Track Your Order</h2>
-                            <form onSubmit={handleTrackOrder} className="mb-8">
-                                <div className="flex gap-4">
-                                    <input type="text" value={trackInvoiceId} onChange={(e) => setTrackInvoiceId(e.target.value)}
-                                        placeholder="Enter Invoice ID" className="flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:outline-none" />
-                                    <button type="submit" disabled={trackLoading}
-                                        className="px-6 py-3 bg-[var(--brand-royal-red)] text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50">
-                                        {trackLoading ? "Searching..." : "Track"}
-                                    </button>
+                        {/* Profile */}
+                        {activeSection === "profile" && (
+                            <div className="bg-white rounded-xl shadow-sm p-6 border">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold">Profile Settings</h2>
+                                    {!isEditing && (
+                                        <button
+                                            onClick={() => setIsEditing(true)}
+                                            className="px-4 py-2 bg-[var(--brand-royal-red)] text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                                        >
+                                            Edit Profile
+                                        </button>
+                                    )}
                                 </div>
-                            </form>
 
-                            {trackOrderData && (
-                                <div className="border rounded-lg p-6">
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div>
-                                            <p className="font-mono font-bold text-lg">{trackOrderData.invoice_id}</p>
-                                            <p className="text-sm text-gray-500">{new Date(trackOrderData.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                        </div>
-                                        <span className={`px-4 py-2 rounded-full text-sm font-bold border ${getStatusColor(trackOrderData.status)}`}>
-                                            {getStatusLabel(trackOrderData.status)}
-                                        </span>
-                                    </div>
-
-                                    <div className="grid md:grid-cols-2 gap-6 mb-6">
-                                        <div className="space-y-4">
+                                {isEditing ? (
+                                    <form onSubmit={handleProfileUpdate} className="space-y-6">
+                                        <div className="grid md:grid-cols-2 gap-6">
                                             <div>
-                                                <p className="text-sm font-medium text-gray-500">Customer</p>
-                                                <p className="text-sm">{trackOrderData.delivery_customer_name}</p>
-                                                <p className="text-sm">{trackOrderData.delivery_customer_phone}</p>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                                                <input
+                                                    type="text"
+                                                    name="first_name"
+                                                    value={formData.first_name}
+                                                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-gray-500">Delivery Address</p>
-                                                <p className="text-sm">{trackOrderData.delivery_customer_address}</p>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                                                <input
+                                                    type="text"
+                                                    name="last_name"
+                                                    value={formData.last_name}
+                                                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                />
                                             </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                                <input
+                                                    type="email"
+                                                    name="email"
+                                                    value={formData.email}
+                                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                                                <input
+                                                    type="tel"
+                                                    name="mobile_number"
+                                                    value={formData.mobile_number}
+                                                    onChange={(e) => setFormData({ ...formData, mobile_number: e.target.value })}
+                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                                                <textarea
+                                                    name="address"
+                                                    rows={3}
+                                                    value={formData.address}
+                                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3 pt-4 border-t">
+                                            <button
+                                                type="submit"
+                                                disabled={isUpdating}
+                                                className="px-6 py-2.5 bg-[var(--brand-royal-red)] text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                                            >
+                                                {isUpdating ? "Saving..." : "Save Changes"}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsEditing(false)}
+                                                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-500 mb-1">Full Name</label>
+                                            <p className="text-gray-900">{user.first_name ? `${user.first_name} ${user.last_name || ""}` : user.name || "N/A"}</p>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-gray-500">Total Amount</p>
-                                            <p className="text-2xl font-bold text-[var(--brand-royal-red)]">৳{trackOrderData.total || trackOrderData.sub_total}</p>
+                                            <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                                            <p className="text-gray-900">{user.email || "N/A"}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
+                                            <p className="text-gray-900">{user.mobile_number || user.phone || "N/A"}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
+                                            <p className="text-gray-900">{user.address || "No address provided"}</p>
                                         </div>
                                     </div>
-
-                                    <div className="border-t pt-6">
-                                        <h3 className="font-semibold mb-4">Order Items</h3>
-                                        <div className="space-y-3">
-                                            {trackOrderData.sales_details?.map((item, i) => (
-                                                <div key={i} className="flex items-center gap-4">
-                                                    <div className="w-16 h-16 bg-gray-100 rounded relative">
-                                                        {item.product_info?.image_path && <Image src={item.product_info.image_path} alt={item.product_info.name} fill className="object-cover rounded" unoptimized />}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="font-medium text-sm">{item.product_info?.name}</p>
-                                                        <p className="text-xs text-gray-500">Qty: {item.qty} {item.size && `• Size: ${item.size}`}</p>
-                                                    </div>
-                                                    <p className="font-medium">৳{item.price * item.qty}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Coupons */}
-                    {activeSection === "coupons" && (
-                        <div className="bg-white rounded-xl shadow-sm p-6 border">
-                            <h2 className="text-2xl font-bold mb-6">My Coupons</h2>
-                            {couponsLoading ? (
-                                <div className="flex justify-center py-20">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
-                                </div>
-                            ) : coupons.length > 0 ? (
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    {coupons.map(coupon => (
-                                        <div key={coupon.customer_coupon_id} className="border-2 border-dashed border-[var(--brand-royal-red)] rounded-lg p-6 bg-red-50/30">
-                                            <p className="text-2xl font-bold text-[var(--brand-royal-red)] mb-1">৳{coupon.amount} OFF</p>
-                                            <p className="text-xs text-gray-600 mb-3">Min. order: ৳{coupon.minimum_order_amount}</p>
-                                            <div className="bg-white rounded px-4 py-2 border mb-3">
-                                                <p className="font-mono text-sm font-bold text-center">{coupon.coupon_code}</p>
-                                            </div>
-                                            <p className="text-xs text-gray-600">Expires: {new Date(coupon.expire_date).toLocaleDateString()}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-20 text-gray-400">
-                                    <p className="text-4xl mb-4">🏷️</p>
-                                    <p>No coupons available</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Profile */}
-                    {activeSection === "profile" && (
-                        <div className="bg-white rounded-xl shadow-sm p-6 border">
-                            <h2 className="text-2xl font-bold mb-6">Profile Settings</h2>
-                            <div className="grid md:grid-cols-2 gap-4">
-                                <div><label className="block text-sm font-medium text-gray-700 mb-2">Name</label><p>{user.name || "N/A"}</p></div>
-                                <div><label className="block text-sm font-medium text-gray-700 mb-2">Email</label><p>{user.email || "N/A"}</p></div>
-                                <div><label className="block text-sm font-medium text-gray-700 mb-2">Phone</label><p>{user.mobile_number || user.phone || "N/A"}</p></div>
-                                <div><label className="block text-sm font-medium text-gray-700 mb-2">Address</label><p>{user.address || "No address"}</p></div>
+                                )}
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
