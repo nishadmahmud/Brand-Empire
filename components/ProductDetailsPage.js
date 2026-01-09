@@ -196,9 +196,16 @@ const ProductDetailsPage = ({ productId }) => {
             try {
                 const response = await getRelatedProduct(productId);
 
-                if (response.success && response.data && response.data.length > 0) {
+                let relatedData = [];
+                if (Array.isArray(response)) {
+                    relatedData = response;
+                } else if (response.success && Array.isArray(response.data)) {
+                    relatedData = response.data;
+                }
+
+                if (relatedData.length > 0) {
                     // Transform related products to ProductCard format
-                    const transformedRelated = response.data
+                    const transformedRelated = relatedData
                         .filter(item => item.id != productId)
                         .map(item => ({
                             id: item.id,

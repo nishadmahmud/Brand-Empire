@@ -27,6 +27,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
     const [isSearchLoading, setIsSearchLoading] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const searchContainerRef = useRef(null);
+    const isSearchSubmittedRef = useRef(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [expandedCategory, setExpandedCategory] = useState(null);
     const router = useRouter();
@@ -35,8 +36,10 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
     const handleSearchSubmit = (e) => {
         if (e.key === 'Enter' && searchQuery.trim()) {
             e.preventDefault();
+            isSearchSubmittedRef.current = true;
             setShowDropdown(false);
             setMobileSearchOpen(false);
+            e.target.blur();
             router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         }
     };
@@ -81,7 +84,9 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
             }
 
             setIsSearchLoading(true);
-            setShowDropdown(true);
+            if (!isSearchSubmittedRef.current) {
+                setShowDropdown(true);
+            }
 
             try {
                 // Check if query matches a category exactly (case-insensitive)
@@ -230,7 +235,10 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 placeholder="Search for products, brands and more"
                                 className="ml-2 bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none w-full"
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    isSearchSubmittedRef.current = false;
+                                }}
                                 onKeyDown={handleSearchSubmit}
                             />
 
@@ -358,8 +366,8 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                 {activeMegaMenu && (
                     <div
                         className="hidden lg:block absolute left-0 top-full bg-white shadow-lg border-t border-gray-200"
-                        style={{ 
-                            left: '50%', 
+                        style={{
+                            left: '50%',
                             transform: 'translateX(-50%)',
                             width: '900px',
                             maxWidth: '90vw'
@@ -651,7 +659,10 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 type="text"
                                 placeholder="Search..."
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    isSearchSubmittedRef.current = false;
+                                }}
                                 onKeyDown={handleSearchSubmit}
                                 className="ml-2 bg-transparent w-full text-base text-gray-900 placeholder-gray-500 focus:outline-none"
                             />

@@ -6,6 +6,8 @@ import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import { searchProducts } from "@/lib/api";
 
+import CategoryTopFilters from "@/components/CategoryTopFilters";
+
 function SearchPageContent() {
     const searchParams = useSearchParams();
     const query = searchParams.get('q') || '';
@@ -15,12 +17,19 @@ function SearchPageContent() {
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
     const [sortBy, setSortBy] = useState("recommended");
 
+    // Dynamic filters state
+    const [availableCategories, setAvailableCategories] = useState([]);
+    const [availableSizes, setAvailableSizes] = useState([]);
+
     const [filters, setFilters] = useState({
         categories: [],
         brands: [],
         priceRange: [0, 50000],
         colors: [],
+        sizes: [],
         discount: 0,
+        bundle: 'single',
+        country: 'all',
     });
 
     // Fetch search results
@@ -28,6 +37,8 @@ function SearchPageContent() {
         const fetchSearchResults = async () => {
             if (!query.trim()) {
                 setProducts([]);
+                setAvailableCategories([]);
+                setAvailableSizes([]);
                 setLoading(false);
                 return;
             }
@@ -63,11 +74,43 @@ function SearchPageContent() {
                         reviews: product.review_summary?.total_reviews || 0,
                         rawPrice: product.retails_price || 0,
                         rawDiscount: product.discount || 0,
+                        category: product.category, // Keep original category object for filtering
+                        categoryId: product.category_id,
+                        categoryName: product.category?.name
                     }));
 
                     setProducts(transformedProducts);
+
+                    // Extract unique categories from search results
+                    const categoriesMap = new Map();
+                    transformedProducts.forEach(p => {
+                        if (p.categoryId && p.categoryName) {
+                            if (!categoriesMap.has(p.categoryId)) {
+                                categoriesMap.set(p.categoryId, {
+                                    id: p.categoryId,
+                                    name: p.categoryName,
+                                    count: 1
+                                });
+                            } else {
+                                categoriesMap.get(p.categoryId).count++;
+                            }
+                        }
+                    });
+                    setAvailableCategories(Array.from(categoriesMap.values()));
+
+                    // Extract unique sizes
+                    const sizesSet = new Set();
+                    transformedProducts.forEach(p => {
+                        if (p.sizes && Array.isArray(p.sizes)) {
+                            p.sizes.forEach(s => sizesSet.add(s));
+                        }
+                    });
+                    setAvailableSizes(Array.from(sizesSet).sort());
+
                 } else {
                     setProducts([]);
+                    setAvailableCategories([]);
+                    setAvailableSizes([]);
                 }
             } catch (error) {
                 console.error("Error fetching search results:", error);
@@ -88,6 +131,11 @@ function SearchPageContent() {
         }
         let result = [...products];
 
+        // Apply category filter (from sidebar)
+        if (filters.categories && filters.categories.length > 0) {
+            result = result.filter(p => filters.categories.includes(p.categoryId.toString()) || filters.categories.includes(p.categoryId));
+        }
+
         // Apply brand filter
         if (filters.brands && filters.brands.length > 0) {
             result = result.filter(p => filters.brands.includes(p.brand));
@@ -106,10 +154,36 @@ function SearchPageContent() {
             result = result.filter(p => filters.colors.includes(p.color));
         }
 
+        // Apply size filter
+        if (filters.sizes && filters.sizes.length > 0) {
+            result = result.filter(p =>
+                p.sizes.some(size => filters.sizes.includes(size))
+            );
+        }
+
         // Apply discount filter
         if (filters.discount > 0) {
             result = result.filter(p => p.rawDiscount >= filters.discount);
         }
+
+        // Apply Country Filter
+        if (filters.country === 'bangladesh') {
+            // Assuming "Made in Bangladesh" logic. 
+            // Since we don't have a direct field in transformedProducts for country yet, 
+            // we'll filter based on a hypothetical property or description check if available.
+            // But checking the API response provided by user: `description` contains "Made in Bangladesh".
+            // However, parsing HTML description is expensive. 
+            // For now, we will perform a check on `p.description` if it exists.
+            result = result.filter(p =>
+                p.description && p.description.toLowerCase().includes("bangladesh")
+            );
+        }
+
+        // Apply Bundle Filter (Placeholder logic for now as per user request history)
+        if (filters.bundle === 'bundle') {
+            // Logic for bundles (currently same as single/placeholder)
+        }
+
 
         // Apply sorting
         switch (sortBy) {
@@ -142,7 +216,10 @@ function SearchPageContent() {
             brands: [],
             priceRange: [0, 50000],
             colors: [],
+            sizes: [],
             discount: 0,
+            bundle: 'single',
+            country: 'all',
         });
     };
 
@@ -206,6 +283,24 @@ function SearchPageContent() {
                 </div>
             </div>
 
+            {/* Top Filters - Mobile */}
+            <div className="md:hidden sticky top-[56px] z-30 bg-white border-b border-gray-100 px-4">
+                <CategoryTopFilters
+                    availableSizes={availableSizes}
+                    selectedSizes={filters.sizes}
+                    onSizeChange={(size) => {
+                        const newSizes = filters.sizes.includes(size)
+                            ? filters.sizes.filter(s => s !== size)
+                            : [...filters.sizes, size];
+                        handleFilterChange('sizes', newSizes);
+                    }}
+                    selectedBundle={filters.bundle}
+                    onBundleChange={(val) => handleFilterChange('bundle', val)}
+                    selectedCountry={filters.country}
+                    onCountryChange={(val) => handleFilterChange('country', val)}
+                />
+            </div>
+
             {/* Main Content */}
             <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-6">
                 <div className="flex gap-6">
@@ -216,6 +311,9 @@ function SearchPageContent() {
                             onFilterChange={handleFilterChange}
                             onClearAll={handleClearAll}
                             products={products}
+                            categories={availableCategories}
+                            selectedCategoryId={filters.categories[0]}
+                            onCategoryChange={(id) => handleFilterChange('categories', id ? [id] : [])}
                         />
                     </div>
 
@@ -223,14 +321,21 @@ function SearchPageContent() {
                     <div className="flex-1">
                         {/* Header with Sort - Desktop only */}
                         <div className="hidden md:flex items-center justify-between mb-3 gap-2">
-                            <div className="flex-shrink-0">
-                                <h1 className="text-2xl font-bold text-gray-900">
-                                    {query ? `Search Results for "${query}"` : "Search Results"}
-                                </h1>
-                                <p className="text-sm text-gray-600">
-                                    {loading ? "Loading..." : `${filteredAndSortedProducts.length} products found`}
-                                </p>
-                            </div>
+                            <CategoryTopFilters
+                                className="flex-1"
+                                availableSizes={availableSizes}
+                                selectedSizes={filters.sizes}
+                                onSizeChange={(size) => {
+                                    const newSizes = filters.sizes.includes(size)
+                                        ? filters.sizes.filter(s => s !== size)
+                                        : [...filters.sizes, size];
+                                    handleFilterChange('sizes', newSizes);
+                                }}
+                                selectedBundle={filters.bundle}
+                                onBundleChange={(val) => handleFilterChange('bundle', val)}
+                                selectedCountry={filters.country}
+                                onCountryChange={(val) => handleFilterChange('country', val)}
+                            />
 
                             <div className="flex items-center gap-2">
                                 {/* Sort Dropdown - Desktop */}
@@ -309,6 +414,9 @@ function SearchPageContent() {
                             onFilterChange={handleFilterChange}
                             onClearAll={handleClearAll}
                             products={products}
+                            categories={availableCategories}
+                            selectedCategoryId={filters.categories[0]}
+                            onCategoryChange={(id) => handleFilterChange('categories', id ? [id] : [])}
                         />
                     </div>
                 </div>
