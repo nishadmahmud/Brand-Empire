@@ -16,6 +16,7 @@ export default function CategoryTopFilters({
     onCountryChange,
     className = ""
 }) {
+    const [openDropdown, setOpenDropdown] = useState(null);
     const itemsRef = useRef({});
 
     // Close dropdown on outside click
