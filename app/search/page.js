@@ -32,6 +32,7 @@ function SearchPageContent() {
         country: 'all',
     });
 
+
     // Fetch search results
     useEffect(() => {
         const fetchSearchResults = async () => {
