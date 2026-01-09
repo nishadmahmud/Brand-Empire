@@ -24,7 +24,7 @@ const Footer = () => {
     }, []);
 
     return (
-        <footer className="bg-[#111111] text-white pt-16 md:pt-20 border-t-4 border-[var(--brand-royal-red)]">
+        <footer className="bg-[#111111] text-white pt-16 md:pt-20 pb-24 md:pb-0 border-t-4 border-[var(--brand-royal-red)]">
             <div className="section-content pb-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
 

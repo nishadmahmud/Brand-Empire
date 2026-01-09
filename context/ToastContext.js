@@ -40,7 +40,7 @@ export const ToastProvider = ({ children }) => {
                         <div className="w-12 h-12 bg-white rounded flex-shrink-0 overflow-hidden">
                             <Image
                                 src={toast.images?.[0] || '/api/placeholder/48/48'}
-                                alt={toast.name}
+                                alt={toast.name || "Product Image"}
                                 width={48}
                                 height={48}
                                 className="object-cover w-full h-full"

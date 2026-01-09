@@ -81,20 +81,24 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
             const response = await saveProductReview(payload, token);
 
             if (response.success) {
-                showToast("Review submitted successfully!", "success");
+                // Success - just close or show inline state? User said no toast.
+                // Just close for now as per "stop that".
+                onClose();
                 // Reset form
                 setRating(0);
                 setComment("");
                 setFiles([]);
-                onClose();
             } else {
                 throw new Error(response.message || "Failed to submit review.");
             }
 
         } catch (err) {
-            console.error("Review submission error:", err);
-            setError(err.message || "An error occurred. Please try again.");
-            showToast(err.message || "Failed to submit review", "error");
+            console.log("Review submission message:", err.message); // Changed to log
+
+            // Check for "already reviewed" to show as info/warning instead of scary error
+            // The exact message from user expectation: "You have already reviewed this product."
+            const message = err.message || "An error occurred.";
+            setError(message);
         } finally {
             setLoading(false);
         }
@@ -113,16 +117,16 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center pt-16 sm:pt-0 pb-20 sm:pb-4 p-0 sm:p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
             <div
-                className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col"
+                className="bg-white w-full h-[calc(100vh-9rem)] sm:h-auto sm:max-h-[75vh] sm:max-w-2xl sm:rounded-lg shadow-xl flex flex-col overflow-hidden rounded-t-2xl sm:rounded-b-lg"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 flex-shrink-0">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">Write a Review</h2>
-                        <p className="text-sm text-gray-500 mt-1">{product?.name}</p>
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Write a Review</h2>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-1 truncate max-w-[200px] sm:max-w-md">{product?.name}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -133,11 +137,14 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
                 </div>
 
                 {/* Body */}
-                <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+                <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto min-h-0">
 
-                    {/* Error Message */}
+                    {/* Error/Info Message */}
                     {error && (
-                        <div className="p-3 bg-red-50 text-red-700 text-sm rounded border border-red-200">
+                        <div className={`p-3 text-sm rounded border ${error.toLowerCase().includes("already reviewed")
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : "bg-red-50 text-red-700 border-red-200"
+                            }`}>
                             {error}
                         </div>
                     )}
@@ -228,7 +235,7 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 rounded-b-lg">
+                <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 flex-shrink-0">
                     <button
                         onClick={onClose}
                         className="px-6 py-2.5 text-gray-700 font-bold hover:bg-gray-200 rounded transition-colors"

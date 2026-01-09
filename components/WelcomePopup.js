@@ -98,7 +98,7 @@ const WelcomePopup = () => {
                 {/* Popup Content */}
                 <div className="relative">
                     {/* Background Image */}
-                    <div className="relative w-full h-[500px]">
+                    <div className="relative w-full h-[400px] sm:h-[500px]">
                         <Image
                             src={popupData.image || "/welcome_popup_banner.png"}
                             alt={popupData.title || "Welcome"}
@@ -107,35 +107,15 @@ const WelcomePopup = () => {
                             unoptimized
                             priority
                         />
-
-                        {/* Overlay Gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
                     </div>
 
-                    {/* Text Content Overlay */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8">
-                        {/* Brand Title */}
-                        <div className="mb-6">
-                            <h1 className="text-white text-5xl md:text-6xl font-bold tracking-tight drop-shadow-2xl">
-                                {popupData.title || "BRAND EMPIRE"}
-                            </h1>
-                        </div>
-
-                        {/* Description */}
-                        {popupData.description && (
-                            <div className="mb-8">
-                                <p className="text-white text-lg md:text-xl font-medium drop-shadow-lg max-w-2xl">
-                                    {popupData.description}
-                                </p>
-                            </div>
-                        )}
-
-                        {/* CTA Button */}
+                    {/* CTA Button - Positioned at Bottom */}
+                    <div className="absolute bottom-6 left-0 right-0 flex justify-center">
                         <button
                             onClick={handleShopNow}
                             className="bg-white text-gray-900 px-10 py-4 text-lg font-bold uppercase tracking-wider rounded-md hover:bg-gray-100 transition-all shadow-2xl hover:scale-105 hover:shadow-xl"
                         >
-                            {popupData.button_text || "Shop Now"}
+                            {popupData.button_text || "SHOP NOW"}
                         </button>
                     </div>
                 </div>

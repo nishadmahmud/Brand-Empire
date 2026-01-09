@@ -540,11 +540,13 @@ const ProductDetailsPage = ({ productId }) => {
 
                         {/* Price */}
                         <div className="flex items-center gap-3 pb-6 border-b border-gray-200">
-                            <span className="text-2xl font-bold text-gray-900">৳{product.price}</span>
-                            {product.discount > 0 && (
+                            <span className="text-2xl font-bold text-gray-900">৳{product.price?.toLocaleString()}</span>
+                            {product.mrp > product.price && (
                                 <>
-                                    <span className="text-lg text-gray-400 line-through">MRP ৳{product.mrp}</span>
-                                    <span className="text-[var(--brand-royal-red)] font-bold">({product.discount}% OFF)</span>
+                                    <span className="text-lg text-gray-400 line-through">MRP ৳{product.mrp?.toLocaleString()}</span>
+                                    {product.discount && (
+                                        <span className="text-[var(--brand-royal-red)] font-bold">({product.discount})</span>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -561,7 +563,7 @@ const ProductDetailsPage = ({ productId }) => {
                                     SIZE CHART →
                                 </button>
                             </div>
-                            <div className="flex gap-3">
+                            <div className="flex flex-wrap gap-2 sm:gap-3">
                                 {product.sizes.map((size) => (
                                     <button
                                         key={size}
@@ -569,7 +571,7 @@ const ProductDetailsPage = ({ productId }) => {
                                             setSelectedSize(size);
                                             setSizeError(false);
                                         }}
-                                        className={`w-14 h-14 rounded-full border-2 font-bold transition-all ${selectedSize === size
+                                        className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full border-2 font-bold text-sm sm:text-base transition-all ${selectedSize === size
                                             ? 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]'
                                             : 'border-gray-300 text-gray-700 hover:border-gray-400'
                                             }`}

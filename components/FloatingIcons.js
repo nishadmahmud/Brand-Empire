@@ -32,9 +32,9 @@ const FloatingIcons = () => {
 
     return (
         <div
-            className="fixed right-0 z-[100] flex items-start"
-            style={{ 
-                top: 'clamp(130px, 50vh, calc(100vh - 100px))', 
+            className="fixed right-0 z-50 hidden md:flex items-start"
+            style={{
+                top: 'clamp(130px, 50vh, calc(100vh - 100px))',
                 transform: 'translateY(-50%)',
                 maxHeight: 'calc(100vh - 140px)'
             }}
@@ -65,11 +65,10 @@ const FloatingIcons = () => {
 
                     <button
                         onClick={handleCopy}
-                        className={`w-full py-2 md:py-2.5 font-bold rounded transition flex items-center justify-center gap-2 text-xs md:text-sm ${
-                            isCopied 
-                                ? 'bg-green-600 text-white hover:bg-green-700' 
-                                : 'bg-[var(--brand-royal-red)] text-white hover:bg-red-700'
-                        }`}
+                        className={`w-full py-2 md:py-2.5 font-bold rounded transition flex items-center justify-center gap-2 text-xs md:text-sm ${isCopied
+                            ? 'bg-green-600 text-white hover:bg-green-700'
+                            : 'bg-[var(--brand-royal-red)] text-white hover:bg-red-700'
+                            }`}
                     >
                         {isCopied ? (
                             <>
