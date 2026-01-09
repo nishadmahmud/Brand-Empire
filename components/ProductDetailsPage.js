@@ -840,7 +840,7 @@ const ProductDetailsPage = ({ productId }) => {
                                     key={index}
                                     onClick={() => setSelectedImage(index)}
                                     className={`relative w-14 h-16 flex-shrink-0 overflow-hidden transition-all ${selectedImage === index
-                                        ? 'ring-2 ring-[var(--brand-royal-red)] opacity-100 z-10'
+                                        ? 'opacity-100 z-10'
                                         : 'opacity-70 hover:opacity-100'
                                         }`}
                                 >
