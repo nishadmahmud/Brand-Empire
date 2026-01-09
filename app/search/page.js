@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
-import { searchProducts } from "@/lib/api";
+import { searchProducts, getProductById } from "@/lib/api";
 
 import CategoryTopFilters from "@/components/CategoryTopFilters";
 
@@ -48,36 +48,73 @@ function SearchPageContent() {
                 const response = await searchProducts(query);
 
                 if (response.success && response.data && response.data.data) {
-                    const transformedProducts = response.data.data.map(product => ({
-                        id: product.id,
-                        brand: product.brand_name || product.brands?.name || "BRAND",
-                        name: product.name,
-                        price: `৳ ${(product.retails_price || 0).toLocaleString()}`,
-                        originalPrice: product.discount > 0
-                            ? `৳ ${(product.retails_price / (1 - product.discount / 100)).toFixed(0)}`
-                            : "",
-                        discount: product.discount > 0 ? `${product.discount}% OFF` : "",
-                        images: product.image_paths && product.image_paths.length > 0
-                            ? product.image_paths
-                            : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
-                        sizes: product.product_variants && product.product_variants.length > 0
-                            ? product.product_variants.map(v => v.name)
-                            : product.items?.map(item => item.size) || [],
-                        unavailableSizes: product.product_variants && product.product_variants.length > 0
-                            ? product.product_variants.filter(v => v.quantity === 0).map(v => v.name)
-                            : product.items?.filter(item => item.quantity === 0).map(item => item.size) || [],
-                        color: product.color ||
-                            (product.name.toLowerCase().includes("black") ? "black" :
-                                product.name.toLowerCase().includes("blue") ? "blue" :
-                                    product.name.toLowerCase().includes("white") ? "white" : "gray"),
-                        rating: product.review_summary?.average_rating || 0,
-                        reviews: product.review_summary?.total_reviews || 0,
-                        rawPrice: product.retails_price || 0,
-                        rawDiscount: product.discount || 0,
-                        category: product.category, // Keep original category object for filtering
-                        categoryId: product.category_id,
-                        categoryName: product.category?.name
-                    }));
+                    const transformedProducts = response.data.data.map(product => {
+                        let finalPrice = product.retails_price || 0;
+                        let rawPrice = finalPrice;
+                        let originalPrice = null;
+                        let discountLabel = "";
+                        let rawDiscount = product.discount || 0;
+
+                        // Check for Campaign first
+                        if (product.campaigns && product.campaigns.length > 0) {
+                            const campaign = product.campaigns[0];
+                            let discountAmount = 0;
+
+                            // Check discount type (handle null case safely)
+                            const discountType = campaign.discount_type ? String(campaign.discount_type).toLowerCase() : 'amount';
+
+                            if (discountType === 'amount') {
+                                discountAmount = campaign.discount;
+                                discountLabel = `৳${campaign.discount} OFF`;
+                            } else if (discountType === 'percentage') {
+                                discountAmount = (finalPrice * campaign.discount) / 100;
+                                discountLabel = `${campaign.discount}% OFF`;
+                            }
+
+                            let calculatedPrice = finalPrice - discountAmount;
+                            if (calculatedPrice < 0) calculatedPrice = 0;
+
+                            originalPrice = finalPrice; // The retail price becomes original
+                            finalPrice = calculatedPrice;
+                            rawPrice = calculatedPrice;
+                            rawDiscount = campaign.discount; // Store for filtering if needed
+
+                        } else if (product.discount > 0) {
+                            // Standard discount logic
+                            // Assuming retails_price is the Selling Price (post-discount) as per previous logic
+                            originalPrice = finalPrice / (1 - product.discount / 100);
+                            discountLabel = `${product.discount}% OFF`;
+                        }
+
+                        return {
+                            id: product.id,
+                            brand: product.brand_name || product.brands?.name || "BRAND",
+                            name: product.name,
+                            price: `৳ ${finalPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+                            originalPrice: originalPrice ? `৳ ${originalPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "",
+                            discount: discountLabel,
+                            images: product.image_paths && product.image_paths.length > 0
+                                ? product.image_paths
+                                : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
+                            sizes: product.product_variants && product.product_variants.length > 0
+                                ? product.product_variants.map(v => v.name)
+                                : product.items?.map(item => item.size) || [],
+                            unavailableSizes: product.product_variants && product.product_variants.length > 0
+                                ? product.product_variants.filter(v => v.quantity === 0).map(v => v.name)
+                                : product.items?.filter(item => item.quantity === 0).map(item => item.size) || [],
+                            color: product.color ||
+                                (product.name.toLowerCase().includes("black") ? "black" :
+                                    product.name.toLowerCase().includes("blue") ? "blue" :
+                                        product.name.toLowerCase().includes("white") ? "white" : "gray"),
+                            rating: product.review_summary?.average_rating || 0,
+                            reviews: product.review_summary?.total_reviews || 0,
+                            rawPrice: rawPrice,
+                            rawDiscount: rawDiscount,
+                            category: product.category, // Keep original category object for filtering
+                            categoryId: product.category_id,
+                            categoryName: product.category?.name
+                        };
+                    });
 
                     setProducts(transformedProducts);
 
@@ -99,6 +136,7 @@ function SearchPageContent() {
                     setAvailableCategories(Array.from(categoriesMap.values()));
 
                     // Extract unique sizes
+                    // Extract unique sizes
                     const sizesSet = new Set();
                     transformedProducts.forEach(p => {
                         if (p.sizes && Array.isArray(p.sizes)) {
@@ -107,15 +145,61 @@ function SearchPageContent() {
                     });
                     setAvailableSizes(Array.from(sizesSet).sort());
 
+                    setLoading(false);
+
+                    // Background fetch for details (to get sizes)
+                    try {
+                        const enrichedProducts = await Promise.all(
+                            transformedProducts.map(async (p) => {
+                                try {
+                                    const detailRes = await getProductById(p.id);
+                                    if (detailRes.success && detailRes.data) {
+                                        const detailedParams = detailRes.data;
+                                        const variants = detailedParams.product_variants || [];
+                                        const sizes = variants.map(v => v.name).filter(Boolean);
+                                        const unavailableSizes = variants.filter(v => v.quantity === 0).map(v => v.name);
+
+                                        if (sizes.length > 0) {
+                                            return {
+                                                ...p,
+                                                sizes: sizes,
+                                                unavailableSizes: unavailableSizes.length > 0 ? unavailableSizes : p.unavailableSizes
+                                            };
+                                        }
+                                    }
+                                } catch (err) {
+                                    // Ignore error
+                                }
+                                return p;
+                            })
+                        );
+
+                        setProducts(enrichedProducts);
+
+                        // Re-extract unique sizes from enriched products
+                        const enrichedSizesSet = new Set();
+                        enrichedProducts.forEach(p => {
+                            if (p.sizes && Array.isArray(p.sizes)) {
+                                p.sizes.forEach(s => enrichedSizesSet.add(s));
+                            }
+                        });
+                        setAvailableSizes(Array.from(enrichedSizesSet).sort());
+
+                    } catch (bgError) {
+                        console.error("Background fetch error:", bgError);
+                    }
+
                 } else {
                     setProducts([]);
                     setAvailableCategories([]);
                     setAvailableSizes([]);
+                    setLoading(false);
                 }
+
+
             } catch (error) {
                 console.error("Error fetching search results:", error);
                 setProducts([]);
-            } finally {
                 setLoading(false);
             }
         };

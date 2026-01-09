@@ -119,14 +119,42 @@ const ProductDetailsPage = ({ productId }) => {
 
                     // Transform API data to match our component's expected structure
                     // Merging review data
+                    // Calculate Price and Discount properly handles Campaign logic
+                    let finalPrice = apiProduct.retails_price || 0;
+                    let mrp = finalPrice;
+                    let discountLabel = apiProduct.discount || 0;
+
+                    // Check for Campaign first
+                    if (apiProduct.campaigns && apiProduct.campaigns.length > 0) {
+                        const campaign = apiProduct.campaigns[0];
+                        let discountAmount = 0;
+                        const discountType = campaign.discount_type ? String(campaign.discount_type).toLowerCase() : 'amount';
+
+                        if (discountType === 'amount') {
+                            discountAmount = campaign.discount;
+                            discountLabel = `৳${campaign.discount} OFF`;
+                        } else if (discountType === 'percentage') {
+                            discountAmount = (finalPrice * campaign.discount) / 100;
+                            discountLabel = `${campaign.discount}% OFF`;
+                        }
+
+                        let calculatedPrice = finalPrice - discountAmount;
+                        if (calculatedPrice < 0) calculatedPrice = 0;
+
+                        mrp = finalPrice; // The retail price becomes original (MRP)
+                        finalPrice = calculatedPrice;
+                    } else if (apiProduct.discount > 0) {
+                        // Standard discount logic
+                        mrp = Math.round(finalPrice / (1 - apiProduct.discount / 100));
+                        discountLabel = `${apiProduct.discount}% OFF`;
+                    }
+
                     const transformedProduct = {
                         id: apiProduct.id,
                         name: apiProduct.name,
-                        price: apiProduct.retails_price,
-                        mrp: apiProduct.discount > 0
-                            ? Math.round(apiProduct.retails_price / (1 - apiProduct.discount / 100))
-                            : apiProduct.retails_price,
-                        discount: apiProduct.discount || 0,
+                        price: finalPrice,
+                        mrp: mrp,
+                        discount: discountLabel,
                         rating: reviewsData.summary?.average_rating || apiProduct.rating || 0,
                         reviewCount: reviewsData.summary?.total_reviews || 0,
                         brand: apiProduct.brand?.name || apiProduct.brand_name || "Unknown Brand",
