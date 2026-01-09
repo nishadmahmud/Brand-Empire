@@ -244,6 +244,8 @@ export default function CategoryPage() {
             colors: [],
             sizes: [],
             discount: 0,
+            bundle: 'single',
+            country: 'all',
         });
     };
 
@@ -353,9 +355,9 @@ export default function CategoryPage() {
                                 >
                                     <span>
                                         {sortBy === "recommended" ? "Sort" :
-                                         sortBy === "newest" ? "New" :
-                                         sortBy === "price-low" ? "Low" :
-                                         sortBy === "price-high" ? "High" : "Sort"}
+                                            sortBy === "newest" ? "New" :
+                                                sortBy === "price-low" ? "Low" :
+                                                    sortBy === "price-high" ? "High" : "Sort"}
                                     </span>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${mobileSortOpen ? 'rotate-180' : ''}`}>
                                         <path d="m6 9 6 6 6-6" />
@@ -452,24 +454,37 @@ export default function CategoryPage() {
                             onFilterChange={handleFilterChange}
                             onClearAll={handleClearAll}
                             products={products}
+                            categories={subcategoryId ? childCategories : subCategories}
+                            selectedCategoryId={subcategoryId ? childId : subcategoryId}
+                            onCategoryChange={subcategoryId ? handleChildCategoryChange : handleSubCategoryChange}
                         />
                     </div>
 
                     {/* Products Section */}
                     <div className="flex-1">
-                        {/* Header with Sort - Desktop only */}
-                        <div className="hidden md:flex items-center justify-between mb-3 gap-2">
-                            <div className="flex-shrink-0">
-                                <h1 className="text-2xl font-bold text-gray-900">
-                                    {categoryName || "Products"}
-                                </h1>
-                                <p className="text-sm text-gray-600">
-                                    {loading ? "Loading..." : `${filteredAndSortedProducts.length} products`}
-                                </p>
+                        {/* Header with Filters and Sort - Desktop */}
+                        <div className="hidden md:flex items-center justify-between mb-6 gap-4 border-b border-gray-200 pb-4">
+                            {/* Left: Filters */}
+                            <div className="flex-1">
+                                <CategoryTopFilters
+                                    availableSizes={availableSizes}
+                                    selectedSizes={filters.sizes}
+                                    onSizeChange={(size) => {
+                                        const newSizes = filters.sizes.includes(size)
+                                            ? filters.sizes.filter(s => s !== size)
+                                            : [...filters.sizes, size];
+                                        handleFilterChange('sizes', newSizes);
+                                    }}
+                                    selectedBundle={filters.bundle || 'single'}
+                                    onBundleChange={(val) => handleFilterChange('bundle', val)}
+                                    selectedCountry={filters.country || 'all'}
+                                    onCountryChange={(val) => handleFilterChange('country', val)}
+                                    className="ml-0"
+                                />
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                {/* Sort Dropdown - Desktop */}
+                            {/* Right: Sort Dropdown */}
+                            <div className="flex-shrink-0">
                                 <div className="relative">
                                     <select
                                         value={sortBy}
@@ -487,24 +502,6 @@ export default function CategoryPage() {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Top Filter Bar (Myntra Style) */}
-                        <CategoryTopFilters
-                            subCategories={subCategories}
-                            childCategories={childCategories}
-                            selectedSubId={subcategoryId}
-                            selectedChildId={childId}
-                            availableSizes={availableSizes}
-                            selectedSizes={filters.sizes}
-                            onSubChange={handleSubCategoryChange}
-                            onChildChange={handleChildCategoryChange}
-                            onSizeChange={(size) => {
-                                const newSizes = filters.sizes.includes(size)
-                                    ? filters.sizes.filter(s => s !== size)
-                                    : [...filters.sizes, size];
-                                handleFilterChange('sizes', newSizes);
-                            }}
-                        />
 
                         {/* Products Grid */}
                         {loading ? (
@@ -574,6 +571,9 @@ export default function CategoryPage() {
                             onFilterChange={handleFilterChange}
                             onClearAll={handleClearAll}
                             products={products}
+                            categories={subcategoryId ? childCategories : subCategories}
+                            selectedCategoryId={subcategoryId ? childId : subcategoryId}
+                            onCategoryChange={subcategoryId ? handleChildCategoryChange : handleSubCategoryChange}
                         />
                     </div>
                 </div>

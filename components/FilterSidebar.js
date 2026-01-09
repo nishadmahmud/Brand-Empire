@@ -2,9 +2,11 @@
 
 import React, { useState, useMemo } from "react";
 
-const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBrandFilter = false }) => {
+const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBrandFilter = false, categories = [], selectedCategoryId, onCategoryChange }) => {
     const [brandSearch, setBrandSearch] = useState("");
     const [priceRange, setPriceRange] = useState(filters.priceRange || [0, 10000]);
+    const [showAllCategories, setShowAllCategories] = useState(false);
+    const [showAllBrands, setShowAllBrands] = useState(false);
 
     // Extract unique brands from products
     const availableBrands = useMemo(() => {
@@ -58,8 +60,11 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBran
         { value: 50, label: "50% and above" },
     ];
 
+    const visibleCategories = showAllCategories ? categories : categories.slice(0, 5);
+    const visibleBrands = showAllBrands ? filteredBrands : filteredBrands.slice(0, 5);
+
     return (
-        <div className="w-full bg-white border-r border-gray-200 p-6 overflow-y-auto h-full">
+        <div className="w-full bg-white border-r border-gray-200 p-6 h-full">
             {/* Header with Clear All */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
                 <h3 className="text-sm font-bold uppercase tracking-wider">Filters</h3>
@@ -70,6 +75,37 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBran
                     Clear All
                 </button>
             </div>
+
+            {/* Categories - Dynamic List */}
+            {categories && categories.length > 0 && (
+                <div className="mb-6 pb-6 border-b border-gray-200">
+                    <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Categories</h4>
+                    <div className="space-y-3">
+                        {visibleCategories.map((category) => (
+                            <label key={category.id} className="flex items-center cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedCategoryId == category.id}
+                                    onChange={() => onCategoryChange(category.id === selectedCategoryId ? null : category.id)}
+                                    className="w-4 h-4 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)]"
+                                />
+                                <span className="ml-3 text-sm text-gray-700 group-hover:text-black">
+                                    {category.name}
+                                    {category.products_count && <span className="text-gray-400 ml-1">({category.products_count})</span>}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                    {categories.length > 5 && (
+                        <button
+                            onClick={() => setShowAllCategories(!showAllCategories)}
+                            className="text-sm text-[var(--brand-royal-red)] mt-3 hover:underline font-medium"
+                        >
+                            {showAllCategories ? "Show Less" : `+ ${categories.length - 5} more`}
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Brand - Hidden on brand pages */}
             {!hideBrandFilter && availableBrands.length > 0 && (
@@ -89,8 +125,8 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBran
                         </div>
                     )}
 
-                    <div className="space-y-3 max-h-48 overflow-y-auto">
-                        {filteredBrands.map((brand) => (
+                    <div className="space-y-3">
+                        {visibleBrands.map((brand) => (
                             <label key={brand} className="flex items-center cursor-pointer group">
                                 <input
                                     type="checkbox"
@@ -107,6 +143,14 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBran
                             </label>
                         ))}
                     </div>
+                    {filteredBrands.length > 5 && (
+                        <button
+                            onClick={() => setShowAllBrands(!showAllBrands)}
+                            className="text-sm text-[var(--brand-royal-red)] mt-3 hover:underline font-medium"
+                        >
+                            {showAllBrands ? "Show Less" : `+ ${filteredBrands.length - 5} more`}
+                        </button>
+                    )}
                 </div>
             )}
 
