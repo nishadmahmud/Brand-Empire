@@ -81,20 +81,38 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBran
                 <div className="mb-6 pb-6 border-b border-gray-200">
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Categories</h4>
                     <div className="space-y-3">
-                        {visibleCategories.map((category, index) => (
-                            <label key={`${category.id}-${index}`} className="flex items-center cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={selectedCategoryId == category.id}
-                                    onChange={() => onCategoryChange(category.id === selectedCategoryId ? null : category.id)}
-                                    className="w-4 h-4 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)]"
-                                />
-                                <span className="ml-3 text-sm text-gray-700 group-hover:text-black">
-                                    {category.name}
-                                    {category.products_count && <span className="text-gray-400 ml-1">({category.products_count})</span>}
-                                </span>
-                            </label>
-                        ))}
+                        {visibleCategories.map((category, index) => {
+                            // Support both filters.categories array (multi-select) and selectedCategoryId (single-select)
+                            const categoryId = category.id || category.category_id;
+                            const isChecked = filters?.categories?.includes(categoryId) || selectedCategoryId == categoryId;
+
+                            return (
+                                <label key={`${categoryId}-${index}`} className="flex items-center cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={() => {
+                                            if (onCategoryChange) {
+                                                // Single select mode
+                                                onCategoryChange(categoryId === selectedCategoryId ? null : categoryId);
+                                            } else if (onFilterChange) {
+                                                // Multi-select mode via filters
+                                                const currentCategories = filters?.categories || [];
+                                                const newCategories = currentCategories.includes(categoryId)
+                                                    ? currentCategories.filter(id => id !== categoryId)
+                                                    : [...currentCategories, categoryId];
+                                                onFilterChange('categories', newCategories);
+                                            }
+                                        }}
+                                        className="w-4 h-4 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)]"
+                                    />
+                                    <span className="ml-3 text-sm text-gray-700 group-hover:text-black">
+                                        {category.name}
+                                        {category.products_count && <span className="text-gray-400 ml-1">({category.products_count})</span>}
+                                    </span>
+                                </label>
+                            );
+                        })}
                     </div>
                     {categories.length > 5 && (
                         <button

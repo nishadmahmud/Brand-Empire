@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
+import CategoryTopFilters from "@/components/CategoryTopFilters";
 import { getCampaigns } from "@/lib/api";
 
 export default function CampaignPage() {
@@ -12,9 +13,50 @@ export default function CampaignPage() {
     const campaignId = params.id;
 
     const [campaign, setCampaign] = useState(null);
+    const [campaignCategories, setCampaignCategories] = useState([]);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState("recommended");
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+    const [mobileSortOpen, setMobileSortOpen] = useState(false);
+    const sortDropdownRef = useRef(null);
+
+    // Filters
+    const [filters, setFilters] = useState({
+        categories: [],
+        brands: [],
+        priceRange: [0, 50000],
+        colors: [],
+        sizes: [],
+        discount: 0,
+    });
+
+    // Extract unique sizes from products
+    const availableSizes = useMemo(() => {
+        const sizes = products
+            .flatMap(p => p.sizes || [])
+            .filter((size, index, self) => self.indexOf(size) === index)
+            .sort((a, b) => {
+                const aNum = parseInt(a);
+                const bNum = parseInt(b);
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return aNum - bNum;
+                }
+                return a.localeCompare(b);
+            });
+        return sizes;
+    }, [products]);
+
+    // Close sort dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target)) {
+                setMobileSortOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     useEffect(() => {
         const fetchCampaign = async () => {
@@ -30,13 +72,16 @@ export default function CampaignPage() {
                     if (foundCampaign) {
                         setCampaign(foundCampaign);
 
+                        // Store campaign categories for filter
+                        if (foundCampaign.categories && foundCampaign.categories.length > 0) {
+                            setCampaignCategories(foundCampaign.categories);
+                        }
+
                         // Transform products with campaign discounts
                         const transformedProducts = (foundCampaign.products || []).map(product => {
-                            // Get discount from pivot (individual product discount in campaign)
                             const pivotDiscount = product.pivot?.discount || 0;
                             const discountType = product.pivot?.discount_type || 'percentage';
 
-                            // Calculate final price based on discount type
                             let finalPrice = product.retails_price;
                             let discountText = '';
 
@@ -51,6 +96,7 @@ export default function CampaignPage() {
                             return {
                                 id: product.id,
                                 brand: product.brands?.name || "BRAND",
+                                categoryId: product.category_id,
                                 name: product.name,
                                 price: `৳ ${Math.round(finalPrice).toLocaleString()}`,
                                 originalPrice: pivotDiscount > 0 ? `৳ ${product.retails_price.toLocaleString()}` : "",
@@ -88,10 +134,39 @@ export default function CampaignPage() {
         }
     }, [campaignId]);
 
-    // Apply sorting
-    const sortedProducts = useMemo(() => {
+    // Apply filters and sorting
+    const filteredAndSortedProducts = useMemo(() => {
         let result = [...products];
 
+        // Apply category filter
+        if (filters.categories.length > 0) {
+            result = result.filter(p => filters.categories.includes(p.categoryId));
+        }
+
+        // Apply brand filter
+        if (filters.brands.length > 0) {
+            result = result.filter(p => filters.brands.includes(p.brand));
+        }
+
+        // Apply price range filter
+        result = result.filter(p =>
+            p.rawPrice >= filters.priceRange[0] &&
+            p.rawPrice <= filters.priceRange[1]
+        );
+
+        // Apply size filter
+        if (filters.sizes.length > 0) {
+            result = result.filter(p =>
+                p.sizes.some(size => filters.sizes.includes(size))
+            );
+        }
+
+        // Apply discount filter
+        if (filters.discount > 0) {
+            result = result.filter(p => p.rawDiscount >= filters.discount);
+        }
+
+        // Apply sorting
         switch (sortBy) {
             case "price-low":
                 result.sort((a, b) => a.rawPrice - b.rawPrice);
@@ -110,7 +185,25 @@ export default function CampaignPage() {
         }
 
         return result;
-    }, [products, sortBy]);
+    }, [products, filters, sortBy]);
+
+    const handleFilterChange = (filterType, value) => {
+        setFilters(prev => ({
+            ...prev,
+            [filterType]: value
+        }));
+    };
+
+    const handleClearAll = () => {
+        setFilters({
+            categories: [],
+            brands: [],
+            priceRange: [0, 50000],
+            colors: [],
+            sizes: [],
+            discount: 0,
+        });
+    };
 
     if (loading) {
         return (
@@ -132,82 +225,202 @@ export default function CampaignPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Campaign Banner */}
-            {campaign.bg_image && (
-                <div className="w-full bg-gray-100">
-                    <div className="max-w-[1400px] mx-auto">
-                        <img
-                            src={campaign.bg_image}
-                            alt={campaign.name}
-                            className="w-full h-auto max-h-48 md:max-h-64 object-contain mx-auto"
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* Breadcrumb */}
+        <div className="min-h-screen bg-gray-50 pt-4 md:pt-4">
+            {/* Breadcrumb - with Filter/Sort on mobile */}
             <div className="bg-white border-b border-gray-200">
-                <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Link href="/" className="hover:text-[var(--brand-royal-red)]">Home</Link>
-                        <span>/</span>
-                        <Link href="/offers" className="hover:text-[var(--brand-royal-red)]">Offers</Link>
-                        <span>/</span>
-                        <span className="text-gray-900 font-medium">{campaign.name}</span>
+                <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-3">
+                    <div className="flex items-center justify-between">
+                        {/* Breadcrumb Links */}
+                        <div className="flex items-center gap-2 text-xs md:text-sm text-gray-600 flex-wrap">
+                            <Link href="/" className="hover:text-[var(--brand-royal-red)]">Home</Link>
+                            <span>/</span>
+                            <Link href="/offers" className="hover:text-[var(--brand-royal-red)]">Offers</Link>
+                            <span>/</span>
+                            <span className="text-gray-900 font-medium">{campaign.name}</span>
+
+                            {/* Item count on mobile */}
+                            <span className="lg:hidden text-gray-400 ml-1">
+                                ({loading ? "..." : filteredAndSortedProducts.length})
+                            </span>
+                        </div>
+
+                        {/* Filter & Sort - Mobile only in breadcrumb */}
+                        <div className="flex items-center gap-2 lg:hidden">
+                            <button
+                                onClick={() => setMobileFiltersOpen(true)}
+                                className="flex items-center justify-center gap-1 px-3 py-1.5 border border-gray-200 rounded-full hover:bg-gray-50 bg-white text-xs font-medium transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                                </svg>
+                                <span>Filter</span>
+                            </button>
+                            <div className="relative" ref={sortDropdownRef}>
+                                <button
+                                    onClick={() => setMobileSortOpen(!mobileSortOpen)}
+                                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                                >
+                                    <span>
+                                        {sortBy === "recommended" ? "Sort" :
+                                            sortBy === "newest" ? "New" :
+                                                sortBy === "price-low" ? "Low" :
+                                                    sortBy === "price-high" ? "High" :
+                                                        sortBy === "discount" ? "Discount" : "Sort"}
+                                    </span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${mobileSortOpen ? 'rotate-180' : ''}`}>
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
+                                </button>
+
+                                {mobileSortOpen && (
+                                    <>
+                                        <div className="fixed inset-0 bg-black/50 z-[100] md:hidden" onClick={() => setMobileSortOpen(false)}></div>
+                                        <div className="fixed inset-x-0 bottom-0 z-[101] w-full rounded-t-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-xl md:rounded-lg md:absolute md:top-full md:left-0 md:right-auto md:bottom-auto md:w-56 md:mt-2 bg-white border-t md:border border-gray-100 py-2 pb-20 md:pb-2 max-h-[60vh] md:max-h-96 overflow-y-auto">
+                                            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 md:hidden">
+                                                <span className="font-bold text-gray-900">Sort By</span>
+                                                <button onClick={() => setMobileSortOpen(false)} className="p-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                </button>
+                                            </div>
+                                            {[
+                                                { value: "recommended", label: "Recommended" },
+                                                { value: "discount", label: "Highest Discount" },
+                                                { value: "newest", label: "Newest First" },
+                                                { value: "price-low", label: "Price: Low to High" },
+                                                { value: "price-high", label: "Price: High to Low" },
+                                            ].map(option => (
+                                                <button
+                                                    key={option.value}
+                                                    onClick={() => {
+                                                        setSortBy(option.value);
+                                                        setMobileSortOpen(false);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-3 md:py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortBy === option.value ? 'text-[var(--brand-royal-red)] font-bold' : 'text-gray-700'}`}
+                                                >
+                                                    {option.label}
+                                                    {sortBy === option.value && (
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--brand-royal-red)]">
+                                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Main Content */}
-            <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">
-                {/* Header with Sort */}
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-                            {campaign.name} Products
-                        </h2>
-                        <p className="text-sm text-gray-600">
-                            {products.length} products
-                        </p>
+            <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-6">
+                <div className="flex gap-6">
+                    {/* Filter Sidebar - Desktop */}
+                    <div className="hidden lg:block w-64 flex-shrink-0">
+                        <FilterSidebar
+                            filters={filters}
+                            onFilterChange={handleFilterChange}
+                            onClearAll={handleClearAll}
+                            products={products}
+                            categories={campaignCategories}
+                            hideBrandFilter={false}
+                        />
                     </div>
 
-                    <div className="relative">
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] appearance-none pr-8 font-medium"
-                        >
-                            <option value="recommended">Recommended</option>
-                            <option value="discount">Highest Discount</option>
-                            <option value="price-low">Price: Low to High</option>
-                            <option value="price-high">Price: High to Low</option>
-                            <option value="newest">Newest First</option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
+                    {/* Products Section */}
+                    <div className="flex-1">
+                        {/* Header with Filters and Sort - Desktop */}
+                        <div className="hidden md:flex items-center justify-between mb-6 gap-4 border-b border-gray-200 pb-4">
+                            {/* Left: Filters */}
+                            <div className="flex-1">
+                                <CategoryTopFilters
+                                    availableSizes={availableSizes}
+                                    selectedSizes={filters.sizes}
+                                    onSizeChange={(size) => {
+                                        const newSizes = filters.sizes.includes(size)
+                                            ? filters.sizes.filter(s => s !== size)
+                                            : [...filters.sizes, size];
+                                        handleFilterChange('sizes', newSizes);
+                                    }}
+                                    className="ml-0"
+                                />
+                            </div>
+
+                            {/* Right: Sort Dropdown */}
+                            <div className="flex-shrink-0">
+                                <div className="relative">
+                                    <select
+                                        value={sortBy}
+                                        onChange={(e) => setSortBy(e.target.value)}
+                                        className="px-4 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] appearance-none font-medium pr-8"
+                                    >
+                                        <option value="recommended">Recommended</option>
+                                        <option value="discount">Highest Discount</option>
+                                        <option value="newest">Newest First</option>
+                                        <option value="price-low">Price: Low to High</option>
+                                        <option value="price-high">Price: High to Low</option>
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
+                        {/* Products Grid */}
+                        {filteredAndSortedProducts.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
+                                {filteredAndSortedProducts.map((product) => (
+                                    <ProductCard key={product.id} product={product} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-20">
+                                <p className="text-gray-500 text-lg">No products found.</p>
+                                <button
+                                    onClick={handleClearAll}
+                                    className="mt-4 text-[var(--brand-royal-red)] font-semibold hover:underline"
+                                >
+                                    Clear all filters
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
-
-                {/* Products Grid */}
-                {sortedProducts.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-                        {sortedProducts.map((product) => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-20">
-                        <p className="text-gray-500 text-lg">No products in this campaign.</p>
-                        <Link href="/offers" className="text-[var(--brand-royal-red)] font-semibold hover:underline mt-4 inline-block">
-                            ← Browse other offers
-                        </Link>
-                    </div>
-                )}
             </div>
+
+            {/* Mobile Filter Modal */}
+            {mobileFiltersOpen && (
+                <div className="fixed inset-0 z-[70] lg:hidden">
+                    <div className="absolute inset-0 bg-black/50" onClick={() => setMobileFiltersOpen(false)}></div>
+                    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white overflow-y-auto pb-20">
+                        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                            <h2 className="text-lg font-bold">Filters</h2>
+                            <button onClick={() => setMobileFiltersOpen(false)}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <FilterSidebar
+                            filters={filters}
+                            onFilterChange={handleFilterChange}
+                            onClearAll={handleClearAll}
+                            products={products}
+                            categories={campaignCategories}
+                            hideBrandFilter={false}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
