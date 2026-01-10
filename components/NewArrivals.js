@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import ProductCard from "./ProductCard";
 import { getNewArrivalsFromServer } from "@/lib/api";
 
@@ -141,14 +142,14 @@ const NewArrivals = () => {
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
                         NEW ARRIVALS
                     </h2>
-                    <button className="text-sm font-semibold text-[var(--brand-royal-red)] hover:underline uppercase tracking-wide">
+                    <Link href="/new-arrivals" className="text-sm font-semibold text-[var(--brand-royal-red)] hover:underline uppercase tracking-wide">
                         View All →
-                    </button>
+                    </Link>
                 </div>
 
                 {/* Products Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                    {products.map((product) => (
+                    {products.slice(0, 8).map((product) => (
                         <ProductCard key={product.id} product={product} />
                     ))}
                 </div>

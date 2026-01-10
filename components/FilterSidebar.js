@@ -81,8 +81,8 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBran
                 <div className="mb-6 pb-6 border-b border-gray-200">
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Categories</h4>
                     <div className="space-y-3">
-                        {visibleCategories.map((category) => (
-                            <label key={category.id} className="flex items-center cursor-pointer group">
+                        {visibleCategories.map((category, index) => (
+                            <label key={`${category.id}-${index}`} className="flex items-center cursor-pointer group">
                                 <input
                                     type="checkbox"
                                     checked={selectedCategoryId == category.id}
@@ -126,8 +126,8 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBran
                     )}
 
                     <div className="space-y-3">
-                        {visibleBrands.map((brand) => (
-                            <label key={brand} className="flex items-center cursor-pointer group">
+                        {visibleBrands.map((brand, index) => (
+                            <label key={`${brand}-${index}`} className="flex items-center cursor-pointer group">
                                 <input
                                     type="checkbox"
                                     checked={filters.brands.includes(brand)}

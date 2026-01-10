@@ -81,8 +81,8 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
             const response = await saveProductReview(payload, token);
 
             if (response.success) {
-                // Success - just close or show inline state? User said no toast.
-                // Just close for now as per "stop that".
+                // Success toast
+                showToast({ message: "Review submitted successfully!", type: "success" });
                 onClose();
                 // Reset form
                 setRating(0);
@@ -93,12 +93,17 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
             }
 
         } catch (err) {
-            console.log("Review submission message:", err.message); // Changed to log
+            console.log("Review submission message:", err.message);
 
-            // Check for "already reviewed" to show as info/warning instead of scary error
-            // The exact message from user expectation: "You have already reviewed this product."
             const message = err.message || "An error occurred.";
-            setError(message);
+
+            // Check for "already reviewed" and show info toast instead of inline error
+            if (message.toLowerCase().includes("already reviewed")) {
+                showToast({ message: "You have already reviewed this product.", type: "info" });
+                onClose();
+            } else {
+                setError(message);
+            }
         } finally {
             setLoading(false);
         }

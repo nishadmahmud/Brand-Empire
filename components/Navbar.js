@@ -30,6 +30,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
     const isSearchSubmittedRef = useRef(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [expandedCategory, setExpandedCategory] = useState(null);
+    const [expandedSubcategory, setExpandedSubcategory] = useState(null);
     const router = useRouter();
 
     // Handle search submit (Enter key)
@@ -580,21 +581,45 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                         <div className="bg-gray-50 py-2">
                                             {category.sub_category.map((subCat) => (
                                                 <div key={subCat.id}>
-                                                    <Link
-                                                        href={`/category/${category.category_id}?subcategory=${subCat.id}`}
-                                                        className="block px-8 py-2 text-sm text-[var(--brand-royal-red)] font-medium hover:bg-gray-100"
-                                                        onClick={() => setMobileMenuOpen(false)}
-                                                    >
-                                                        {subCat.name}
-                                                    </Link>
-                                                    {/* Child categories */}
-                                                    {subCat.child_categories && subCat.child_categories.length > 0 && (
-                                                        <div className="pl-4">
+                                                    <div className="flex items-center">
+                                                        <Link
+                                                            href={`/category/${category.category_id}?subcategory=${subCat.id}`}
+                                                            className="flex-1 px-8 py-2 text-sm text-[var(--brand-royal-red)] font-medium hover:bg-gray-100"
+                                                            onClick={() => setMobileMenuOpen(false)}
+                                                        >
+                                                            {subCat.name}
+                                                        </Link>
+                                                        {/* Toggle button for child categories */}
+                                                        {subCat.child_categories && subCat.child_categories.length > 0 && (
+                                                            <button
+                                                                onClick={() => setExpandedSubcategory(expandedSubcategory === subCat.id ? null : subCat.id)}
+                                                                className="px-4 py-2 text-gray-400 hover:bg-gray-100"
+                                                            >
+                                                                <svg
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    width="14"
+                                                                    height="14"
+                                                                    viewBox="0 0 24 24"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="2"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    className={`transition-transform duration-200 ${expandedSubcategory === subCat.id ? 'rotate-90' : ''}`}
+                                                                >
+                                                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                                                </svg>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    {/* Child categories - only shown when subcategory is expanded */}
+                                                    {expandedSubcategory === subCat.id && subCat.child_categories && subCat.child_categories.length > 0 && (
+                                                        <div className="bg-gray-100 pl-4">
                                                             {subCat.child_categories.map((child) => (
                                                                 <Link
                                                                     key={child.id}
                                                                     href={`/category/${category.category_id}?subcategory=${subCat.id}&child=${child.id}`}
-                                                                    className="block px-8 py-1.5 text-xs text-gray-600 hover:text-[var(--brand-royal-red)] hover:bg-gray-100"
+                                                                    className="block px-8 py-1.5 text-xs text-gray-600 hover:text-[var(--brand-royal-red)] hover:bg-gray-200"
                                                                     onClick={() => setMobileMenuOpen(false)}
                                                                 >
                                                                     {child.name}
