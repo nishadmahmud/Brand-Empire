@@ -79,28 +79,46 @@ const NewArrivals = () => {
 
                 if (response.success && response.data && response.data.data && response.data.data.length > 0) {
                     // Transform API data to match ProductCard structure
-                    const apiProducts = response.data.data.map(product => ({
-                        id: product.id,
-                        brand: product.brands?.name || product.category_name || "BRAND",
-                        name: product.name,
-                        price: `৳ ${product.retails_price.toLocaleString()}`,
-                        originalPrice: product.discount > 0 ? `৳ ${(product.retails_price / (1 - product.discount / 100)).toFixed(0)}` : "",
-                        discount: product.discount > 0 ? `${product.discount}% OFF` : "",
-                        images: product.image_paths && product.image_paths.length > 0
-                            ? product.image_paths
-                            : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
-                        sizes: product.items && product.items.length > 0
-                            ? product.items.map(item => item.size)
-                            : ["S", "M", "L", "XL"], // Default sizes if no variants
-                        unavailableSizes: product.items && product.items.length > 0
-                            ? product.items.filter(item => item.quantity === 0).map(item => item.size)
-                            : [],
-                        color: product.name.toLowerCase().includes("black") ? "black" :
-                            product.name.toLowerCase().includes("blue") ? "blue" :
-                                product.name.toLowerCase().includes("white") ? "white" : "default",
-                        rating: product.review_summary?.average_rating || 0,
-                        reviews: product.review_summary?.total_reviews || 0,
-                    }));
+                    const apiProducts = response.data.data.map(product => {
+                        const mrp = product.retails_price || 0;
+                        let finalPrice = mrp;
+                        let discountLabel = "";
+
+                        if (product.discount > 0) {
+                            const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
+                            if (discountType === 'amount') {
+                                finalPrice = mrp - product.discount;
+                                discountLabel = `৳${product.discount} OFF`;
+                            } else {
+                                finalPrice = Math.round(mrp * (1 - product.discount / 100));
+                                discountLabel = `${product.discount}% OFF`;
+                            }
+                            if (finalPrice < 0) finalPrice = 0;
+                        }
+
+                        return {
+                            id: product.id,
+                            brand: product.brands?.name || product.category_name || "BRAND",
+                            name: product.name,
+                            price: `৳ ${finalPrice.toLocaleString()}`,
+                            originalPrice: product.discount > 0 ? `৳ ${mrp.toLocaleString()}` : "",
+                            discount: discountLabel,
+                            images: product.image_paths && product.image_paths.length > 0
+                                ? product.image_paths
+                                : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
+                            sizes: product.items && product.items.length > 0
+                                ? product.items.map(item => item.size)
+                                : ["S", "M", "L", "XL"], // Default sizes if no variants
+                            unavailableSizes: product.items && product.items.length > 0
+                                ? product.items.filter(item => item.quantity === 0).map(item => item.size)
+                                : [],
+                            color: product.name.toLowerCase().includes("black") ? "black" :
+                                product.name.toLowerCase().includes("blue") ? "blue" :
+                                    product.name.toLowerCase().includes("white") ? "white" : "default",
+                            rating: product.review_summary?.average_rating || 0,
+                            reviews: product.review_summary?.total_reviews || 0,
+                        };
+                    });
 
                     setProducts(apiProducts);
                 }

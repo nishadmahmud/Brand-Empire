@@ -300,9 +300,9 @@ const CartPage = () => {
                             {/* Use available sizes if present, otherwise fallback to defaults or current size */}
                             {(openSizeModal.availableSizes && openSizeModal.availableSizes.length > 0
                                 ? openSizeModal.availableSizes
-                                : ['S', 'M', 'L', 'XL', 'XXL']).map((size) => (
+                                : ['S', 'M', 'L', 'XL', 'XXL']).map((size, index) => (
                                     <button
-                                        key={size}
+                                        key={`size-${index}-${size}`}
                                         onClick={() => {
                                             updateSize(openSizeModal.id, openSizeModal.selectedSize, size, openSizeModal.selectedColor);
                                             setOpenSizeModal(null);

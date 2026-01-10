@@ -184,8 +184,8 @@ export default function CategoryTopFilters({
                             </div>
                             {availableSizes && availableSizes.length > 0 ? (
                                 <div className="grid grid-cols-4 gap-2 max-h-80 overflow-y-auto custom-scrollbar">
-                                    {availableSizes.map(size => (
-                                        <label key={size} className={`flex items-center justify-center p-2 border rounded cursor-pointer text-xs font-medium transition-all ${selectedSizes.includes(size)
+                                    {availableSizes.map((size, index) => (
+                                        <label key={`size-${index}-${size}`} className={`flex items-center justify-center p-2 border rounded cursor-pointer text-xs font-medium transition-all ${selectedSizes.includes(size)
                                             ? 'bg-[var(--brand-royal-red)] text-white border-[var(--brand-royal-red)]'
                                             : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                                             }`}>

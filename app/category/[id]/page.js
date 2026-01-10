@@ -131,34 +131,54 @@ export default function CategoryPage() {
 
                 if (response.success && response.data) {
                     // Transform API data to ProductCard format
-                    const transformedProducts = response.data.map(product => ({
-                        id: product.id,
-                        brand: product.brand_name || product.brands?.name || "BRAND",
-                        name: product.name,
-                        price: `৳ ${product.retails_price.toLocaleString()}`,
-                        originalPrice: product.discount > 0
-                            ? `৳ ${(product.retails_price / (1 - product.discount / 100)).toFixed(0)}`
-                            : "",
-                        discount: product.discount > 0 ? `${product.discount}% OFF` : "",
-                        images: product.image_paths && product.image_paths.length > 0
-                            ? product.image_paths
-                            : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
-                        sizes: product.product_variants && product.product_variants.length > 0
-                            ? product.product_variants.map(v => v.name)
-                            : ["S", "M", "L", "XL"],
-                        unavailableSizes: product.product_variants && product.product_variants.length > 0
-                            ? product.product_variants.filter(v => v.quantity === 0).map(v => v.name)
-                            : [],
-                        color: product.color ||
-                            (product.name.toLowerCase().includes("black") ? "black" :
-                                product.name.toLowerCase().includes("blue") ? "blue" :
-                                    product.name.toLowerCase().includes("white") ? "white" : "gray"),
-                        rating: product.review_summary?.average_rating || 0,
-                        reviews: product.review_summary?.total_reviews || 0,
-                        // Store raw price for filtering
-                        rawPrice: product.retails_price,
-                        rawDiscount: product.discount,
-                    }));
+                    const transformedProducts = response.data.map(product => {
+                        // retails_price is the MRP (original price)
+                        const mrp = product.retails_price || 0;
+                        let finalPrice = mrp;
+                        let discountLabel = "";
+
+                        // Apply discount to MRP to get selling price
+                        if (product.discount > 0) {
+                            const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
+
+                            if (discountType === 'amount') {
+                                finalPrice = mrp - product.discount;
+                                discountLabel = `৳${product.discount} OFF`;
+                            } else {
+                                // Percentage discount
+                                finalPrice = Math.round(mrp * (1 - product.discount / 100));
+                                discountLabel = `${product.discount}% OFF`;
+                            }
+                            if (finalPrice < 0) finalPrice = 0;
+                        }
+
+                        return {
+                            id: product.id,
+                            brand: product.brand_name || product.brands?.name || "BRAND",
+                            name: product.name,
+                            price: `৳ ${finalPrice.toLocaleString()}`,
+                            originalPrice: product.discount > 0 ? `৳ ${mrp.toLocaleString()}` : "",
+                            discount: discountLabel,
+                            images: product.image_paths && product.image_paths.length > 0
+                                ? product.image_paths
+                                : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
+                            sizes: product.product_variants && product.product_variants.length > 0
+                                ? product.product_variants.map(v => v.name)
+                                : ["S", "M", "L", "XL"],
+                            unavailableSizes: product.product_variants && product.product_variants.length > 0
+                                ? product.product_variants.filter(v => v.quantity === 0).map(v => v.name)
+                                : [],
+                            color: product.color ||
+                                (product.name.toLowerCase().includes("black") ? "black" :
+                                    product.name.toLowerCase().includes("blue") ? "blue" :
+                                        product.name.toLowerCase().includes("white") ? "white" : "gray"),
+                            rating: product.review_summary?.average_rating || 0,
+                            reviews: product.review_summary?.total_reviews || 0,
+                            // Store raw price for filtering
+                            rawPrice: finalPrice,
+                            rawDiscount: product.discount,
+                        };
+                    });
 
                     setProducts(transformedProducts);
 
