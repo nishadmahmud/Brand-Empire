@@ -58,6 +58,9 @@ export default function CategoryPage() {
         return sizes;
     }, [products]);
 
+    // Pre-select subcategory filter when arriving from navbar with ?subcategory=X
+    // REMOVED - navigation should work normally, multi-select is for WITHIN page filtering
+
     // Close sort dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -116,77 +119,118 @@ export default function CategoryPage() {
         }
     }, [categoryId, subcategoryId, childId]);
 
+    // Helper function to transform product data
+    const transformProduct = (product) => {
+        const mrp = product.retails_price || 0;
+        let finalPrice = mrp;
+        let discountLabel = "";
+
+        if (product.discount > 0) {
+            const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
+            if (discountType === 'amount') {
+                finalPrice = mrp - product.discount;
+                discountLabel = `৳${product.discount} OFF`;
+            } else {
+                finalPrice = Math.round(mrp * (1 - product.discount / 100));
+                discountLabel = `${product.discount}% OFF`;
+            }
+            if (finalPrice < 0) finalPrice = 0;
+        }
+
+        return {
+            id: product.id,
+            brand: product.brand_name || product.brands?.name || "BRAND",
+            name: product.name,
+            price: `৳ ${finalPrice.toLocaleString()}`,
+            originalPrice: product.discount > 0 ? `৳ ${mrp.toLocaleString()}` : "",
+            discount: discountLabel,
+            images: product.image_paths && product.image_paths.length > 0
+                ? product.image_paths
+                : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
+            sizes: product.product_variants && product.product_variants.length > 0
+                ? product.product_variants.map(v => v.name)
+                : ["S", "M", "L", "XL"],
+            unavailableSizes: product.product_variants && product.product_variants.length > 0
+                ? product.product_variants.filter(v => v.quantity === 0).map(v => v.name)
+                : [],
+            color: product.color ||
+                (product.name.toLowerCase().includes("black") ? "black" :
+                    product.name.toLowerCase().includes("blue") ? "blue" :
+                        product.name.toLowerCase().includes("white") ? "white" : "gray"),
+            rating: product.review_summary?.average_rating || 0,
+            reviews: product.review_summary?.total_reviews || 0,
+            rawPrice: finalPrice,
+            rawDiscount: product.discount,
+            subcategoryId: product.sub_category_id,
+            childCategoryId: product.child_category_id,
+        };
+    };
+
+    // Fetch products based on current level AND selected category filters
     useEffect(() => {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                let response;
-                if (childId) {
-                    response = await getProductsByChildCategory(childId, page);
-                } else if (subcategoryId) {
-                    response = await getProductsBySubcategory(subcategoryId, page);
-                } else {
-                    response = await getCategoryWiseProducts(categoryId, page);
-                }
+                let allProducts = [];
 
-                if (response.success && response.data) {
-                    // Transform API data to ProductCard format
-                    const transformedProducts = response.data.map(product => {
-                        // retails_price is the MRP (original price)
-                        const mrp = product.retails_price || 0;
-                        let finalPrice = mrp;
-                        let discountLabel = "";
-
-                        // Apply discount to MRP to get selling price
-                        if (product.discount > 0) {
-                            const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
-
-                            if (discountType === 'amount') {
-                                finalPrice = mrp - product.discount;
-                                discountLabel = `৳${product.discount} OFF`;
-                            } else {
-                                // Percentage discount
-                                finalPrice = Math.round(mrp * (1 - product.discount / 100));
-                                discountLabel = `${product.discount}% OFF`;
+                // Determine what to fetch based on current level and selected filters
+                if (subcategoryId) {
+                    // We're on a subcategory page
+                    if (filters.categories.length > 0) {
+                        // Fetch products for each selected child category
+                        const fetchPromises = filters.categories.map(childCatId =>
+                            getProductsByChildCategory(childCatId, page)
+                        );
+                        const responses = await Promise.all(fetchPromises);
+                        responses.forEach(response => {
+                            if (response.success && response.data) {
+                                allProducts = [...allProducts, ...response.data];
                             }
-                            if (finalPrice < 0) finalPrice = 0;
+                        });
+                    } else {
+                        // No child categories selected, fetch all for this subcategory
+                        const response = await getProductsBySubcategory(subcategoryId, page);
+                        if (response.success && response.data) {
+                            allProducts = response.data;
                         }
-
-                        return {
-                            id: product.id,
-                            brand: product.brand_name || product.brands?.name || "BRAND",
-                            name: product.name,
-                            price: `৳ ${finalPrice.toLocaleString()}`,
-                            originalPrice: product.discount > 0 ? `৳ ${mrp.toLocaleString()}` : "",
-                            discount: discountLabel,
-                            images: product.image_paths && product.image_paths.length > 0
-                                ? product.image_paths
-                                : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
-                            sizes: product.product_variants && product.product_variants.length > 0
-                                ? product.product_variants.map(v => v.name)
-                                : ["S", "M", "L", "XL"],
-                            unavailableSizes: product.product_variants && product.product_variants.length > 0
-                                ? product.product_variants.filter(v => v.quantity === 0).map(v => v.name)
-                                : [],
-                            color: product.color ||
-                                (product.name.toLowerCase().includes("black") ? "black" :
-                                    product.name.toLowerCase().includes("blue") ? "blue" :
-                                        product.name.toLowerCase().includes("white") ? "white" : "gray"),
-                            rating: product.review_summary?.average_rating || 0,
-                            reviews: product.review_summary?.total_reviews || 0,
-                            // Store raw price for filtering
-                            rawPrice: finalPrice,
-                            rawDiscount: product.discount,
-                        };
-                    });
-
-                    setProducts(transformedProducts);
-
-                    // Set pagination info
-                    if (response.pagination) {
-                        setTotalPages(response.pagination.last_page);
+                        if (response.pagination) {
+                            setTotalPages(response.pagination.last_page);
+                        }
+                    }
+                } else {
+                    // We're on main category page
+                    if (filters.categories.length > 0) {
+                        // Fetch products for each selected subcategory
+                        const fetchPromises = filters.categories.map(subCatId =>
+                            getProductsBySubcategory(subCatId, page)
+                        );
+                        const responses = await Promise.all(fetchPromises);
+                        responses.forEach(response => {
+                            if (response.success && response.data) {
+                                allProducts = [...allProducts, ...response.data];
+                            }
+                        });
+                    } else {
+                        // No subcategories selected, fetch all for main category
+                        const response = await getCategoryWiseProducts(categoryId, page);
+                        if (response.success && response.data) {
+                            allProducts = response.data;
+                        }
+                        if (response.pagination) {
+                            setTotalPages(response.pagination.last_page);
+                        }
                     }
                 }
+
+                // Remove duplicates by product id
+                const uniqueProducts = allProducts.filter((product, index, self) =>
+                    index === self.findIndex(p => p.id === product.id)
+                );
+
+                // Transform products
+                const transformedProducts = uniqueProducts.map(transformProduct);
+                setProducts(transformedProducts);
+
             } catch (error) {
                 console.error("Error fetching products:", error);
             } finally {
@@ -197,9 +241,9 @@ export default function CategoryPage() {
         if (categoryId) {
             fetchProducts();
         }
-    }, [categoryId, subcategoryId, page]);
+    }, [categoryId, subcategoryId, page, filters.categories]);
 
-    // Apply filters and sorting
+    // Apply filters and sorting (categories already handled by API fetch)
     const filteredAndSortedProducts = React.useMemo(() => {
         let result = [...products];
 
@@ -475,8 +519,6 @@ export default function CategoryPage() {
                             onClearAll={handleClearAll}
                             products={products}
                             categories={subcategoryId ? childCategories : subCategories}
-                            selectedCategoryId={subcategoryId ? childId : subcategoryId}
-                            onCategoryChange={subcategoryId ? handleChildCategoryChange : handleSubCategoryChange}
                         />
                     </div>
 
@@ -592,8 +634,6 @@ export default function CategoryPage() {
                             onClearAll={handleClearAll}
                             products={products}
                             categories={subcategoryId ? childCategories : subCategories}
-                            selectedCategoryId={subcategoryId ? childId : subcategoryId}
-                            onCategoryChange={subcategoryId ? handleChildCategoryChange : handleSubCategoryChange}
                         />
                     </div>
                 </div>
