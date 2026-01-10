@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+
+// Force dynamic rendering to avoid prerender issues
+export const dynamic = 'force-dynamic';
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
@@ -10,7 +13,6 @@ import { getNewArrivalsFromServer, getCategoriesFromServer, getProductById } fro
 export default function NewArrivalsPage() {
     const router = useRouter();
     const pathname = usePathname();
-    const searchParams = useSearchParams();
 
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);

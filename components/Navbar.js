@@ -376,48 +376,78 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                         onMouseEnter={() => setActiveMegaMenu(activeMegaMenu)}
                         onMouseLeave={() => setActiveMegaMenu(null)}
                     >
-                        {/* Offers Mega Menu - Dynamic Campaigns */}
+                        {/* Offers Mega Menu - Dynamic Campaigns with Banners */}
                         {activeMegaMenu === 'offers' && (
-                            <div className="px-8 py-6">
-                                <div className="flex flex-wrap justify-center items-center gap-4">
-                                    {campaigns.length > 0 ? (
-                                        <>
-                                            {campaigns.map((campaign) => (
+                            <div className="p-6">
+                                {campaigns.length > 0 ? (
+                                    <div className="flex flex-col gap-4">
+                                        {/* Campaign Banner Cards */}
+                                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {campaigns.slice(0, 3).map((campaign) => (
                                                 <Link
                                                     key={campaign.id}
                                                     href={`/offers/${campaign.id}`}
-                                                    className="group flex items-center gap-3 px-5 py-3 rounded-lg bg-gray-50 hover:bg-[var(--brand-royal-red)] transition-all"
+                                                    className="group relative rounded-xl overflow-hidden h-32 md:h-36 shadow-md hover:shadow-xl transition-all duration-300"
                                                     onClick={() => setActiveMegaMenu(null)}
                                                 >
-                                                    <span className="text-2xl">🔥</span>
-                                                    <div>
-                                                        <span className="block text-sm font-bold text-gray-900 group-hover:text-white transition-colors">
-                                                            {campaign.name}
-                                                        </span>
-                                                        <span className="text-xs text-gray-500 group-hover:text-white/80 transition-colors">
-                                                            Up to {campaign.discount}% OFF
-                                                        </span>
+                                                    {/* Background Image or Gradient */}
+                                                    {campaign.bg_image ? (
+                                                        <Image
+                                                            src={campaign.bg_image}
+                                                            alt={campaign.name}
+                                                            fill
+                                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                            unoptimized
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-gradient-to-br from-[var(--brand-royal-red)] to-red-700" />
+                                                    )}
+                                                    {/* Overlay */}
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                                                    {/* Content */}
+                                                    <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                                                        <h3 className="font-bold text-sm md:text-base truncate">{campaign.name}</h3>
+                                                        <div className="flex items-center justify-between mt-1">
+                                                            <span className="text-xs bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                                                                {campaign.discount_type === 'amount'
+                                                                    ? `৳${campaign.discount} OFF`
+                                                                    : `Up to ${campaign.discount}% OFF`
+                                                                }
+                                                            </span>
+                                                            <span className="text-xs opacity-80">
+                                                                {campaign.products?.length || 0} items
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </Link>
                                             ))}
+                                        </div>
+                                        {/* View All Link */}
+                                        <div className="text-center pt-2 border-t border-gray-100">
                                             <Link
                                                 href="/offers"
-                                                className="px-5 py-3 text-sm font-bold text-[var(--brand-royal-red)] hover:underline"
+                                                className="inline-flex items-center gap-2 px-6 py-2 text-sm font-bold text-[var(--brand-royal-red)] hover:bg-red-50 rounded-full transition-colors"
                                                 onClick={() => setActiveMegaMenu(null)}
                                             >
-                                                View All Offers →
+                                                View All Offers
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M5 12h14M12 5l7 7-7 7" />
+                                                </svg>
                                             </Link>
-                                        </>
-                                    ) : (
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-500 mb-4">No active offers right now</p>
                                         <Link
                                             href="/offers"
-                                            className="px-5 py-3 text-sm font-bold text-[var(--brand-royal-red)] hover:underline"
+                                            className="text-[var(--brand-royal-red)] font-semibold hover:underline"
                                             onClick={() => setActiveMegaMenu(null)}
                                         >
-                                            View All Offers →
+                                            Check back later →
                                         </Link>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
