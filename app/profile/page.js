@@ -1011,14 +1011,23 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
         }
     };
 
+    // Filter coupons expiring in 5 days or less
+    const expiringSoonCoupons = allCoupons.filter(coupon => {
+        const now = new Date();
+        const expireDate = new Date(coupon.expire_date);
+        const diffTime = expireDate - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 0 && diffDays <= 5;
+    });
+
     return (
         <div className="bg-white rounded-xl shadow-sm border">
             {/* Tabs */}
-            <div className="border-b">
+            <div className="border-b overflow-x-auto">
                 <div className="flex">
                     <button
                         onClick={() => setActiveTab("all")}
-                        className={`flex-1 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "all"
+                        className={`flex-1 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-2 ${activeTab === "all"
                             ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]"
                             : "border-transparent text-gray-500 hover:text-gray-700"
                             }`}
@@ -1026,8 +1035,17 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                         All Coupons
                     </button>
                     <button
+                        onClick={() => setActiveTab("expiring")}
+                        className={`flex-1 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-2 ${activeTab === "expiring"
+                            ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]"
+                            : "border-transparent text-gray-500 hover:text-gray-700"
+                            }`}
+                    >
+                        Expires Soon {expiringSoonCoupons.length > 0 && `(${expiringSoonCoupons.length})`}
+                    </button>
+                    <button
                         onClick={() => setActiveTab("my")}
-                        className={`flex-1 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "my"
+                        className={`flex-1 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-2 ${activeTab === "my"
                             ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]"
                             : "border-transparent text-gray-500 hover:text-gray-700"
                             }`}
@@ -1113,6 +1131,92 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                             <div className="text-center py-20 text-gray-400">
                                 <p className="text-4xl mb-4">🏷️</p>
                                 <p>No coupons available right now</p>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* Expires Soon Tab */}
+                {activeTab === "expiring" && (
+                    <>
+                        {allCouponsLoading ? (
+                            <div className="flex justify-center py-20">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
+                            </div>
+                        ) : expiringSoonCoupons.length > 0 ? (
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {expiringSoonCoupons.map(coupon => {
+                                    const collected = isAlreadyCollected(coupon.coupon_code);
+                                    const expireDate = new Date(coupon.expire_date);
+                                    const diffDays = Math.ceil((expireDate - new Date()) / (1000 * 60 * 60 * 24));
+
+                                    return (
+                                        <div
+                                            key={coupon.id}
+                                            className={`border rounded-lg p-5 relative overflow-hidden ${collected ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'
+                                                }`}
+                                        >
+                                            {/* Urgency Badge */}
+                                            <div className="absolute top-0 right-0 bg-orange-500 text-white text-xs px-2 py-1 rounded-bl font-medium">
+                                                ⏰ {diffDays} day{diffDays !== 1 ? 's' : ''} left
+                                            </div>
+
+                                            {/* Discount Badge */}
+                                            <div className="flex items-start justify-between mb-3 mt-2">
+                                                <div>
+                                                    <p className="text-2xl font-bold text-[var(--brand-royal-red)]">
+                                                        {coupon.coupon_amount_type === 'percentage'
+                                                            ? `${parseFloat(coupon.amount)}% OFF`
+                                                            : `৳${parseFloat(coupon.amount)} OFF`
+                                                        }
+                                                    </p>
+                                                    <p className="text-sm text-gray-600 font-medium">{coupon.coupon_name}</p>
+                                                </div>
+                                                {collected && (
+                                                    <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded font-medium">
+                                                        Collected
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Coupon Code */}
+                                            <div className="bg-white rounded border border-dashed border-gray-300 px-3 py-2 mb-3">
+                                                <p className="font-mono text-sm font-bold text-center text-gray-800">
+                                                    {coupon.coupon_code}
+                                                </p>
+                                            </div>
+
+                                            {/* Details */}
+                                            <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                                                {parseFloat(coupon.minimum_order_amount) > 0 && (
+                                                    <span>Min. order: ৳{parseFloat(coupon.minimum_order_amount)}</span>
+                                                )}
+                                                <span className="text-orange-600 font-medium">
+                                                    Expires: {expireDate.toLocaleDateString()}
+                                                </span>
+                                            </div>
+
+                                            {/* Collect Button */}
+                                            {!collected && (
+                                                <button
+                                                    onClick={() => handleCollect(coupon)}
+                                                    disabled={collectingId === coupon.id}
+                                                    className="w-full py-2.5 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
+                                                >
+                                                    {collectingId === coupon.id ? "Collecting..." : "Collect Before It's Gone!"}
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-center py-20 text-gray-400">
+                                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p>No coupons expiring soon</p>
+                                <p className="text-sm mt-1">Check back later for time-sensitive offers!</p>
                             </div>
                         )}
                     </>
