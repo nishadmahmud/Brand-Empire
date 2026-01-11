@@ -371,7 +371,7 @@ export default function CampaignPage() {
             </div>
 
             {/* Top Filters - Mobile */}
-            <div className="md:hidden sticky top-[56px] z-[60] bg-white border-b border-gray-100 px-4">
+            <div className="md:hidden bg-white border-b border-gray-100 px-4">
                 <CategoryTopFilters
                     selectedAttributeValues={filters.attributeValues}
                     onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
