@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { getAttributes } from "@/lib/api";
 
 /**
@@ -18,7 +19,13 @@ export default function CategoryTopFilters({
     const [openDropdown, setOpenDropdown] = useState(null);
     const [attributes, setAttributes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [mounted, setMounted] = useState(false);
     const itemsRef = useRef({});
+
+    // Set mounted for portal hydration safety
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Fetch attributes on mount
     useEffect(() => {
@@ -126,25 +133,58 @@ export default function CategoryTopFilters({
 
                     {openDropdown === `attr_${attribute.id}` && (
                         <>
-                            {/* Mobile backdrop */}
-                            <div
-                                className="fixed inset-0 bg-black/50 z-[100] md:hidden"
-                                onClick={() => setOpenDropdown(null)}
-                            />
+                            {/* Mobile modal - rendered via portal for iOS Safari */}
+                            {mounted && createPortal(
+                                <div className="md:hidden">
+                                    {/* Mobile backdrop */}
+                                    <div
+                                        className="fixed inset-0 bg-black/50 z-[100]"
+                                        onClick={() => setOpenDropdown(null)}
+                                    />
+                                    {/* Mobile dropdown */}
+                                    <div className="fixed inset-x-0 bottom-0 z-[101] w-full rounded-t-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] bg-white border-t border-gray-100 py-2 pb-20 max-h-[60vh] overflow-y-auto">
+                                        {/* Mobile header */}
+                                        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+                                            <span className="font-bold text-gray-900">{attribute.name}</span>
+                                            <button onClick={() => setOpenDropdown(null)} className="p-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        {/* Values list */}
+                                        <div className="p-2 space-y-1">
+                                            {attribute.values.map((value) => (
+                                                <button
+                                                    key={value.id}
+                                                    onClick={() => handleValueToggle(value.id)}
+                                                    className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${selectedAttributeValues.includes(value.id)
+                                                        ? 'text-[var(--brand-royal-red)] font-bold'
+                                                        : 'text-gray-700'
+                                                        }`}
+                                                >
+                                                    <div className={`w-4 h-4 border rounded flex items-center justify-center flex-shrink-0 ${selectedAttributeValues.includes(value.id)
+                                                        ? 'border-[var(--brand-royal-red)] bg-[var(--brand-royal-red)] text-white'
+                                                        : 'border-gray-300'
+                                                        }`}>
+                                                        {selectedAttributeValues.includes(value.id) && (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    {value.value}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>,
+                                document.body
+                            )}
 
-                            {/* Dropdown */}
-                            <div className="fixed inset-x-0 bottom-0 z-[101] w-full rounded-t-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-xl md:rounded-lg md:absolute md:top-full md:left-0 md:right-auto md:bottom-auto md:w-56 md:mt-2 bg-white border-t md:border border-gray-100 py-2 pb-20 md:pb-2 max-h-[60vh] overflow-y-auto">
-                                {/* Mobile header */}
-                                <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 md:hidden">
-                                    <span className="font-bold text-gray-900">{attribute.name}</span>
-                                    <button onClick={() => setOpenDropdown(null)} className="p-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                                        </svg>
-                                    </button>
-                                </div>
-
+                            {/* Desktop dropdown - rendered inline */}
+                            <div className="hidden md:block absolute top-full left-0 w-56 mt-2 bg-white border border-gray-100 rounded-lg shadow-xl py-2 max-h-96 overflow-y-auto z-50">
                                 {/* Values list */}
                                 <div className="p-2 space-y-1">
                                     {attribute.values.map((value) => (
