@@ -470,7 +470,7 @@ export default function NewArrivalsPage() {
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand-royal-red)]"></div>
                             </div>
                         ) : paginatedProducts.length > 0 ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
+                            <div className="relative z-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
                                 {paginatedProducts.map((product) => (
                                     <ProductCard key={product.id} product={product} />
                                 ))}

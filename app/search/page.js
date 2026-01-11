@@ -471,7 +471,7 @@ function SearchPageContent() {
                                 <p className="text-gray-500 text-lg">Enter a search term to find products</p>
                             </div>
                         ) : filteredAndSortedProducts.length > 0 ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
+                            <div className="relative z-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
                                 {filteredAndSortedProducts.map((product) => (
                                     <ProductCard key={product.id} product={product} />
                                 ))}
