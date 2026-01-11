@@ -261,100 +261,190 @@ export default function ProfileDashboard() {
                                 </Link>
                             </div>
 
-                            <nav className="p-4 space-y-2">
+                            <nav className="p-4">
+                                {/* Overview - Active indicator */}
                                 <button onClick={() => { setActiveSection("dashboard"); setSidebarOpen(false); }}
-                                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSection === "dashboard" ? "bg-red-50 text-[var(--brand-royal-red)] shadow-sm" : "text-gray-700 hover:bg-gray-50"}`}>
-                                    <Home size={20} />
-                                    <span>Dashboard</span>
+                                    className={`w-full text-left px-3 py-2 text-sm font-semibold transition-colors ${activeSection === "dashboard" ? "text-[var(--brand-royal-red)]" : "text-gray-700 hover:text-[var(--brand-royal-red)]"}`}>
+                                    Overview
                                 </button>
 
-                                <div>
-                                    <button onClick={() => setOrdersExpanded(!ordersExpanded)}
-                                        className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all">
-                                        <div className="flex items-center gap-3">
-                                            <Package size={20} />
-                                            <span>My Orders</span>
-                                        </div>
-                                        <ChevronDown size={18} className={`transition-transform ${ordersExpanded ? "rotate-180" : ""}`} />
+                                {/* ORDERS Section */}
+                                <div className="mt-6">
+                                    <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Orders</p>
+                                    <button onClick={() => { setActiveSection("orders"); setSidebarOpen(false); }}
+                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "orders" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        Orders & Returns
                                     </button>
-                                    {ordersExpanded && (
-                                        <div className="ml-9 mt-1 space-y-1">
-                                            <button onClick={() => { setActiveSection("orders"); setSidebarOpen(false); }}
-                                                className={`w-full text-left px-4 py-2 rounded-lg text-sm ${activeSection === "orders" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-600 hover:bg-gray-50"}`}>
-                                                Orders
-                                            </button>
-                                            <button onClick={() => { setActiveSection("tracking"); setSidebarOpen(false); }}
-                                                className={`w-full text-left px-4 py-2 rounded-lg text-sm ${activeSection === "tracking" ? "bg-red-50 text-[var(--brand-royal-red)]" : "text-gray-600 hover:bg-gray-50"}`}>
-                                                Order Tracking
-                                            </button>
-                                        </div>
-                                    )}
+                                    <button onClick={() => { setActiveSection("tracking"); setSidebarOpen(false); }}
+                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "tracking" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        Track Order
+                                    </button>
                                 </div>
 
-                                <button onClick={() => { setActiveSection("wishlist"); setSidebarOpen(false); }}
-                                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSection === "wishlist" ? "bg-red-50 text-[var(--brand-royal-red)] shadow-sm" : "text-gray-700 hover:bg-gray-50"}`}>
-                                    <Heart size={20} />
-                                    <span>Wishlist</span>
-                                    {wishlist.length > 0 && <span className="ml-auto bg-[var(--brand-royal-red)] text-white text-xs px-2 py-0.5 rounded-full font-semibold">{wishlist.length}</span>}
-                                </button>
+                                {/* CREDITS Section */}
+                                <div className="mt-6">
+                                    <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Credits</p>
+                                    <button onClick={() => { setActiveSection("coupons"); setSidebarOpen(false); }}
+                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "coupons" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        Coupons
+                                    </button>
+                                    <button onClick={() => { setActiveSection("benefits"); setSidebarOpen(false); }}
+                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "benefits" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        My Points
+                                    </button>
+                                </div>
 
-                                <button onClick={() => { setActiveSection("benefits"); setSidebarOpen(false); }}
-                                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSection === "benefits" ? "bg-red-50 text-[var(--brand-royal-red)] shadow-sm" : "text-gray-700 hover:bg-gray-50"}`}>
-                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-                                    </svg>
-                                    <span>My Benefits</span>
-                                </button>
+                                {/* ACCOUNT Section */}
+                                <div className="mt-6">
+                                    <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Account</p>
+                                    <button onClick={() => { setActiveSection("profile"); setSidebarOpen(false); }}
+                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "profile" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        Profile
+                                    </button>
+                                    <button onClick={() => { setActiveSection("wishlist"); setSidebarOpen(false); }}
+                                        className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between ${activeSection === "wishlist" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        Wishlist
+                                        {wishlist.length > 0 && <span className="bg-[var(--brand-royal-red)] text-white text-[10px] px-1.5 py-0.5 rounded-full">{wishlist.length}</span>}
+                                    </button>
+                                    <Link href="/checkout" className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                                        Addresses
+                                    </Link>
+                                </div>
 
-                                <button onClick={() => { setActiveSection("coupons"); setSidebarOpen(false); }}
-                                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSection === "coupons" ? "bg-red-50 text-[var(--brand-royal-red)] shadow-sm" : "text-gray-700 hover:bg-gray-50"}`}>
-                                    <Tag size={20} />
-                                    <span>My Coupons</span>
-                                </button>
+                                {/* LEGAL Section */}
+                                <div className="mt-6">
+                                    <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Legal</p>
+                                    <Link href="/terms" className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                                        Terms of Use
+                                    </Link>
+                                    <Link href="/privacy" className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                                        Privacy Center
+                                    </Link>
+                                </div>
 
-                                <button onClick={() => { setActiveSection("profile"); setSidebarOpen(false); }}
-                                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSection === "profile" ? "bg-red-50 text-[var(--brand-royal-red)] shadow-sm" : "text-gray-700 hover:bg-gray-50"}`}>
-                                    <User size={20} />
-                                    <span>Profile Settings</span>
-                                </button>
-
-                                <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all mt-4 border-t pt-6">
-                                    <LogOut size={20} />
-                                    <span>Logout</span>
-                                </button>
+                                {/* Logout */}
+                                <div className="mt-6 pt-4 border-t">
+                                    <button onClick={logout} className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-red-600 transition-colors">
+                                        Logout
+                                    </button>
+                                </div>
                             </nav>
                         </div>
                     </aside>
 
                     {/* Main Content Area - Full width on mobile */}
                     <div className="flex-1 w-full lg:w-auto min-w-0">
-                        {/* Dashboard */}
+                        {/* Dashboard / Overview */}
                         {activeSection === "dashboard" && (
                             <>
-                                <div className="bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-2xl p-6 md:p-8 mb-6 md:mb-8 text-white">
-                                    <h1 className="text-2xl md:text-3xl font-bold mb-2">Hello, {userName}</h1>
-                                    <p className="text-white/90 text-sm">Welcome back to Brand Empire</p>
+                                {/* User Profile Header */}
+                                <div className="bg-white rounded-lg border p-6 mb-6 flex items-center gap-6">
+                                    {/* Avatar */}
+                                    <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                        </svg>
+                                    </div>
+                                    {/* User Info */}
+                                    <div className="flex-1">
+                                        <h1 className="text-xl font-bold text-gray-900">{userName}</h1>
+                                        <p className="text-gray-500 text-sm">{user?.email || user?.mobile_number || ""}</p>
+                                    </div>
+                                    {/* Edit Profile Button */}
+                                    <button
+                                        onClick={() => setActiveSection("profile")}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                    >
+                                        EDIT PROFILE
+                                    </button>
                                 </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                                    {[
-                                        { label: "Track Orders", icon: "📦", action: () => setActiveSection("orders") },
-                                        { label: "My Wishlist", icon: "❤️", action: () => setActiveSection("wishlist") },
-                                        { label: "Profile Settings", icon: "👤", action: () => setActiveSection("profile") },
-                                        { label: "My Coupons", icon: "🏷️", action: () => setActiveSection("coupons") }
-                                    ].map((item, i) => (
-                                        item.href ? (
-                                            <Link key={i} href={item.href} className="bg-white p-4 md:p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
-                                                <div className="text-2xl md:text-3xl mb-2">{item.icon}</div>
-                                                <p className="text-xs md:text-sm font-medium">{item.label}</p>
-                                            </Link>
-                                        ) : (
-                                            <button key={i} onClick={item.action} className="bg-white p-4 md:p-6 rounded-xl shadow-sm hover:shadow-md border text-center">
-                                                <div className="text-2xl md:text-3xl mb-2">{item.icon}</div>
-                                                <p className="text-xs md:text-sm font-medium">{item.label}</p>
-                                            </button>
-                                        )
-                                    ))}
+                                {/* Action Cards Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {/* Orders Card */}
+                                    <button
+                                        onClick={() => setActiveSection("orders")}
+                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                    >
+                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="font-semibold text-gray-900 mb-1">Orders</h3>
+                                        <p className="text-xs text-gray-500">Check your order status</p>
+                                    </button>
+
+                                    {/* Wishlist Card */}
+                                    <button
+                                        onClick={() => setActiveSection("wishlist")}
+                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                    >
+                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="font-semibold text-gray-900 mb-1">Wishlist</h3>
+                                        <p className="text-xs text-gray-500">All your saved products</p>
+                                    </button>
+
+                                    {/* Coupons Card */}
+                                    <button
+                                        onClick={() => setActiveSection("coupons")}
+                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                    >
+                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="font-semibold text-gray-900 mb-1">Coupons</h3>
+                                        <p className="text-xs text-gray-500">Your available discounts</p>
+                                    </button>
+
+                                    {/* My Points Card */}
+                                    <button
+                                        onClick={() => setActiveSection("benefits")}
+                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                    >
+                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="font-semibold text-gray-900 mb-1">My Points</h3>
+                                        <p className="text-xs text-gray-500">Manage your rewards</p>
+                                    </button>
+
+                                    {/* Track Order Card */}
+                                    <button
+                                        onClick={() => setActiveSection("tracking")}
+                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                    >
+                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="font-semibold text-gray-900 mb-1">Track Order</h3>
+                                        <p className="text-xs text-gray-500">Track your shipments</p>
+                                    </button>
+
+                                    {/* Profile Card */}
+                                    <button
+                                        onClick={() => setActiveSection("profile")}
+                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                    >
+                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="font-semibold text-gray-900 mb-1">Profile</h3>
+                                        <p className="text-xs text-gray-500">Edit your account details</p>
+                                    </button>
                                 </div>
                             </>
                         )}

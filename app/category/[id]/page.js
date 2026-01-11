@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter, usePathname } from "next/navigat
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
-import { getProducts, getProductsBySubcategory, getProductsByChildCategory, getCategoriesFromServer, getCategoryWiseProducts } from "@/lib/api";
+import { getProducts, getProductsBySubcategory, getProductsByChildCategory, getCategoriesFromServer, getCategoryWiseProducts, filterProductsByAttributes } from "@/lib/api";
 
 export default function CategoryPage() {
     const params = useParams();
@@ -40,6 +40,7 @@ export default function CategoryPage() {
         colors: [],
         sizes: [],
         discount: 0,
+        attributeValues: [], // Selected attribute value IDs for top filters
     });
 
     // Extract unique sizes from products
@@ -166,15 +167,25 @@ export default function CategoryPage() {
         };
     };
 
-    // Fetch products based on current level AND selected category filters
+    // Fetch products based on current level AND selected filters
     useEffect(() => {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
                 let allProducts = [];
 
-                // Determine what to fetch based on current level and selected filters
-                if (subcategoryId) {
+                // If attribute filters are selected, use the filter-products API
+                if (filters.attributeValues.length > 0) {
+                    const response = await filterProductsByAttributes(filters.attributeValues, page);
+                    if (response.success && response.data?.data) {
+                        allProducts = response.data.data;
+                    }
+                    if (response.pagination) {
+                        setTotalPages(response.pagination.last_page);
+                    }
+                }
+                // Otherwise use category-based fetching
+                else if (subcategoryId) {
                     // We're on a subcategory page
                     if (filters.categories.length > 0) {
                         // Fetch products for each selected child category
@@ -241,7 +252,7 @@ export default function CategoryPage() {
         if (categoryId) {
             fetchProducts();
         }
-    }, [categoryId, subcategoryId, page, filters.categories]);
+    }, [categoryId, subcategoryId, page, filters.categories, filters.attributeValues]);
 
     // Apply filters and sorting (categories already handled by API fetch)
     const filteredAndSortedProducts = React.useMemo(() => {
@@ -308,8 +319,7 @@ export default function CategoryPage() {
             colors: [],
             sizes: [],
             discount: 0,
-            bundle: 'single',
-            country: 'all',
+            attributeValues: [],
         });
     };
 
@@ -537,10 +547,8 @@ export default function CategoryPage() {
                                             : [...filters.sizes, size];
                                         handleFilterChange('sizes', newSizes);
                                     }}
-                                    selectedBundle={filters.bundle || 'single'}
-                                    onBundleChange={(val) => handleFilterChange('bundle', val)}
-                                    selectedCountry={filters.country || 'all'}
-                                    onCountryChange={(val) => handleFilterChange('country', val)}
+                                    selectedAttributeValues={filters.attributeValues}
+                                    onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
                                     className="ml-0"
                                 />
                             </div>
