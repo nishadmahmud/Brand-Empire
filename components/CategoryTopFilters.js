@@ -89,7 +89,7 @@ export default function CategoryTopFilters({
     }
 
     return (
-        <div className={`flex gap-2 md:gap-3 py-2 md:py-0 relative z-30 overflow-x-auto md:overflow-visible scrollbar-hide ${className}`}>
+        <div className={`flex gap-2 md:gap-3 py-2 md:py-0 relative z-[60] overflow-x-auto md:overflow-visible scrollbar-hide ${className}`}>
 
             {/* Dynamic Attribute Filters */}
             {attributes.map((attribute) => (
@@ -101,8 +101,8 @@ export default function CategoryTopFilters({
                     <button
                         onClick={() => toggleDropdown(`attr_${attribute.id}`)}
                         className={`flex items-center gap-1 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium border transition-colors whitespace-nowrap ${isAttributeActive(attribute)
-                                ? 'bg-gray-100 text-[var(--brand-royal-red)] border-[var(--brand-royal-red)] border-opacity-30'
-                                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                            ? 'bg-gray-100 text-[var(--brand-royal-red)] border-[var(--brand-royal-red)] border-opacity-30'
+                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                             }`}
                     >
                         <span>
@@ -152,13 +152,13 @@ export default function CategoryTopFilters({
                                             key={value.id}
                                             onClick={() => handleValueToggle(value.id)}
                                             className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${selectedAttributeValues.includes(value.id)
-                                                    ? 'text-[var(--brand-royal-red)] font-bold'
-                                                    : 'text-gray-700'
+                                                ? 'text-[var(--brand-royal-red)] font-bold'
+                                                : 'text-gray-700'
                                                 }`}
                                         >
                                             <div className={`w-4 h-4 border rounded flex items-center justify-center flex-shrink-0 ${selectedAttributeValues.includes(value.id)
-                                                    ? 'border-[var(--brand-royal-red)] bg-[var(--brand-royal-red)] text-white'
-                                                    : 'border-gray-300'
+                                                ? 'border-[var(--brand-royal-red)] bg-[var(--brand-royal-red)] text-white'
+                                                : 'border-gray-300'
                                                 }`}>
                                                 {selectedAttributeValues.includes(value.id) && (
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
