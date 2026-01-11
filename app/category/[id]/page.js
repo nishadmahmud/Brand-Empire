@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter, usePathname } from "next/navigat
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
-import { getProducts, getProductsBySubcategory, getProductsByChildCategory, getCategoriesFromServer, getCategoryWiseProducts, filterProductsByAttributes } from "@/lib/api";
+import { getProducts, getProductsBySubcategory, getProductsByChildCategory, getCategoriesFromServer, getCategoryWiseProducts, filterProductsByAttributes, getAttributes } from "@/lib/api";
 
 export default function CategoryPage() {
     const params = useParams();
@@ -32,6 +32,7 @@ export default function CategoryPage() {
 
     const [childName, setChildName] = useState("");
     const [bannerImage, setBannerImage] = useState(null);
+    const [attributes, setAttributes] = useState([]); // Dynamic attributes for filters
 
     const [filters, setFilters] = useState({
         categories: [],
@@ -71,6 +72,34 @@ export default function CategoryPage() {
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Fetch attributes for filters
+    useEffect(() => {
+        const fetchAttributes = async () => {
+            try {
+                const data = await getAttributes();
+                // Handle both array response and {success, data} response
+                let attrArray = [];
+                if (Array.isArray(data)) {
+                    attrArray = data;
+                } else if (data.success && Array.isArray(data.data)) {
+                    attrArray = data.data;
+                }
+                // Filter only active attributes with active values
+                const filtered = attrArray
+                    .filter(attr => attr.status === 'active')
+                    .map(attr => ({
+                        ...attr,
+                        values: (attr.values || []).filter(v => v.status === 'active')
+                    }))
+                    .filter(attr => attr.values.length > 0);
+                setAttributes(filtered);
+            } catch (error) {
+                console.error("Error fetching attributes:", error);
+            }
+        };
+        fetchAttributes();
     }, []);
 
     // Fetch category names and data for filters
@@ -626,7 +655,7 @@ export default function CategoryPage() {
             {mobileFiltersOpen && (
                 <div className="fixed inset-0 z-[70] lg:hidden">
                     <div className="absolute inset-0 bg-black/50" onClick={() => setMobileFiltersOpen(false)}></div>
-                    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white overflow-y-auto pb-20">
+                    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white overflow-y-auto pb-32">
                         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                             <h2 className="text-lg font-bold">Filters</h2>
                             <button onClick={() => setMobileFiltersOpen(false)}>
@@ -642,6 +671,9 @@ export default function CategoryPage() {
                             onClearAll={handleClearAll}
                             products={products}
                             categories={subcategoryId ? childCategories : subCategories}
+                            attributes={attributes}
+                            selectedAttributeValues={filters.attributeValues}
+                            onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
                         />
                     </div>
                 </div>

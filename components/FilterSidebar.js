@@ -2,7 +2,20 @@
 
 import React, { useState, useMemo } from "react";
 
-const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBrandFilter = false, categories = [], selectedCategoryId, onCategoryChange }) => {
+const FilterSidebar = ({
+    filters,
+    onFilterChange,
+    onClearAll,
+    products,
+    hideBrandFilter = false,
+    categories = [],
+    selectedCategoryId,
+    onCategoryChange,
+    // Attribute filter props
+    attributes = [],
+    selectedAttributeValues = [],
+    onAttributeChange
+}) => {
     const [brandSearch, setBrandSearch] = useState("");
     const [priceRange, setPriceRange] = useState(filters.priceRange || [0, 10000]);
     const [showAllCategories, setShowAllCategories] = useState(false);
@@ -64,7 +77,7 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBran
     const visibleBrands = showAllBrands ? filteredBrands : filteredBrands.slice(0, 5);
 
     return (
-        <div className="w-full bg-white border-r border-gray-200 p-6 h-full">
+        <div className="w-full bg-white border-r border-gray-200 p-6 pb-20 h-full">
             {/* Header with Clear All */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
                 <h3 className="text-sm font-bold uppercase tracking-wider">Filters</h3>
@@ -236,6 +249,38 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll, products, hideBran
                     </div>
                 </div>
             )}
+
+            {/* Dynamic Attribute Filters */}
+            {attributes && attributes.length > 0 && attributes.map((attribute) => (
+                <div key={attribute.id} className="mb-6 pb-6 border-b border-gray-200">
+                    <h4 className="text-xs font-bold uppercase tracking-wider mb-4">{attribute.name}</h4>
+                    <div className="space-y-3 max-h-48 overflow-y-auto">
+                        {attribute.values?.map((value) => {
+                            const isSelected = selectedAttributeValues.includes(value.id);
+                            return (
+                                <label key={value.id} className="flex items-center cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => {
+                                            if (onAttributeChange) {
+                                                const newValues = isSelected
+                                                    ? selectedAttributeValues.filter(id => id !== value.id)
+                                                    : [...selectedAttributeValues, value.id];
+                                                onAttributeChange(newValues);
+                                            }
+                                        }}
+                                        className="w-4 h-4 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)]"
+                                    />
+                                    <span className="ml-3 text-sm text-gray-700 group-hover:text-black">
+                                        {value.value}
+                                    </span>
+                                </label>
+                            );
+                        })}
+                    </div>
+                </div>
+            ))}
 
             {/* Discount Range */}
             <div className="mb-6">
