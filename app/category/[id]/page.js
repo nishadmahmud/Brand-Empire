@@ -549,6 +549,14 @@ export default function CategoryPage() {
             {/* Top Filters - Mobile */}
             <div className="md:hidden bg-white border-b border-gray-100 px-4">
                 <CategoryTopFilters
+                    availableSizes={availableSizes}
+                    selectedSizes={filters.sizes}
+                    onSizeChange={(size) => {
+                        const newSizes = filters.sizes.includes(size)
+                            ? filters.sizes.filter(s => s !== size)
+                            : [...filters.sizes, size];
+                        handleFilterChange('sizes', newSizes);
+                    }}
                     selectedAttributeValues={filters.attributeValues}
                     onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
                 />

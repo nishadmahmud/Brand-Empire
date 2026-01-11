@@ -21,6 +21,7 @@ export default function CategoryTopFilters({
     const [loading, setLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
     const itemsRef = useRef({});
+    const portalRef = useRef(null);
 
     // Set mounted for portal hydration safety
     useEffect(() => {
@@ -55,7 +56,12 @@ export default function CategoryTopFilters({
     // Close dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (openDropdown && itemsRef.current[openDropdown] && !itemsRef.current[openDropdown].contains(event.target)) {
+            // Check if click is inside the trigger button
+            const isInsideTrigger = openDropdown && itemsRef.current[openDropdown] && itemsRef.current[openDropdown].contains(event.target);
+            // Check if click is inside the portal content
+            const isInsidePortal = portalRef.current && portalRef.current.contains(event.target);
+
+            if (openDropdown && !isInsideTrigger && !isInsidePortal) {
                 setOpenDropdown(null);
             }
         };
@@ -135,7 +141,7 @@ export default function CategoryTopFilters({
                         <>
                             {/* Mobile modal - rendered via portal for iOS Safari */}
                             {mounted && createPortal(
-                                <div className="md:hidden">
+                                <div className="md:hidden" ref={portalRef}>
                                     {/* Mobile backdrop */}
                                     <div
                                         className="fixed inset-0 bg-black/50 z-[100]"
@@ -234,14 +240,40 @@ export default function CategoryTopFilters({
 
                     {openDropdown === 'size' && (
                         <>
-                            <div className="fixed inset-0 bg-black/50 z-[100] md:hidden" onClick={() => setOpenDropdown(null)}></div>
-                            <div className="fixed inset-x-0 bottom-0 z-[101] w-full rounded-t-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-xl md:rounded-lg md:absolute md:top-full md:left-0 md:right-auto md:bottom-auto md:w-[320px] md:mt-2 bg-white border-t md:border border-gray-100 p-3 pb-20 md:pb-3 max-h-[60vh] overflow-y-auto">
-                                <div className="flex items-center justify-between mb-3 md:hidden border-b border-gray-100 pb-2">
-                                    <span className="font-bold text-gray-900">Select Sizes</span>
-                                    <button onClick={() => setOpenDropdown(null)} className="p-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                    </button>
-                                </div>
+                            {/* Mobile modal - rendered via portal for iOS Safari */}
+                            {mounted && createPortal(
+                                <div className="md:hidden" ref={portalRef}>
+                                    <div className="fixed inset-0 bg-black/50 z-[100]" onClick={() => setOpenDropdown(null)}></div>
+                                    <div className="fixed inset-x-0 bottom-0 z-[101] w-full rounded-t-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] bg-white border-t border-gray-100 p-3 pb-20 max-h-[60vh] overflow-y-auto">
+                                        <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+                                            <span className="font-bold text-gray-900">Select Sizes</span>
+                                            <button onClick={() => setOpenDropdown(null)} className="p-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-2 max-h-80 overflow-y-auto custom-scrollbar">
+                                            {availableSizes.map((size, index) => (
+                                                <label key={`size-${index}-${size}`} className={`flex items-center justify-center p-2 border rounded cursor-pointer text-xs font-medium transition-all ${selectedSizes.includes(size)
+                                                    ? 'bg-[var(--brand-royal-red)] text-white border-[var(--brand-royal-red)]'
+                                                    : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                                    }`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedSizes.includes(size)}
+                                                        onChange={() => onSizeChange(size)}
+                                                        className="hidden"
+                                                    />
+                                                    {size}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>,
+                                document.body
+                            )}
+
+                            {/* Desktop dropdown - rendered inline */}
+                            <div className="hidden md:block absolute top-full left-0 w-[320px] mt-2 bg-white border border-gray-100 rounded-lg shadow-xl p-3 max-h-96 overflow-y-auto z-50">
                                 <div className="grid grid-cols-4 gap-2 max-h-80 overflow-y-auto custom-scrollbar">
                                     {availableSizes.map((size, index) => (
                                         <label key={`size-${index}-${size}`} className={`flex items-center justify-center p-2 border rounded cursor-pointer text-xs font-medium transition-all ${selectedSizes.includes(size)
