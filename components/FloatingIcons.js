@@ -35,13 +35,13 @@ const FloatingIcons = () => {
             {/* Backdrop overlay - click to close */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 z-40 hidden md:block"
+                    className="fixed inset-0 z-40"
                     onClick={handleClose}
                 />
             )}
 
             <div
-                className="fixed right-0 z-50 hidden md:flex items-center top-1/2 -translate-y-1/2"
+                className="fixed right-0 z-50 flex items-center top-1/2 -translate-y-1/2"
             >
                 {/* Expanded Content (Slide out) */}
                 <div
