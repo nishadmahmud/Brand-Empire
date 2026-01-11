@@ -6,7 +6,7 @@ import Link from "next/link";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
-import { getCampaigns } from "@/lib/api";
+import { getCampaigns, filterProductsByAttributes } from "@/lib/api";
 
 export default function CampaignPage() {
     const params = useParams();
@@ -29,6 +29,7 @@ export default function CampaignPage() {
         colors: [],
         sizes: [],
         discount: 0,
+        attributeValues: [],
     });
 
     // Extract unique sizes from products
@@ -62,6 +63,56 @@ export default function CampaignPage() {
         const fetchCampaign = async () => {
             try {
                 setLoading(true);
+
+                // If attribute filters are selected, use the filter-products API
+                if (filters.attributeValues.length > 0) {
+                    const response = await filterProductsByAttributes(filters.attributeValues, 1);
+                    if (response.success && response.data?.data) {
+                        const transformedProducts = response.data.data.map(product => {
+                            const mrp = product.retails_price || 0;
+                            let finalPrice = mrp;
+                            let discountLabel = "";
+
+                            if (product.discount > 0) {
+                                const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
+                                if (discountType === 'amount') {
+                                    finalPrice = mrp - product.discount;
+                                    discountLabel = `৳${product.discount} OFF`;
+                                } else {
+                                    finalPrice = Math.round(mrp * (1 - product.discount / 100));
+                                    discountLabel = `${product.discount}% OFF`;
+                                }
+                                if (finalPrice < 0) finalPrice = 0;
+                            }
+
+                            return {
+                                id: product.id,
+                                brand: product.brand_name || product.brands?.name || "BRAND",
+                                categoryId: product.category_id,
+                                name: product.name,
+                                price: `৳ ${Math.round(finalPrice).toLocaleString()}`,
+                                originalPrice: product.discount > 0 ? `৳ ${mrp.toLocaleString()}` : "",
+                                discount: discountLabel,
+                                images: product.image_paths && product.image_paths.length > 0
+                                    ? product.image_paths
+                                    : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
+                                sizes: product.product_variants && product.product_variants.length > 0
+                                    ? product.product_variants.map(v => v.name)
+                                    : ["S", "M", "L", "XL"],
+                                unavailableSizes: [],
+                                color: product.color || "gray",
+                                rating: product.review_summary?.average_rating || 0,
+                                reviews: product.review_summary?.total_reviews || 0,
+                                rawPrice: Math.round(finalPrice),
+                                rawDiscount: product.discount || 0,
+                            };
+                        });
+                        setProducts(transformedProducts);
+                    }
+                    setLoading(false);
+                    return;
+                }
+
                 const response = await getCampaigns();
 
                 if (response.success && response.campaigns?.data) {
@@ -132,7 +183,7 @@ export default function CampaignPage() {
         if (campaignId) {
             fetchCampaign();
         }
-    }, [campaignId]);
+    }, [campaignId, filters.attributeValues]);
 
     // Apply filters and sorting
     const filteredAndSortedProducts = useMemo(() => {
@@ -319,6 +370,14 @@ export default function CampaignPage() {
                 </div>
             </div>
 
+            {/* Top Filters - Mobile */}
+            <div className="md:hidden sticky top-[56px] z-40 bg-white border-b border-gray-100 px-4">
+                <CategoryTopFilters
+                    selectedAttributeValues={filters.attributeValues}
+                    onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
+                />
+            </div>
+
             {/* Main Content */}
             <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-6">
                 <div className="flex gap-6">
@@ -350,6 +409,8 @@ export default function CampaignPage() {
                                         handleFilterChange('sizes', newSizes);
                                     }}
                                     className="ml-0"
+                                    selectedAttributeValues={filters.attributeValues}
+                                    onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
                                 />
                             </div>
 

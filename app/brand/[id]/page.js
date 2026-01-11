@@ -6,7 +6,7 @@ import Link from "next/link";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
-import { getBrandwiseProducts, getTopBrands } from "@/lib/api";
+import { getBrandwiseProducts, getTopBrands, filterProductsByAttributes } from "@/lib/api";
 
 export default function BrandPage() {
     const params = useParams();
@@ -33,6 +33,7 @@ export default function BrandPage() {
         colors: [],
         sizes: [],
         discount: 0,
+        attributeValues: [],
     });
 
     // Extract unique sizes from products
@@ -89,25 +90,43 @@ export default function BrandPage() {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                const response = await getBrandwiseProducts(brandId, page);
-
                 let productsArray = [];
+                let response;
 
-                if (response.success && response.data) {
-                    if (Array.isArray(response.data)) {
-                        productsArray = response.data;
-                    } else if (response.data.data && Array.isArray(response.data.data)) {
+                // If attribute filters are selected, use the filter-products API
+                if (filters.attributeValues.length > 0) {
+                    response = await filterProductsByAttributes(filters.attributeValues, page);
+                    if (response.success && response.data?.data) {
                         productsArray = response.data.data;
                     }
+                    if (response.pagination) {
+                        setTotalPages(response.pagination.last_page);
+                    }
+                } else {
+                    response = await getBrandwiseProducts(brandId, page);
 
-                    // Extract banner image from the first product's brands data if available
-                    if (productsArray.length > 0 && productsArray[0].brands && productsArray[0].brands.banner_image) {
-                        setBannerImage(productsArray[0].brands.banner_image);
-                        if (!brandName) {
-                            setBrandName(productsArray[0].brands.name);
+                    if (response.success && response.data) {
+                        if (Array.isArray(response.data)) {
+                            productsArray = response.data;
+                        } else if (response.data.data && Array.isArray(response.data.data)) {
+                            productsArray = response.data.data;
                         }
-                        if (!brandImage && productsArray[0].brands.image_path) {
-                            setBrandImage(productsArray[0].brands.image_path);
+
+                        // Extract banner image from the first product's brands data if available
+                        if (productsArray.length > 0 && productsArray[0].brands && productsArray[0].brands.banner_image) {
+                            setBannerImage(productsArray[0].brands.banner_image);
+                            if (!brandName) {
+                                setBrandName(productsArray[0].brands.name);
+                            }
+                            if (!brandImage && productsArray[0].brands.image_path) {
+                                setBrandImage(productsArray[0].brands.image_path);
+                            }
+                        }
+
+                        if (response.pagination) {
+                            setTotalPages(response.pagination.last_page);
+                        } else if (response.data?.last_page) {
+                            setTotalPages(response.data.last_page);
                         }
                     }
                 }
@@ -175,7 +194,7 @@ export default function BrandPage() {
         if (brandId) {
             fetchProducts();
         }
-    }, [brandId, page, brandName]);
+    }, [brandId, page, brandName, filters.attributeValues]);
 
     // Apply filters and sorting
     const filteredAndSortedProducts = useMemo(() => {
@@ -342,6 +361,14 @@ export default function BrandPage() {
                 </div>
             </div>
 
+            {/* Top Filters - Mobile */}
+            <div className="md:hidden sticky top-[56px] z-40 bg-white border-b border-gray-100 px-4">
+                <CategoryTopFilters
+                    selectedAttributeValues={filters.attributeValues}
+                    onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
+                />
+            </div>
+
             {/* Main Content */}
             <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-6">
                 <div className="flex gap-6">
@@ -372,6 +399,8 @@ export default function BrandPage() {
                                         handleFilterChange('sizes', newSizes);
                                     }}
                                     className="ml-0"
+                                    selectedAttributeValues={filters.attributeValues}
+                                    onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
                                 />
                             </div>
 

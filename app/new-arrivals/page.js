@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
-import { getNewArrivalsFromServer, getCategoriesFromServer, getProductById } from "@/lib/api";
+import { getNewArrivalsFromServer, getCategoriesFromServer, getProductById, filterProductsByAttributes } from "@/lib/api";
 
 export default function NewArrivalsPage() {
     const router = useRouter();
@@ -33,6 +33,7 @@ export default function NewArrivalsPage() {
         discount: 0,
         bundle: 'single',
         country: 'all',
+        attributeValues: [],
     });
 
     // Categories for sidebar (optionally fetch if needed for filtering)
@@ -95,67 +96,77 @@ export default function NewArrivalsPage() {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                const response = await getNewArrivalsFromServer();
+                let apiProducts = [];
+                let response;
 
-                if (response.success && response.data && response.data.data) { // Assuming response structure based on NewArrivals.js
-                    const apiProducts = response.data.data;
-
-                    // Transform
-                    const transformedProducts = apiProducts.map(product => {
-                        const mrp = product.retails_price || 0;
-                        let finalPrice = mrp;
-                        let discountLabel = "";
-
-                        if (product.discount > 0) {
-                            const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
-                            if (discountType === 'amount') {
-                                finalPrice = mrp - product.discount;
-                                discountLabel = `৳${product.discount} OFF`;
-                            } else {
-                                finalPrice = Math.round(mrp * (1 - product.discount / 100));
-                                discountLabel = `${product.discount}% OFF`;
-                            }
-                            if (finalPrice < 0) finalPrice = 0;
-                        }
-
-                        return {
-                            id: product.id,
-                            brand: product.brands?.name || product.category_name || "BRAND",
-                            // Keep category_id/name for filtering if needed
-                            categoryId: product.category_id,
-                            name: product.name,
-                            price: `৳ ${finalPrice.toLocaleString()}`,
-                            originalPrice: product.discount > 0 ? `৳ ${mrp.toLocaleString()}` : "",
-                            discount: discountLabel,
-                            images: product.image_paths && product.image_paths.length > 0
-                                ? product.image_paths
-                                : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
-                            sizes: product.items && product.items.length > 0
-                                ? product.items.map(item => item.size)
-                                : ["S", "M", "L", "XL"], // Default sizes if no variants
-                            unavailableSizes: product.items && product.items.length > 0
-                                ? product.items.filter(item => item.quantity === 0).map(item => item.size)
-                                : [],
-                            color: product.name.toLowerCase().includes("black") ? "black" :
-                                product.name.toLowerCase().includes("blue") ? "blue" :
-                                    product.name.toLowerCase().includes("white") ? "white" : "default",
-                            rating: product.review_summary?.average_rating || 0,
-                            reviews: product.review_summary?.total_reviews || 0,
-                            rawPrice: finalPrice,
-                            rawDiscount: product.discount || 0,
-                        };
-                    });
-
-                    setProducts(transformedProducts);
-
-                    // Handle pagination if API supports it, otherwise client-side (slice in render or filtered)
-                    // The API call seems to return all (or a set limit). 
-                    // If response has pagination metadata:
-                    if (response.pagination) {
-                        setTotalPages(response.pagination.last_page);
-                    } else if (response.data.last_page) {
-                        setTotalPages(response.data.last_page);
+                // If attribute filters are selected, use the filter-products API
+                if (filters.attributeValues.length > 0) {
+                    response = await filterProductsByAttributes(filters.attributeValues, 1);
+                    if (response.success && response.data?.data) {
+                        apiProducts = response.data.data;
                     }
+                } else {
+                    response = await getNewArrivalsFromServer();
+                    if (response.success && response.data && response.data.data) {
+                        apiProducts = response.data.data;
+                    }
+                }
+
+                // Transform
+                const transformedProducts = apiProducts.map(product => {
+                    const mrp = product.retails_price || 0;
+                    let finalPrice = mrp;
+                    let discountLabel = "";
+
+                    if (product.discount > 0) {
+                        const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
+                        if (discountType === 'amount') {
+                            finalPrice = mrp - product.discount;
+                            discountLabel = `৳${product.discount} OFF`;
+                        } else {
+                            finalPrice = Math.round(mrp * (1 - product.discount / 100));
+                            discountLabel = `${product.discount}% OFF`;
+                        }
+                        if (finalPrice < 0) finalPrice = 0;
+                    }
+
+                    return {
+                        id: product.id,
+                        brand: product.brands?.name || product.category_name || "BRAND",
+                        // Keep category_id/name for filtering if needed
+                        categoryId: product.category_id,
+                        name: product.name,
+                        price: `৳ ${finalPrice.toLocaleString()}`,
+                        originalPrice: product.discount > 0 ? `৳ ${mrp.toLocaleString()}` : "",
+                        discount: discountLabel,
+                        images: product.image_paths && product.image_paths.length > 0
+                            ? product.image_paths
+                            : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
+                        sizes: product.items && product.items.length > 0
+                            ? product.items.map(item => item.size)
+                            : ["S", "M", "L", "XL"], // Default sizes if no variants
+                        unavailableSizes: product.items && product.items.length > 0
+                            ? product.items.filter(item => item.quantity === 0).map(item => item.size)
+                            : [],
+                        color: product.name.toLowerCase().includes("black") ? "black" :
+                            product.name.toLowerCase().includes("blue") ? "blue" :
+                                product.name.toLowerCase().includes("white") ? "white" : "default",
+                        rating: product.review_summary?.average_rating || 0,
+                        reviews: product.review_summary?.total_reviews || 0,
+                        rawPrice: finalPrice,
+                        rawDiscount: product.discount || 0,
+                    };
+                });
+
+                setProducts(transformedProducts);
+
+                // Handle pagination if API supports it, otherwise client-side (slice in render or filtered)
+                // The API call seems to return all (or a set limit). 
+                // If response has pagination metadata:
+                if (response.pagination) {
+                    setTotalPages(response.pagination.last_page);
+                } else if (response.data?.last_page) {
+                    setTotalPages(response.data.last_page);
                 }
             } catch (error) {
                 console.error("Error fetching new arrivals:", error);
@@ -165,7 +176,7 @@ export default function NewArrivalsPage() {
         };
 
         fetchProducts();
-    }, []);
+    }, [filters.attributeValues]);
 
     // Apply filters and sorting
     const filteredAndSortedProducts = useMemo(() => {
@@ -382,6 +393,14 @@ export default function NewArrivalsPage() {
                 </div>
             </div>
 
+            {/* Top Filters - Mobile */}
+            <div className="md:hidden sticky top-[56px] z-40 bg-white border-b border-gray-100 px-4">
+                <CategoryTopFilters
+                    selectedAttributeValues={filters.attributeValues}
+                    onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
+                />
+            </div>
+
             {/* Main Content */}
             <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-6">
 
@@ -420,6 +439,8 @@ export default function NewArrivalsPage() {
                                     selectedCountry={filters.country || 'all'}
                                     onCountryChange={(val) => handleFilterChange('country', val)}
                                     className="ml-0"
+                                    selectedAttributeValues={filters.attributeValues}
+                                    onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
                                 />
                             </div>
 

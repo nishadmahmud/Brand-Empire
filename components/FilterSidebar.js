@@ -250,9 +250,9 @@ const FilterSidebar = ({
                 </div>
             )}
 
-            {/* Dynamic Attribute Filters */}
+            {/* Dynamic Attribute Filters - Hidden on mobile since shown in top bar */}
             {attributes && attributes.length > 0 && attributes.map((attribute) => (
-                <div key={attribute.id} className="mb-6 pb-6 border-b border-gray-200">
+                <div key={attribute.id} className="hidden lg:block mb-6 pb-6 border-b border-gray-200">
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-4">{attribute.name}</h4>
                     <div className="space-y-3 max-h-48 overflow-y-auto">
                         {attribute.values?.map((value) => {

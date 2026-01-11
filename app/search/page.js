@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
-import { searchProducts, getProductById } from "@/lib/api";
+import { searchProducts, getProductById, filterProductsByAttributes } from "@/lib/api";
 
 import CategoryTopFilters from "@/components/CategoryTopFilters";
 
@@ -30,13 +30,14 @@ function SearchPageContent() {
         discount: 0,
         bundle: 'single',
         country: 'all',
+        attributeValues: [], // For dynamic attribute filters
     });
 
 
     // Fetch search results
     useEffect(() => {
         const fetchSearchResults = async () => {
-            if (!query.trim()) {
+            if (!query.trim() && filters.attributeValues.length === 0) {
                 setProducts([]);
                 setAvailableCategories([]);
                 setAvailableSizes([]);
@@ -46,7 +47,17 @@ function SearchPageContent() {
 
             try {
                 setLoading(true);
-                const response = await searchProducts(query);
+                let response;
+
+                // If attribute filters are selected, use the filter-products API
+                if (filters.attributeValues.length > 0) {
+                    response = await filterProductsByAttributes(filters.attributeValues, 1);
+                    if (response.success && response.data?.data) {
+                        response = { success: true, data: { data: response.data.data } };
+                    }
+                } else {
+                    response = await searchProducts(query);
+                }
 
                 if (response.success && response.data && response.data.data) {
                     const transformedProducts = response.data.data.map(product => {
@@ -206,7 +217,7 @@ function SearchPageContent() {
         };
 
         fetchSearchResults();
-    }, [query]);
+    }, [query, filters.attributeValues]);
 
 
     // Apply filters and sorting
@@ -369,7 +380,7 @@ function SearchPageContent() {
             </div>
 
             {/* Top Filters - Mobile */}
-            <div className="md:hidden sticky top-[56px] z-30 bg-white border-b border-gray-100 px-4">
+            <div className="md:hidden sticky top-[56px] z-40 bg-white border-b border-gray-100 px-4">
                 <CategoryTopFilters
                     availableSizes={availableSizes}
                     selectedSizes={filters.sizes}
@@ -383,6 +394,8 @@ function SearchPageContent() {
                     onBundleChange={(val) => handleFilterChange('bundle', val)}
                     selectedCountry={filters.country}
                     onCountryChange={(val) => handleFilterChange('country', val)}
+                    selectedAttributeValues={filters.attributeValues}
+                    onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
                 />
             </div>
 
@@ -420,6 +433,8 @@ function SearchPageContent() {
                                 onBundleChange={(val) => handleFilterChange('bundle', val)}
                                 selectedCountry={filters.country}
                                 onCountryChange={(val) => handleFilterChange('country', val)}
+                                selectedAttributeValues={filters.attributeValues}
+                                onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
                             />
 
                             <div className="flex items-center gap-2">
@@ -482,9 +497,9 @@ function SearchPageContent() {
 
             {/* Mobile Filter Modal */}
             {mobileFiltersOpen && (
-                <div className="fixed inset-0 z-50 lg:hidden">
+                <div className="fixed inset-0 z-[70] lg:hidden">
                     <div className="absolute inset-0 bg-black/50" onClick={() => setMobileFiltersOpen(false)}></div>
-                    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white overflow-y-auto">
+                    <div className="absolute right-0 top-0 bottom-0 w-80 bg-white overflow-y-auto pb-32">
                         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                             <h2 className="text-lg font-bold">Filters</h2>
                             <button onClick={() => setMobileFiltersOpen(false)}>

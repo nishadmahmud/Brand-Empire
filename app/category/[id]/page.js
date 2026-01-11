@@ -546,6 +546,14 @@ export default function CategoryPage() {
                 </div>
             </div>
 
+            {/* Top Filters - Mobile */}
+            <div className="md:hidden sticky top-[56px] z-40 bg-white border-b border-gray-100 px-4">
+                <CategoryTopFilters
+                    selectedAttributeValues={filters.attributeValues}
+                    onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
+                />
+            </div>
+
             {/* Main Content */}
             <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-6">
 
