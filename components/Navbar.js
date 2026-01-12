@@ -666,7 +666,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 <span className="text-[var(--brand-royal-red)]">New Arrivals & Offers</span>
                             </Link>
 
-                            {categories.map((category) => (
+                            {categories.slice(0, 4).map((category) => (
                                 <div key={category.category_id} className="border-b border-gray-50">
                                     <div className="flex items-center">
                                         <Link
@@ -756,6 +756,16 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                     )}
                                 </div>
                             ))}
+
+                            {/* Studio Link with NEW badge */}
+                            <Link
+                                href="/studio"
+                                className="px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                <span>Studio</span>
+                                <span className="text-[10px] font-bold text-white bg-[#ff3f6c] px-1.5 py-0.5 rounded">NEW</span>
+                            </Link>
                         </div>
                     </div>
 

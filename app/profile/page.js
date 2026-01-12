@@ -267,7 +267,7 @@ export default function ProfileDashboard() {
                     <aside className={`
                         fixed lg:static
                         top-0 lg:top-auto left-0 lg:left-auto
-                        w-64
+                        w-72
                         bg-white
                         z-50 lg:z-auto
                         transform lg:transform-none transition-transform duration-300
@@ -276,13 +276,13 @@ export default function ProfileDashboard() {
                         flex-shrink-0
                         h-screen lg:h-auto
                     `}>
-                        <div className="bg-white lg:rounded-xl shadow-sm border lg:sticky lg:top-24 h-full lg:h-auto flex flex-col">
+                        <div className="bg-white lg:rounded-2xl shadow-lg lg:sticky lg:top-24 h-full lg:h-auto flex flex-col overflow-hidden">
                             {/* Mobile Close Button */}
-                            <div className="lg:hidden flex items-center justify-between p-4 border-b flex-shrink-0">
-                                <span className="font-semibold text-gray-900">Menu</span>
+                            <div className="lg:hidden flex items-center justify-between p-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white flex-shrink-0">
+                                <span className="font-bold">Menu</span>
                                 <button
                                     onClick={() => setSidebarOpen(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-lg"
+                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                                 >
                                     <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -291,82 +291,138 @@ export default function ProfileDashboard() {
                                 </button>
                             </div>
 
-
-                            <div className="p-6 border-b hidden lg:block">
+                            {/* Desktop Header with Logo */}
+                            <div className="p-5 bg-gradient-to-r from-gray-900 to-gray-800 hidden lg:block">
                                 <Link href="/" className="flex items-center">
-                                    <div className="relative h-10 w-32">
+                                    <div className="relative h-10 w-36">
                                         <Image src="/logo.png" alt="Brand Empire" fill className="object-contain" unoptimized />
                                     </div>
                                 </Link>
                             </div>
 
-                            <nav className="p-4 flex-1 overflow-y-auto pb-20 lg:pb-4">
+                            <nav className="p-4 flex-1 overflow-y-auto pb-20 lg:pb-4 bg-gray-50/50">
                                 {/* Overview - Active indicator */}
                                 <button onClick={() => { setActiveSection("dashboard"); setSidebarOpen(false); }}
-                                    className={`w-full text-left px-3 py-2 text-sm font-semibold transition-colors ${activeSection === "dashboard" ? "text-[var(--brand-royal-red)]" : "text-gray-700 hover:text-[var(--brand-royal-red)]"}`}>
+                                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-3 ${activeSection === "dashboard"
+                                        ? "bg-gradient-to-r from-[var(--brand-royal-red)] to-red-500 text-white shadow-lg shadow-red-500/30"
+                                        : "text-gray-700 hover:bg-white hover:shadow-md"}`}>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                    </svg>
                                     Overview
                                 </button>
 
                                 {/* ORDERS Section */}
                                 <div className="mt-6">
-                                    <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Orders</p>
+                                    <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Orders</p>
                                     <button onClick={() => { setActiveSection("orders"); setSidebarOpen(false); }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "orders" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 ${activeSection === "orders"
+                                            ? "bg-white text-[var(--brand-royal-red)] font-semibold shadow-sm"
+                                            : "text-gray-600 hover:bg-white hover:text-gray-900"}`}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                        </svg>
                                         Orders & Returns
                                     </button>
                                     <button onClick={() => { setActiveSection("tracking"); setSidebarOpen(false); }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "tracking" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 ${activeSection === "tracking"
+                                            ? "bg-white text-[var(--brand-royal-red)] font-semibold shadow-sm"
+                                            : "text-gray-600 hover:bg-white hover:text-gray-900"}`}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                        </svg>
                                         Track Order
                                     </button>
                                 </div>
 
                                 {/* CREDITS Section */}
                                 <div className="mt-6">
-                                    <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Credits</p>
+                                    <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Credits</p>
                                     <button onClick={() => { setActiveSection("coupons"); setSidebarOpen(false); }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "coupons" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 ${activeSection === "coupons"
+                                            ? "bg-white text-[var(--brand-royal-red)] font-semibold shadow-sm"
+                                            : "text-gray-600 hover:bg-white hover:text-gray-900"}`}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                        </svg>
                                         Coupons
                                     </button>
                                     <button onClick={() => { setActiveSection("benefits"); setSidebarOpen(false); }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "benefits" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 ${activeSection === "benefits"
+                                            ? "bg-white text-[var(--brand-royal-red)] font-semibold shadow-sm"
+                                            : "text-gray-600 hover:bg-white hover:text-gray-900"}`}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                        </svg>
                                         My Points
                                     </button>
                                 </div>
 
                                 {/* ACCOUNT Section */}
                                 <div className="mt-6">
-                                    <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Account</p>
+                                    <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Account</p>
                                     <button onClick={() => { setActiveSection("profile"); setSidebarOpen(false); }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "profile" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 ${activeSection === "profile"
+                                            ? "bg-white text-[var(--brand-royal-red)] font-semibold shadow-sm"
+                                            : "text-gray-600 hover:bg-white hover:text-gray-900"}`}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
                                         Profile
                                     </button>
                                     <button onClick={() => { setActiveSection("wishlist"); setSidebarOpen(false); }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between ${activeSection === "wishlist" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
-                                        Wishlist
-                                        {wishlist.length > 0 && <span className="bg-[var(--brand-royal-red)] text-white text-[10px] px-1.5 py-0.5 rounded-full">{wishlist.length}</span>}
+                                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 justify-between ${activeSection === "wishlist"
+                                            ? "bg-white text-[var(--brand-royal-red)] font-semibold shadow-sm"
+                                            : "text-gray-600 hover:bg-white hover:text-gray-900"}`}>
+                                        <div className="flex items-center gap-3">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                            </svg>
+                                            Wishlist
+                                        </div>
+                                        {wishlist.length > 0 && <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">{wishlist.length}</span>}
                                     </button>
                                     <button onClick={() => { setActiveSection("addresses"); setSidebarOpen(false); }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "addresses" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 ${activeSection === "addresses"
+                                            ? "bg-white text-[var(--brand-royal-red)] font-semibold shadow-sm"
+                                            : "text-gray-600 hover:bg-white hover:text-gray-900"}`}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
                                         Addresses
                                     </button>
                                 </div>
 
                                 {/* LEGAL Section */}
                                 <div className="mt-6">
-                                    <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Legal</p>
+                                    <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Legal</p>
                                     <button onClick={() => { setActiveSection("terms"); setSidebarOpen(false); }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "terms" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 ${activeSection === "terms"
+                                            ? "bg-white text-[var(--brand-royal-red)] font-semibold shadow-sm"
+                                            : "text-gray-600 hover:bg-white hover:text-gray-900"}`}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
                                         Terms of Use
                                     </button>
                                     <button onClick={() => { setActiveSection("privacy"); setSidebarOpen(false); }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "privacy" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
+                                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 ${activeSection === "privacy"
+                                            ? "bg-white text-[var(--brand-royal-red)] font-semibold shadow-sm"
+                                            : "text-gray-600 hover:bg-white hover:text-gray-900"}`}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
                                         Privacy Center
                                     </button>
                                 </div>
 
                                 {/* Logout */}
-                                <div className="mt-6 pt-4 border-t">
-                                    <button onClick={logout} className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-red-600 transition-colors">
+                                <div className="mt-6 pt-4 border-t border-gray-200">
+                                    <button onClick={logout} className="w-full text-left px-4 py-2.5 rounded-lg text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 flex items-center gap-3">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
                                         Logout
                                     </button>
                                 </div>
@@ -379,123 +435,130 @@ export default function ProfileDashboard() {
                         {/* Dashboard / Overview */}
                         {activeSection === "dashboard" && (
                             <>
-                                {/* User Profile Header */}
-                                <div className="bg-white rounded-lg border p-3 md:p-6 mb-4 md:mb-6 flex items-center gap-3 md:gap-6">
-                                    {/* Avatar */}
-                                    <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                        {user?.image ? (
-                                            <Image
-                                                src={user.image}
-                                                alt="Profile"
-                                                width={64}
-                                                height={64}
-                                                className="w-full h-full object-cover"
-                                                unoptimized
-                                            />
-                                        ) : (
-                                            <svg className="w-7 h-7 md:w-9 md:h-9 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                                            </svg>
-                                        )}
+                                {/* User Profile Header - Premium Design */}
+                                <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-4 md:p-6 mb-4 md:mb-6 flex items-center gap-4 md:gap-6 shadow-xl">
+                                    {/* Avatar with ring */}
+                                    <div className="relative">
+                                        <div className="w-14 h-14 md:w-20 md:h-20 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-white/30 ring-offset-2 ring-offset-gray-900">
+                                            {user?.image ? (
+                                                <Image
+                                                    src={user.image}
+                                                    alt="Profile"
+                                                    width={80}
+                                                    height={80}
+                                                    className="w-full h-full object-cover"
+                                                    unoptimized
+                                                />
+                                            ) : (
+                                                <svg className="w-7 h-7 md:w-10 md:h-10 text-white/70" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                        {/* Online indicator */}
+                                        <div className="absolute bottom-0 right-0 w-3 h-3 md:w-4 md:h-4 bg-green-500 rounded-full border-2 border-gray-900"></div>
                                     </div>
                                     {/* User Info */}
                                     <div className="flex-1 min-w-0">
-                                        <h1 className="text-sm md:text-lg font-bold text-gray-900 truncate">{userName}</h1>
-                                        <p className="text-gray-500 text-xs md:text-sm truncate">{user?.email || user?.mobile_number || ""}</p>
+                                        <h1 className="text-base md:text-xl font-bold text-white truncate">{userName}</h1>
+                                        <p className="text-white/60 text-xs md:text-sm truncate">{user?.email || user?.mobile_number || ""}</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="px-2 py-0.5 bg-[var(--brand-royal-red)] text-white text-[10px] md:text-xs font-bold rounded-full">VIP MEMBER</span>
+                                        </div>
                                     </div>
                                     {/* Edit Button */}
                                     <button
                                         onClick={() => { setActiveSection("profile"); setIsEditing(true); }}
-                                        className="px-2.5 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs md:text-sm font-medium text-gray-700 transition-colors whitespace-nowrap flex-shrink-0"
+                                        className="px-3 py-1.5 md:px-5 md:py-2.5 bg-white text-gray-900 hover:bg-gray-100 rounded-lg text-xs md:text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0 shadow-lg"
                                     >
-                                        Edit
+                                        Edit Profile
                                     </button>
                                 </div>
 
-                                {/* Action Cards Grid */}
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                                {/* Action Cards Grid - Premium Design */}
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
                                     {/* Orders Card */}
                                     <button
                                         onClick={() => setActiveSection("orders")}
-                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
+                                        className="bg-white rounded-2xl p-4 md:p-6 text-center shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                                     >
-                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
-                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                        <div className="w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                                            <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">Orders</h3>
+                                        <h3 className="font-bold text-gray-900 text-sm md:text-base mb-0.5">Orders</h3>
                                         <p className="text-[10px] md:text-xs text-gray-500">Check your order status</p>
                                     </button>
 
                                     {/* Wishlist Card */}
                                     <button
                                         onClick={() => setActiveSection("wishlist")}
-                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
+                                        className="bg-white rounded-2xl p-4 md:p-6 text-center shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                                     >
-                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
-                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                        <div className="w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl flex items-center justify-center shadow-lg shadow-pink-500/30 group-hover:scale-110 transition-transform">
+                                            <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">Wishlist</h3>
+                                        <h3 className="font-bold text-gray-900 text-sm md:text-base mb-0.5">Wishlist</h3>
                                         <p className="text-[10px] md:text-xs text-gray-500">All your saved products</p>
                                     </button>
 
                                     {/* Coupons Card */}
                                     <button
                                         onClick={() => setActiveSection("coupons")}
-                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
+                                        className="bg-white rounded-2xl p-4 md:p-6 text-center shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                                     >
-                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
-                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                        <div className="w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
+                                            <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">Coupons</h3>
+                                        <h3 className="font-bold text-gray-900 text-sm md:text-base mb-0.5">Coupons</h3>
                                         <p className="text-[10px] md:text-xs text-gray-500">Your available discounts</p>
                                     </button>
 
                                     {/* My Points Card */}
                                     <button
                                         onClick={() => setActiveSection("benefits")}
-                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
+                                        className="bg-white rounded-2xl p-4 md:p-6 text-center shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                                     >
-                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
-                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                        <div className="w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-500/30 group-hover:scale-110 transition-transform">
+                                            <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">My Points</h3>
+                                        <h3 className="font-bold text-gray-900 text-sm md:text-base mb-0.5">My Points</h3>
                                         <p className="text-[10px] md:text-xs text-gray-500">Manage your rewards</p>
                                     </button>
 
                                     {/* Track Order Card */}
                                     <button
                                         onClick={() => setActiveSection("tracking")}
-                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
+                                        className="bg-white rounded-2xl p-4 md:p-6 text-center shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                                     >
-                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
-                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                        <div className="w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                                            <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">Track Order</h3>
+                                        <h3 className="font-bold text-gray-900 text-sm md:text-base mb-0.5">Track Order</h3>
                                         <p className="text-[10px] md:text-xs text-gray-500">Track your shipments</p>
                                     </button>
 
                                     {/* Profile Card */}
                                     <button
                                         onClick={() => { setActiveSection("profile"); setIsEditing(true); }}
-                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
+                                        className="bg-white rounded-2xl p-4 md:p-6 text-center shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                                     >
-                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
-                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                        <div className="w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30 group-hover:scale-110 transition-transform">
+                                            <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">Profile</h3>
+                                        <h3 className="font-bold text-gray-900 text-sm md:text-base mb-0.5">Profile</h3>
                                         <p className="text-[10px] md:text-xs text-gray-500">Edit your account</p>
                                     </button>
                                 </div>
@@ -504,18 +567,21 @@ export default function ProfileDashboard() {
 
                         {/* Orders with Tabs */}
                         {activeSection === "orders" && (
-                            <div className="bg-white rounded-xl shadow-sm border">
-                                <div className="p-6 border-b">
-                                    <h2 className="text-2xl font-bold text-[var(--brand-royal-red)]">My Orders</h2>
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                                    <h2 className="text-2xl font-bold text-white">My Orders</h2>
+                                    <p className="text-white/60 text-sm mt-1">Track and manage your orders</p>
                                 </div>
 
-                                <div className="border-b overflow-x-auto">
+                                <div className="border-b overflow-x-auto bg-gray-50">
                                     <div className="flex">
                                         {ORDER_TABS.map(tab => {
                                             const IconComponent = tab.Icon;
                                             return (
                                                 <button key={tab.id} onClick={() => setActiveOrderTab(tab.id)}
-                                                    className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeOrderTab === tab.id ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-red-50/30" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}>
+                                                    className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 ${activeOrderTab === tab.id
+                                                        ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-white"
+                                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/50"}`}>
                                                     <IconComponent size={18} />
                                                     {tab.label}
                                                 </button>
@@ -532,17 +598,17 @@ export default function ProfileDashboard() {
                                     ) : orders.length > 0 ? (
                                         <div className="space-y-4">
                                             {orders.map(order => (
-                                                <div key={order.id} className="border rounded-lg p-6">
+                                                <div key={order.id} className="bg-gray-50 rounded-xl p-5 hover:shadow-md transition-shadow">
                                                     <div className="flex justify-between mb-4">
                                                         <div>
-                                                            <p className="font-mono font-bold">{order.invoice_id}</p>
-                                                            <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
+                                                            <p className="font-mono font-bold text-gray-900">{order.invoice_id}</p>
+                                                            <p className="text-xs text-gray-500 mt-1">{new Date(order.created_at).toLocaleDateString()}</p>
                                                         </div>
                                                         <div className="text-right">
-                                                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
+                                                            <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${getStatusColor(order.status)}`}>
                                                                 {getStatusLabel(order.status)}
                                                             </span>
-                                                            <p className="text-lg font-bold text-[var(--brand-royal-red)] mt-2">৳{order.sub_total || order.total}</p>
+                                                            <p className="text-xl font-bold text-[var(--brand-royal-red)] mt-2">৳{order.sub_total || order.total}</p>
                                                         </div>
                                                     </div>
                                                     <p className="text-sm text-gray-600">Items: {order.sales_details?.length || 0} • {order.delivery_customer_address}</p>
@@ -550,10 +616,14 @@ export default function ProfileDashboard() {
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-center py-20 text-gray-400">
-                                            <p className="text-4xl mb-4">📦</p>
-                                            <p>No orders found in this category</p>
-                                            <p className="text-sm mt-2">Orders will appear here once you make a purchase</p>
+                                        <div className="text-center py-20">
+                                            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
+                                                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                </svg>
+                                            </div>
+                                            <h3 className="font-bold text-gray-900 text-lg mb-2">No orders found</h3>
+                                            <p className="text-gray-500 text-sm">Orders will appear here once you make a purchase</p>
                                         </div>
                                     )}
                                 </div>
@@ -562,322 +632,342 @@ export default function ProfileDashboard() {
 
                         {/* Order Tracking */}
                         {activeSection === "tracking" && (
-                            <div className="bg-white rounded-xl shadow-sm p-6 border">
-                                <h2 className="text-2xl font-bold mb-6">Track Your Order</h2>
-                                <form onSubmit={handleTrackOrder} className="mb-8">
-                                    <div className="flex gap-4">
-                                        <input type="text" value={trackInvoiceId} onChange={(e) => setTrackInvoiceId(e.target.value)}
-                                            placeholder="Enter Invoice ID" className="flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:outline-none" />
-                                        <button type="submit" disabled={trackLoading}
-                                            className="px-6 py-3 bg-[var(--brand-royal-red)] text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50">
-                                            {trackLoading ? "Searching..." : "Track"}
-                                        </button>
-                                    </div>
-                                </form>
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                                    <h2 className="text-2xl font-bold text-white">Track Your Order</h2>
+                                    <p className="text-white/60 text-sm mt-1">Enter your invoice ID to track shipment</p>
+                                </div>
 
-                                {trackOrderData && (
-                                    <div className="border rounded-lg p-6">
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div>
-                                                <p className="font-mono font-bold text-lg">{trackOrderData.invoice_id}</p>
-                                                <p className="text-sm text-gray-500">{new Date(trackOrderData.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                            </div>
-                                            <span className={`px-4 py-2 rounded-full text-sm font-bold border ${getStatusColor(trackOrderData.status)}`}>
-                                                {getStatusLabel(trackOrderData.status)}
-                                            </span>
+                                <div className="p-6">
+                                    <form onSubmit={handleTrackOrder} className="mb-8">
+                                        <div className="flex gap-3">
+                                            <input type="text" value={trackInvoiceId} onChange={(e) => setTrackInvoiceId(e.target.value)}
+                                                placeholder="Enter Invoice ID (e.g., INV-12345)"
+                                                className="flex-1 px-4 py-3.5 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:outline-none text-gray-900 placeholder:text-gray-400" />
+                                            <button type="submit" disabled={trackLoading}
+                                                className="px-8 py-3.5 bg-gradient-to-r from-[var(--brand-royal-red)] to-red-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-red-500/30 disabled:opacity-50 transition-all duration-200">
+                                                {trackLoading ? "Searching..." : "Track"}
+                                            </button>
                                         </div>
+                                    </form>
 
-                                        <div className="grid md:grid-cols-2 gap-6 mb-6">
-                                            <div className="space-y-4">
+                                    {trackOrderData && (
+                                        <div className="bg-gray-50 rounded-xl p-6">
+                                            <div className="flex justify-between items-start mb-6">
                                                 <div>
-                                                    <p className="text-sm font-medium text-gray-500">Customer</p>
-                                                    <p className="text-sm">{trackOrderData.delivery_customer_name}</p>
-                                                    <p className="text-sm">{trackOrderData.delivery_customer_phone}</p>
+                                                    <p className="font-mono font-bold text-lg text-gray-900">{trackOrderData.invoice_id}</p>
+                                                    <p className="text-sm text-gray-500 mt-1">{new Date(trackOrderData.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-500">Delivery Address</p>
-                                                    <p className="text-sm">{trackOrderData.delivery_customer_address}</p>
-                                                </div>
+                                                <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusColor(trackOrderData.status)}`}>
+                                                    {getStatusLabel(trackOrderData.status)}
+                                                </span>
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-500">Total Amount</p>
-                                                <p className="text-2xl font-bold text-[var(--brand-royal-red)]">৳{trackOrderData.total || trackOrderData.sub_total}</p>
-                                            </div>
-                                        </div>
 
-                                        <div className="border-t pt-6">
-                                            <h3 className="font-semibold mb-4">Order Items</h3>
-                                            <div className="space-y-3">
-                                                {trackOrderData.sales_details?.map((item, i) => (
-                                                    <div key={i} className="flex items-center gap-4">
-                                                        <div className="w-16 h-16 bg-gray-100 rounded relative">
-                                                            {item.product_info?.image_path && <Image src={item.product_info.image_path} alt={item.product_info.name} fill className="object-cover rounded" unoptimized />}
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <p className="font-medium text-sm">{item.product_info?.name}</p>
-                                                            <p className="text-xs text-gray-500">Qty: {item.qty} {item.size && `• Size: ${item.size}`}</p>
-                                                        </div>
-                                                        <p className="font-medium">৳{item.price * item.qty}</p>
+                                            <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                                <div className="space-y-4">
+                                                    <div className="bg-white rounded-lg p-4">
+                                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Customer</p>
+                                                        <p className="text-sm font-medium text-gray-900">{trackOrderData.delivery_customer_name}</p>
+                                                        <p className="text-sm text-gray-600">{trackOrderData.delivery_customer_phone}</p>
                                                     </div>
-                                                ))}
+                                                    <div className="bg-white rounded-lg p-4">
+                                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Delivery Address</p>
+                                                        <p className="text-sm text-gray-600">{trackOrderData.delivery_customer_address}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="bg-white rounded-lg p-4 flex flex-col justify-center">
+                                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Total Amount</p>
+                                                    <p className="text-3xl font-bold text-[var(--brand-royal-red)]">৳{trackOrderData.total || trackOrderData.sub_total}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t border-gray-200 pt-6">
+                                                <h3 className="font-bold text-gray-900 mb-4">Order Items</h3>
+                                                <div className="space-y-3">
+                                                    {trackOrderData.sales_details?.map((item, i) => (
+                                                        <div key={i} className="flex items-center gap-4 bg-white rounded-lg p-3">
+                                                            <div className="w-16 h-16 bg-gray-100 rounded-lg relative overflow-hidden">
+                                                                {item.product_info?.image_path && <Image src={item.product_info.image_path} alt={item.product_info.name} fill className="object-cover" unoptimized />}
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="font-medium text-sm text-gray-900">{item.product_info?.name}</p>
+                                                                <p className="text-xs text-gray-500">Qty: {item.qty} {item.size && `• Size: ${item.size}`}</p>
+                                                            </div>
+                                                            <p className="font-bold text-gray-900">৳{item.price * item.qty}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         )}
 
                         {/* My Benefits */}
                         {activeSection === "benefits" && (
-                            <div className="space-y-6">
-                                {/* Points & Credit Cards */}
-                                <div className="grid md:grid-cols-3 gap-4">
-                                    {/* Your Points */}
-                                    <div className="bg-white rounded-xl shadow-sm border p-6">
-                                        <div className="flex items-start gap-4">
-                                            <div className="bg-[var(--brand-royal-red)] p-3 rounded-xl">
-                                                <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
-                                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-                                                </svg>
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="text-xs text-gray-500 mb-1">Your Points Now:</p>
-                                                <p className="text-3xl font-bold text-gray-900">283,000</p>
-                                                <p className="text-xs text-gray-500 mt-1">Equal: 1,504 BDT credit</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Shop Now */}
-                                    <div className="bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-xl shadow-sm p-6 flex flex-col items-center justify-center">
-                                        <div className="bg-white p-3 rounded-xl mb-3">
-                                            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <circle cx="9" cy="21" r="1"></circle>
-                                                <circle cx="20" cy="21" r="1"></circle>
-                                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                                            </svg>
-                                        </div>
-                                        <Link href="/" className="bg-white text-[var(--brand-royal-red)] px-6 py-2 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors">
-                                            Shop now
-                                        </Link>
-                                    </div>
-
-                                    {/* Your Credit */}
-                                    <div className="bg-white rounded-xl shadow-sm border p-6">
-                                        <div className="flex items-start gap-4">
-                                            <div className="bg-blue-600 p-3 rounded-xl">
-                                                <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
-                                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                                    <line x1="1" y1="10" x2="23" y2="10"></line>
-                                                </svg>
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="text-xs text-gray-500 mb-1">Your Credit Now:</p>
-                                                <p className="text-3xl font-bold text-gray-900">৳500</p>
-                                                <p className="text-xs text-gray-500 mt-1">📅 Exp in: 30 Dec 2026</p>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                                    <h2 className="text-2xl font-bold text-white">My Points & Benefits</h2>
+                                    <p className="text-white/60 text-sm mt-1">Track your rewards and membership tier</p>
                                 </div>
-
-                                {/* Membership Tier Progress */}
-                                <div className="bg-white rounded-xl shadow-sm border p-6">
-                                    <h3 className="font-bold text-lg mb-6">Membership Tier</h3>
-                                    <div className="relative">
-                                        <div className="flex justify-between items-start mb-4">
-                                            {[
-                                                { name: "Basic", points: "0", active: true, color: "bg-green-500" },
-                                                { name: "Silver", points: "3,000", active: true, color: "bg-green-500" },
-                                                { name: "Gold", points: "15,000", active: true, color: "bg-blue-600" },
-                                                { name: "VIP", points: "30,000", active: false, color: "bg-gray-300" },
-                                            ].map((tier, i) => (
-                                                <div key={i} className="flex flex-col items-center flex-1">
-                                                    <div className={`w-12 h-12 rounded-full ${tier.color} flex items-center justify-center mb-2 relative z-10`}>
-                                                        {tier.active ? (
-                                                            <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
-                                                                <polyline points="20 6 9 17 4 12"></polyline>
-                                                            </svg>
-                                                        ) : (
-                                                            <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
-                                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                                            </svg>
-                                                        )}
-                                                    </div>
-                                                    <p className="font-semibold text-sm text-gray-900">{tier.name}</p>
-                                                    <p className="text-xs text-gray-500">{tier.points} points</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="absolute top-6 left-0 right-0 h-1 bg-gray-200 -z-0">
-                                            <div className="h-full bg-blue-600" style={{ width: "66%" }}></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Featured Coupons */}
-                                <div className="bg-white rounded-xl shadow-sm border p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="font-bold text-lg">Featured Coupons</h3>
-                                        <button onClick={() => setActiveSection("coupons")} className="text-sm text-[var(--brand-royal-red)] font-semibold hover:underline">View All</button>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                        {[
-                                            { name: "Delivery Coupon", discount: "10%", amount: "৳100", badge: "Renewal", expiry: "15 Dec 2025", color: "bg-green-500" },
-                                            { name: "Basic Coupon", discount: "75%", amount: "৳750", badge: "New", expiry: "15 Dec 2025", color: "bg-blue-600" },
-                                            { name: "Login Coupon", discount: "50%", amount: "৳500", badge: "New", expiry: "15 Dec 2025", color: "bg-indigo-700" },
-                                            { name: "Premium Coupon", discount: "50%", amount: "৳500", badge: "Renewal", expiry: "15 Dec 2025", color: "bg-orange-500" },
-                                        ].map((coupon, i) => (
-                                            <div key={i} className={`${coupon.color} rounded-xl p-4 text-white`}>
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="bg-white/20 px-2 py-1 rounded text-xs font-semibold">{coupon.badge}</span>
-                                                    <span className="text-xs opacity-90">Until {coupon.expiry}</span>
-                                                </div>
-                                                <h4 className="font-bold mb-2">{coupon.name}</h4>
-                                                <div className="flex items-baseline gap-2">
-                                                    <span className="text-3xl font-bold">{coupon.discount}</span>
-                                                    <span className="text-sm opacity-90">{coupon.amount}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* My Points Summary */}
-                                <div className="bg-white rounded-xl shadow-sm border">
-                                    <details className="group">
-                                        <summary className="flex items-center justify-between p-6 cursor-pointer">
-                                            <h3 className="font-bold text-lg">My Points Summary</h3>
-                                            <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <polyline points="6 9 12 15 18 9"></polyline>
-                                            </svg>
-                                        </summary>
-                                        <div className="px-6 pb-6 space-y-3">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Total Points Earned</span>
-                                                <span className="font-bold text-gray-900">283,000</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Points Used</span>
-                                                <span className="font-bold text-gray-900">0</span>
-                                            </div>
-                                            <div className="flex justify-between pt-3 border-t">
-                                                <span className="font-semibold text-gray-900">Available Balance</span>
-                                                <span className="font-bold text-blue-600 text-lg">283,000</span>
-                                            </div>
-                                        </div>
-                                    </details>
-                                </div>
-
-                                {/* How to Earn Club Points */}
-                                <div className="bg-white rounded-xl shadow-sm border">
-                                    <details className="group">
-                                        <summary className="flex items-center justify-between p-6 cursor-pointer">
-                                            <h3 className="font-bold text-lg">How to Earn Club Points</h3>
-                                            <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <polyline points="6 9 12 15 18 9"></polyline>
-                                            </svg>
-                                        </summary>
-                                        <div className="px-6 pb-6 grid md:grid-cols-2 gap-4">
-                                            <div className="flex gap-3">
-                                                <div className="bg-blue-50 p-3 rounded-lg h-fit">
-                                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <circle cx="9" cy="21" r="1"></circle>
-                                                        <circle cx="20" cy="21" r="1"></circle>
-                                                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                                                    </svg>
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-900 mb-1">Make Purchases</p>
-                                                    <p className="text-sm text-gray-600">Earn 1 point per ৳1 spent</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-3">
-                                                <div className="bg-pink-50 p-3 rounded-lg h-fit">
-                                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                                        <path d="M9 11l3 3L22 4"></path>
-                                                    </svg>
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-900 mb-1">Complete Surveys</p>
-                                                    <p className="text-sm text-gray-600">Earn up to 100 points</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-3">
-                                                <div className="bg-purple-50 p-3 rounded-lg h-fit">
-                                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                                        <circle cx="8.5" cy="7" r="4"></circle>
-                                                        <polyline points="17 11 19 13 23 9"></polyline>
-                                                    </svg>
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-900 mb-1">Refer Friends</p>
-                                                    <p className="text-sm text-gray-600">Get 500 points per referral</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-3">
-                                                <div className="bg-orange-50 p-3 rounded-lg h-fit">
-                                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                <div className="p-6 space-y-6">
+                                    {/* Points & Credit Cards */}
+                                    <div className="grid md:grid-cols-3 gap-4">
+                                        {/* Your Points */}
+                                        <div className="bg-white rounded-xl shadow-sm border p-6">
+                                            <div className="flex items-start gap-4">
+                                                <div className="bg-[var(--brand-royal-red)] p-3 rounded-xl">
+                                                    <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
                                                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
                                                     </svg>
                                                 </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-900 mb-1">Special Events</p>
-                                                    <p className="text-sm text-gray-600">Bonus points during promotions</p>
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-gray-500 mb-1">Your Points Now:</p>
+                                                    <p className="text-3xl font-bold text-gray-900">283,000</p>
+                                                    <p className="text-xs text-gray-500 mt-1">Equal: 1,504 BDT credit</p>
                                                 </div>
                                             </div>
                                         </div>
-                                    </details>
+
+                                        {/* Shop Now */}
+                                        <div className="bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-xl shadow-sm p-6 flex flex-col items-center justify-center">
+                                            <div className="bg-white p-3 rounded-xl mb-3">
+                                                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <circle cx="9" cy="21" r="1"></circle>
+                                                    <circle cx="20" cy="21" r="1"></circle>
+                                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                                                </svg>
+                                            </div>
+                                            <Link href="/" className="bg-white text-[var(--brand-royal-red)] px-6 py-2 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors">
+                                                Shop now
+                                            </Link>
+                                        </div>
+
+                                        {/* Your Credit */}
+                                        <div className="bg-white rounded-xl shadow-sm border p-6">
+                                            <div className="flex items-start gap-4">
+                                                <div className="bg-blue-600 p-3 rounded-xl">
+                                                    <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
+                                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                                                    </svg>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-gray-500 mb-1">Your Credit Now:</p>
+                                                    <p className="text-3xl font-bold text-gray-900">৳500</p>
+                                                    <p className="text-xs text-gray-500 mt-1">📅 Exp in: 30 Dec 2026</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Membership Tier Progress */}
+                                    <div className="bg-white rounded-xl shadow-sm border p-6">
+                                        <h3 className="font-bold text-lg mb-6">Membership Tier</h3>
+                                        <div className="relative">
+                                            <div className="flex justify-between items-start mb-4">
+                                                {[
+                                                    { name: "Basic", points: "0", active: true, color: "bg-green-500" },
+                                                    { name: "Silver", points: "3,000", active: true, color: "bg-green-500" },
+                                                    { name: "Gold", points: "15,000", active: true, color: "bg-blue-600" },
+                                                    { name: "VIP", points: "30,000", active: false, color: "bg-gray-300" },
+                                                ].map((tier, i) => (
+                                                    <div key={i} className="flex flex-col items-center flex-1">
+                                                        <div className={`w-12 h-12 rounded-full ${tier.color} flex items-center justify-center mb-2 relative z-10`}>
+                                                            {tier.active ? (
+                                                                <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
+                                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                                </svg>
+                                                            ) : (
+                                                                <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
+                                                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                        <p className="font-semibold text-sm text-gray-900">{tier.name}</p>
+                                                        <p className="text-xs text-gray-500">{tier.points} points</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="absolute top-6 left-0 right-0 h-1 bg-gray-200 -z-0">
+                                                <div className="h-full bg-blue-600" style={{ width: "66%" }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Featured Coupons */}
+                                    <div className="bg-white rounded-xl shadow-sm border p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="font-bold text-lg">Featured Coupons</h3>
+                                            <button onClick={() => setActiveSection("coupons")} className="text-sm text-[var(--brand-royal-red)] font-semibold hover:underline">View All</button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                            {[
+                                                { name: "Delivery Coupon", discount: "10%", amount: "৳100", badge: "Renewal", expiry: "15 Dec 2025", color: "bg-green-500" },
+                                                { name: "Basic Coupon", discount: "75%", amount: "৳750", badge: "New", expiry: "15 Dec 2025", color: "bg-blue-600" },
+                                                { name: "Login Coupon", discount: "50%", amount: "৳500", badge: "New", expiry: "15 Dec 2025", color: "bg-indigo-700" },
+                                                { name: "Premium Coupon", discount: "50%", amount: "৳500", badge: "Renewal", expiry: "15 Dec 2025", color: "bg-orange-500" },
+                                            ].map((coupon, i) => (
+                                                <div key={i} className={`${coupon.color} rounded-xl p-4 text-white`}>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="bg-white/20 px-2 py-1 rounded text-xs font-semibold">{coupon.badge}</span>
+                                                        <span className="text-xs opacity-90">Until {coupon.expiry}</span>
+                                                    </div>
+                                                    <h4 className="font-bold mb-2">{coupon.name}</h4>
+                                                    <div className="flex items-baseline gap-2">
+                                                        <span className="text-3xl font-bold">{coupon.discount}</span>
+                                                        <span className="text-sm opacity-90">{coupon.amount}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* My Points Summary */}
+                                    <div className="bg-white rounded-xl shadow-sm border">
+                                        <details className="group">
+                                            <summary className="flex items-center justify-between p-6 cursor-pointer">
+                                                <h3 className="font-bold text-lg">My Points Summary</h3>
+                                                <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                                </svg>
+                                            </summary>
+                                            <div className="px-6 pb-6 space-y-3">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Total Points Earned</span>
+                                                    <span className="font-bold text-gray-900">283,000</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Points Used</span>
+                                                    <span className="font-bold text-gray-900">0</span>
+                                                </div>
+                                                <div className="flex justify-between pt-3 border-t">
+                                                    <span className="font-semibold text-gray-900">Available Balance</span>
+                                                    <span className="font-bold text-blue-600 text-lg">283,000</span>
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </div>
+
+                                    {/* How to Earn Club Points */}
+                                    <div className="bg-white rounded-xl shadow-sm border">
+                                        <details className="group">
+                                            <summary className="flex items-center justify-between p-6 cursor-pointer">
+                                                <h3 className="font-bold text-lg">How to Earn Club Points</h3>
+                                                <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                                </svg>
+                                            </summary>
+                                            <div className="px-6 pb-6 grid md:grid-cols-2 gap-4">
+                                                <div className="flex gap-3">
+                                                    <div className="bg-blue-50 p-3 rounded-lg h-fit">
+                                                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <circle cx="9" cy="21" r="1"></circle>
+                                                            <circle cx="20" cy="21" r="1"></circle>
+                                                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-900 mb-1">Make Purchases</p>
+                                                        <p className="text-sm text-gray-600">Earn 1 point per ৳1 spent</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <div className="bg-pink-50 p-3 rounded-lg h-fit">
+                                                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                                            <path d="M9 11l3 3L22 4"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-900 mb-1">Complete Surveys</p>
+                                                        <p className="text-sm text-gray-600">Earn up to 100 points</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <div className="bg-purple-50 p-3 rounded-lg h-fit">
+                                                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                                            <circle cx="8.5" cy="7" r="4"></circle>
+                                                            <polyline points="17 11 19 13 23 9"></polyline>
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-900 mb-1">Refer Friends</p>
+                                                        <p className="text-sm text-gray-600">Get 500 points per referral</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <div className="bg-orange-50 p-3 rounded-lg h-fit">
+                                                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-900 mb-1">Special Events</p>
+                                                        <p className="text-sm text-gray-600">Bonus points during promotions</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
                         {/* Wishlist */}
                         {activeSection === "wishlist" && (
-                            <div className="bg-white rounded-xl shadow-sm p-6 border">
-                                <h2 className="text-2xl font-bold mb-6">My Wishlist</h2>
-                                {wishlist.length > 0 ? (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                        {wishlist.map((product) => (
-                                            <Link key={product.id} href={`/product/${product.slug}`} className="group">
-                                                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                                                    <div className="relative aspect-square bg-gray-100">
-                                                        <Image
-                                                            src={product.image}
-                                                            alt={product.name}
-                                                            fill
-                                                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                                            unoptimized
-                                                        />
-                                                    </div>
-                                                    <div className="p-3">
-                                                        <h3 className="font-medium text-sm text-gray-900 line-clamp-2 mb-1">
-                                                            {product.name}
-                                                        </h3>
-                                                        <p className="text-xs text-gray-500 mb-2">{product.brand}</p>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-sm text-gray-900">৳{product.price}</span>
-                                                            {product.originalPrice && (
-                                                                <span className="text-xs text-gray-400 line-through">৳{product.originalPrice}</span>
-                                                            )}
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                                    <h2 className="text-2xl font-bold text-white">My Wishlist</h2>
+                                    <p className="text-white/60 text-sm mt-1">Products you've saved for later</p>
+                                </div>
+                                <div className="p-6">
+                                    {wishlist.length > 0 ? (
+                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                            {wishlist.map((product) => (
+                                                <Link key={product.id} href={`/product/${product.slug}`} className="group">
+                                                    <div className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                                                        <div className="relative aspect-square bg-gray-100">
+                                                            <Image
+                                                                src={product.image}
+                                                                alt={product.name}
+                                                                fill
+                                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                unoptimized
+                                                            />
+                                                        </div>
+                                                        <div className="p-3">
+                                                            <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 mb-1">
+                                                                {product.name}
+                                                            </h3>
+                                                            <p className="text-xs text-gray-500 mb-2">{product.brand}</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-sm text-[var(--brand-royal-red)]">৳{product.price}</span>
+                                                                {product.originalPrice && (
+                                                                    <span className="text-xs text-gray-400 line-through">৳{product.originalPrice}</span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-20">
+                                            <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-pink-500/30">
+                                                <Heart size={40} className="text-white" />
+                                            </div>
+                                            <h3 className="font-bold text-gray-900 text-lg mb-2">Your Wishlist is Empty</h3>
+                                            <p className="text-gray-500 mb-6">Save items you love to your wishlist</p>
+                                            <Link href="/" className="inline-block bg-gradient-to-r from-[var(--brand-royal-red)] to-red-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-red-500/30 transition-all duration-200">
+                                                Start Shopping
                                             </Link>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-20 text-gray-400">
-                                        <Heart size={64} className="mx-auto mb-4 text-gray-300" />
-                                        <h3 className="text-lg font-medium text-gray-900 mb-2">Your Wishlist is Empty</h3>
-                                        <p className="mb-6">Save items you love to your wishlist</p>
-                                        <Link href="/" className="inline-block bg-[var(--brand-royal-red)] text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
-                                            Start Shopping
-                                        </Link>
-                                    </div>
-                                )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -892,215 +982,227 @@ export default function ProfileDashboard() {
 
                         {/* Profile */}
                         {activeSection === "profile" && (
-                            <div className="bg-white rounded-xl shadow-sm p-6 border">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold">Profile Settings</h2>
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800 flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-white">Profile Settings</h2>
+                                        <p className="text-white/60 text-sm mt-1">Manage your account information</p>
+                                    </div>
                                     {!isEditing && (
                                         <button
                                             onClick={() => setIsEditing(true)}
-                                            className="px-4 py-2 bg-[var(--brand-royal-red)] text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                                            className="px-5 py-2.5 bg-white text-gray-900 rounded-xl text-sm font-semibold hover:bg-gray-100 transition-colors shadow-lg"
                                         >
                                             Edit Profile
                                         </button>
                                     )}
                                 </div>
 
-                                {isEditing ? (
-                                    <form onSubmit={handleProfileUpdate} className="space-y-6">
-                                        {/* Profile Picture Upload */}
-                                        <div className="flex items-center gap-6 pb-6 border-b">
-                                            <div className="relative">
-                                                <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                                                    {profileImagePreview || user?.image ? (
+                                <div className="p-6">
+
+                                    {isEditing ? (
+                                        <form onSubmit={handleProfileUpdate} className="space-y-6">
+                                            {/* Profile Picture Upload */}
+                                            <div className="flex items-center gap-6 pb-6 border-b">
+                                                <div className="relative">
+                                                    <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                                                        {profileImagePreview || user?.image ? (
+                                                            <Image
+                                                                src={profileImagePreview || user.image}
+                                                                alt="Profile"
+                                                                width={96}
+                                                                height={96}
+                                                                className="w-full h-full object-cover"
+                                                                unoptimized
+                                                            />
+                                                        ) : (
+                                                            <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    {imageUploading && (
+                                                        <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                                                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h3 className="font-medium text-gray-900 mb-1">Profile Picture</h3>
+                                                    <p className="text-sm text-gray-500 mb-3">Upload a new profile picture</p>
+                                                    <div className="flex gap-2">
+                                                        <label className="cursor-pointer px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="hidden"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) {
+                                                                        setProfileImage(file);
+                                                                        setProfileImagePreview(URL.createObjectURL(file));
+                                                                    }
+                                                                }}
+                                                            />
+                                                            Choose Image
+                                                        </label>
+                                                        {(profileImagePreview || user?.image) && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setProfileImage(null);
+                                                                    setProfileImagePreview(null);
+                                                                }}
+                                                                className="px-4 py-2 text-red-600 text-sm font-medium hover:bg-red-50 rounded-lg transition-colors"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                                                    <input
+                                                        type="text"
+                                                        name="first_name"
+                                                        value={formData.first_name}
+                                                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                                                    <input
+                                                        type="text"
+                                                        name="last_name"
+                                                        value={formData.last_name}
+                                                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                                    <input
+                                                        type="email"
+                                                        name="email"
+                                                        value={formData.email}
+                                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                                                    <input
+                                                        type="tel"
+                                                        name="mobile_number"
+                                                        value={formData.mobile_number}
+                                                        onChange={(e) => setFormData({ ...formData, mobile_number: e.target.value })}
+                                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                                                    <textarea
+                                                        name="address"
+                                                        rows={3}
+                                                        value={formData.address}
+                                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-3 pt-4 border-t">
+                                                <button
+                                                    type="submit"
+                                                    disabled={isUpdating}
+                                                    className="px-6 py-2.5 bg-[var(--brand-royal-red)] text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                >
+                                                    {isUpdating ? "Saving..." : "Save Changes"}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsEditing(false)}
+                                                    className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </form>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            {/* Profile Picture Display */}
+                                            <div className="flex items-center gap-4 pb-6 border-b">
+                                                <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                                                    {user?.image ? (
                                                         <Image
-                                                            src={profileImagePreview || user.image}
+                                                            src={user.image}
                                                             alt="Profile"
-                                                            width={96}
-                                                            height={96}
+                                                            width={80}
+                                                            height={80}
                                                             className="w-full h-full object-cover"
                                                             unoptimized
                                                         />
                                                     ) : (
-                                                        <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                                        <svg className="w-10 h-10 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                                                             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                                         </svg>
                                                     )}
                                                 </div>
-                                                {imageUploading && (
-                                                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                                                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
-                                                    </div>
-                                                )}
+                                                <div>
+                                                    <h3 className="font-semibold text-gray-900">{user.first_name ? `${user.first_name} ${user.last_name || ""}` : user.name || "User"}</h3>
+                                                    <p className="text-sm text-gray-500">{user.email}</p>
+                                                </div>
                                             </div>
-                                            <div className="flex-1">
-                                                <h3 className="font-medium text-gray-900 mb-1">Profile Picture</h3>
-                                                <p className="text-sm text-gray-500 mb-3">Upload a new profile picture</p>
-                                                <div className="flex gap-2">
-                                                    <label className="cursor-pointer px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            className="hidden"
-                                                            onChange={(e) => {
-                                                                const file = e.target.files?.[0];
-                                                                if (file) {
-                                                                    setProfileImage(file);
-                                                                    setProfileImagePreview(URL.createObjectURL(file));
-                                                                }
-                                                            }}
-                                                        />
-                                                        Choose Image
-                                                    </label>
-                                                    {(profileImagePreview || user?.image) && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setProfileImage(null);
-                                                                setProfileImagePreview(null);
-                                                            }}
-                                                            className="px-4 py-2 text-red-600 text-sm font-medium hover:bg-red-50 rounded-lg transition-colors"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    )}
+
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-500 mb-1">Full Name</label>
+                                                    <p className="text-gray-900">{user.first_name ? `${user.first_name} ${user.last_name || ""}` : user.name || "N/A"}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                                                    <p className="text-gray-900">{user.email || "N/A"}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
+                                                    <p className="text-gray-900">{user.mobile_number || user.phone || "N/A"}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
+                                                    <p className="text-gray-900">{user.address || "No address provided"}</p>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <div className="grid md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                                                <input
-                                                    type="text"
-                                                    name="first_name"
-                                                    value={formData.first_name}
-                                                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                                                <input
-                                                    type="text"
-                                                    name="last_name"
-                                                    value={formData.last_name}
-                                                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                                <input
-                                                    type="email"
-                                                    name="email"
-                                                    value={formData.email}
-                                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                                                <input
-                                                    type="tel"
-                                                    name="mobile_number"
-                                                    value={formData.mobile_number}
-                                                    onChange={(e) => setFormData({ ...formData, mobile_number: e.target.value })}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
-                                                />
-                                            </div>
-                                            <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                                                <textarea
-                                                    name="address"
-                                                    rows={3}
-                                                    value={formData.address}
-                                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex gap-3 pt-4 border-t">
-                                            <button
-                                                type="submit"
-                                                disabled={isUpdating}
-                                                className="px-6 py-2.5 bg-[var(--brand-royal-red)] text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
-                                            >
-                                                {isUpdating ? "Saving..." : "Save Changes"}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsEditing(false)}
-                                                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </form>
-                                ) : (
-                                    <div className="space-y-6">
-                                        {/* Profile Picture Display */}
-                                        <div className="flex items-center gap-4 pb-6 border-b">
-                                            <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                                                {user?.image ? (
-                                                    <Image
-                                                        src={user.image}
-                                                        alt="Profile"
-                                                        width={80}
-                                                        height={80}
-                                                        className="w-full h-full object-cover"
-                                                        unoptimized
-                                                    />
-                                                ) : (
-                                                    <svg className="w-10 h-10 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                                                    </svg>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-gray-900">{user.first_name ? `${user.first_name} ${user.last_name || ""}` : user.name || "User"}</h3>
-                                                <p className="text-sm text-gray-500">{user.email}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-500 mb-1">Full Name</label>
-                                                <p className="text-gray-900">{user.first_name ? `${user.first_name} ${user.last_name || ""}` : user.name || "N/A"}</p>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
-                                                <p className="text-gray-900">{user.email || "N/A"}</p>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
-                                                <p className="text-gray-900">{user.mobile_number || user.phone || "N/A"}</p>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
-                                                <p className="text-gray-900">{user.address || "No address provided"}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         )}
 
                         {/* Addresses Section */}
                         {activeSection === "addresses" && (
-                            <div className="bg-white rounded-xl shadow-sm border p-6">
-                                <h2 className="text-2xl font-bold text-[var(--brand-royal-red)] mb-6">My Addresses</h2>
-                                <div className="space-y-4">
-                                    <div className="border rounded-lg p-4">
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                                    <h2 className="text-2xl font-bold text-white">My Addresses</h2>
+                                    <p className="text-white/60 text-sm mt-1">Manage your delivery addresses</p>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    <div className="bg-gray-50 rounded-xl p-5">
                                         <div className="flex items-start justify-between">
                                             <div>
-                                                <h3 className="font-semibold text-gray-900 mb-1">Default Address</h3>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Default</span>
+                                                </div>
+                                                <h3 className="font-semibold text-gray-900 mb-1">Delivery Address</h3>
                                                 <p className="text-gray-600 text-sm">{user?.address || "No address saved"}</p>
                                                 <p className="text-gray-600 text-sm mt-1">{user?.mobile_number || user?.phone || ""}</p>
                                             </div>
                                             <button
                                                 onClick={() => { setActiveSection("profile"); setIsEditing(true); }}
-                                                className="text-[var(--brand-royal-red)] text-sm font-medium hover:underline"
+                                                className="px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors shadow-sm"
                                             >
                                                 Edit
                                             </button>
@@ -1113,10 +1215,12 @@ export default function ProfileDashboard() {
 
                         {/* Terms of Use Section */}
                         {activeSection === "terms" && (
-                            <div className="bg-white rounded-xl shadow-sm border p-6">
-                                <h2 className="text-2xl font-bold text-[var(--brand-royal-red)] mb-2">Terms & Conditions</h2>
-                                <p className="text-gray-500 mb-6 text-sm">Last updated: January 1, 2026</p>
-                                <div className="prose prose-sm max-w-none text-gray-700 space-y-6">
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                                    <h2 className="text-2xl font-bold text-white">Terms & Conditions</h2>
+                                    <p className="text-white/60 text-sm mt-1">Last updated: January 1, 2026</p>
+                                </div>
+                                <div className="p-6 prose prose-sm max-w-none text-gray-700 space-y-6">
                                     <section>
                                         <h3 className="text-lg font-bold text-gray-900 mb-2">1. Agreement to Terms</h3>
                                         <p className="text-sm">These Terms of Use constitute a legally binding agreement made between you, whether personally or on behalf of an entity ("you") and Brand Empire ("we," "us" or "our"), concerning your access to and use of the Brand Empire website as well as any other media form, media channel, mobile website or mobile application related, linked, or otherwise connected thereto.</p>
@@ -1149,10 +1253,12 @@ export default function ProfileDashboard() {
 
                         {/* Privacy Center Section */}
                         {activeSection === "privacy" && (
-                            <div className="bg-white rounded-xl shadow-sm border p-6">
-                                <h2 className="text-2xl font-bold text-[var(--brand-royal-red)] mb-2">Privacy Policy</h2>
-                                <p className="text-gray-500 mb-6 text-sm">Last updated: January 1, 2026</p>
-                                <div className="prose prose-sm max-w-none text-gray-700 space-y-6">
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                                    <h2 className="text-2xl font-bold text-white">Privacy Policy</h2>
+                                    <p className="text-white/60 text-sm mt-1">Last updated: January 1, 2026</p>
+                                </div>
+                                <div className="p-6 prose prose-sm max-w-none text-gray-700 space-y-6">
                                     <section>
                                         <h3 className="text-lg font-bold text-gray-900 mb-2">1. Introduction</h3>
                                         <p className="text-sm">Welcome to Brand Empire. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website and tell you about your privacy rights and how the law protects you.</p>
@@ -1262,33 +1368,38 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
     });
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            {/* Premium Header */}
+            <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                <h2 className="text-2xl font-bold text-white">My Coupons</h2>
+                <p className="text-white/60 text-sm mt-1">Discover and collect discount codes</p>
+            </div>
             {/* Tabs */}
-            <div className="border-b overflow-x-auto">
+            <div className="border-b overflow-x-auto bg-gray-50">
                 <div className="flex">
                     <button
                         onClick={() => setActiveTab("all")}
-                        className={`flex-1 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-2 ${activeTab === "all"
-                            ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]"
-                            : "border-transparent text-gray-500 hover:text-gray-700"
+                        className={`flex-1 py-4 text-sm font-medium border-b-2 transition-all duration-200 whitespace-nowrap px-4 ${activeTab === "all"
+                            ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-white"
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/50"
                             }`}
                     >
                         All Coupons
                     </button>
                     <button
                         onClick={() => setActiveTab("expiring")}
-                        className={`flex-1 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-2 ${activeTab === "expiring"
-                            ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]"
-                            : "border-transparent text-gray-500 hover:text-gray-700"
+                        className={`flex-1 py-4 text-sm font-medium border-b-2 transition-all duration-200 whitespace-nowrap px-4 ${activeTab === "expiring"
+                            ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-white"
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/50"
                             }`}
                     >
                         Expires Soon {expiringSoonCoupons.length > 0 && `(${expiringSoonCoupons.length})`}
                     </button>
                     <button
                         onClick={() => setActiveTab("my")}
-                        className={`flex-1 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-2 ${activeTab === "my"
-                            ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]"
-                            : "border-transparent text-gray-500 hover:text-gray-700"
+                        className={`flex-1 py-4 text-sm font-medium border-b-2 transition-all duration-200 whitespace-nowrap px-4 ${activeTab === "my"
+                            ? "border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-white"
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/50"
                             }`}
                     >
                         My Coupons ({myCoupons.length})
