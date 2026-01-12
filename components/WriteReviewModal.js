@@ -56,8 +56,7 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
             if (files.length > 0) {
                 const formData = new FormData();
                 files.forEach((f) => formData.append("pictures[]", f));
-                // Assuming user.id or user.customer_id is available. Using user.id based on context.
-                formData.append("user_id", user?.customer_id || user?.id);
+                formData.append("user_id", String(process.env.NEXT_PUBLIC_USER_ID));
 
                 const uploadRes = await uploadReviewMedia(formData, token);
 

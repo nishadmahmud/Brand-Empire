@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, trackOrder, updateCustomerProfile } from "@/lib/api";
+import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, trackOrder, uploadSingleFile } from "@/lib/api";
 import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -20,7 +20,7 @@ const ORDER_TABS = [
 ];
 
 export default function ProfileDashboard() {
-    const { user, logout, loading, token } = useAuth();
+    const { user, logout, loading, token, updateProfile } = useAuth();
     const { wishlist } = useWishlist();
     const router = useRouter();
 
@@ -44,6 +44,9 @@ export default function ProfileDashboard() {
         address: ""
     });
     const [isUpdating, setIsUpdating] = useState(false);
+    const [profileImage, setProfileImage] = useState(null);
+    const [profileImagePreview, setProfileImagePreview] = useState(null);
+    const [imageUploading, setImageUploading] = useState(false);
 
     // Track order states
     const [trackInvoiceId, setTrackInvoiceId] = useState("");
@@ -78,19 +81,50 @@ export default function ProfileDashboard() {
         setIsUpdating(true);
 
         try {
-            const data = await updateCustomerProfile(token, formData);
-            if (data.success) {
+            let imageUrl = user?.image || null;
+
+
+            // Step 1: Upload profile image if selected
+            if (profileImage) {
+                setImageUploading(true);
+                const imageFormData = new FormData();
+                imageFormData.append("file_name", profileImage);
+                imageFormData.append("user_id", String(process.env.NEXT_PUBLIC_USER_ID));
+
+                const uploadRes = await uploadSingleFile(imageFormData, token);
+
+                if (uploadRes?.success && uploadRes?.path) {
+                    imageUrl = uploadRes.path;
+                } else {
+                    toast.error("Failed to upload image. Please try again.");
+                    setIsUpdating(false);
+                    setImageUploading(false);
+                    return;
+                }
+                setImageUploading(false);
+            }
+
+            // Step 2: Update profile with image URL
+            const profileData = {
+                ...formData,
+                image: imageUrl
+            };
+
+            const result = await updateProfile(profileData);
+            if (result.success) {
                 toast.success("Profile updated successfully!");
                 setIsEditing(false);
-                // Optionally refresh user data here
+                setProfileImage(null);
+                setProfileImagePreview(null);
             } else {
-                toast.error(data.message || "Failed to update profile");
+                toast.error(result.message || "Failed to update profile");
             }
         } catch (error) {
             console.error("Error updating profile:", error);
             toast.error("Something went wrong");
         } finally {
             setIsUpdating(false);
+            setImageUploading(false);
         }
     };
 
@@ -227,7 +261,7 @@ export default function ProfileDashboard() {
                     {/* Sidebar - Hidden on mobile, overlay when opened */}
                     <aside className={`
                         fixed lg:static
-                        top-16 lg:top-auto left-0 lg:left-auto bottom-0 lg:bottom-auto
+                        top-0 lg:top-auto left-0 lg:left-auto
                         w-64
                         bg-white
                         z-50 lg:z-auto
@@ -235,12 +269,11 @@ export default function ProfileDashboard() {
                         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
                         lg:block
                         flex-shrink-0
-                        overflow-y-auto
-                        h-[calc(100vh-4rem)] lg:h-auto
+                        h-screen lg:h-auto
                     `}>
-                        <div className="bg-white lg:rounded-xl shadow-sm border lg:sticky lg:top-24 h-full lg:h-auto">
+                        <div className="bg-white lg:rounded-xl shadow-sm border lg:sticky lg:top-24 h-full lg:h-auto flex flex-col">
                             {/* Mobile Close Button */}
-                            <div className="lg:hidden flex items-center justify-between p-4 border-b">
+                            <div className="lg:hidden flex items-center justify-between p-4 border-b flex-shrink-0">
                                 <span className="font-semibold text-gray-900">Menu</span>
                                 <button
                                     onClick={() => setSidebarOpen(false)}
@@ -253,6 +286,7 @@ export default function ProfileDashboard() {
                                 </button>
                             </div>
 
+
                             <div className="p-6 border-b hidden lg:block">
                                 <Link href="/" className="flex items-center">
                                     <div className="relative h-10 w-32">
@@ -261,7 +295,7 @@ export default function ProfileDashboard() {
                                 </Link>
                             </div>
 
-                            <nav className="p-4">
+                            <nav className="p-4 flex-1 overflow-y-auto pb-20 lg:pb-4">
                                 {/* Overview - Active indicator */}
                                 <button onClick={() => { setActiveSection("dashboard"); setSidebarOpen(false); }}
                                     className={`w-full text-left px-3 py-2 text-sm font-semibold transition-colors ${activeSection === "dashboard" ? "text-[var(--brand-royal-red)]" : "text-gray-700 hover:text-[var(--brand-royal-red)]"}`}>
@@ -306,20 +340,23 @@ export default function ProfileDashboard() {
                                         Wishlist
                                         {wishlist.length > 0 && <span className="bg-[var(--brand-royal-red)] text-white text-[10px] px-1.5 py-0.5 rounded-full">{wishlist.length}</span>}
                                     </button>
-                                    <Link href="/checkout" className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                                    <button onClick={() => { setActiveSection("addresses"); setSidebarOpen(false); }}
+                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "addresses" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
                                         Addresses
-                                    </Link>
+                                    </button>
                                 </div>
 
                                 {/* LEGAL Section */}
                                 <div className="mt-6">
                                     <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Legal</p>
-                                    <Link href="/terms" className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                                    <button onClick={() => { setActiveSection("terms"); setSidebarOpen(false); }}
+                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "terms" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
                                         Terms of Use
-                                    </Link>
-                                    <Link href="/privacy" className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                                    </button>
+                                    <button onClick={() => { setActiveSection("privacy"); setSidebarOpen(false); }}
+                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${activeSection === "privacy" ? "text-[var(--brand-royal-red)] font-medium" : "text-gray-600 hover:text-gray-900"}`}>
                                         Privacy Center
-                                    </Link>
+                                    </button>
                                 </div>
 
                                 {/* Logout */}
@@ -338,112 +375,123 @@ export default function ProfileDashboard() {
                         {activeSection === "dashboard" && (
                             <>
                                 {/* User Profile Header */}
-                                <div className="bg-white rounded-lg border p-6 mb-6 flex items-center gap-6">
+                                <div className="bg-white rounded-lg border p-3 md:p-6 mb-4 md:mb-6 flex items-center gap-3 md:gap-6">
                                     {/* Avatar */}
-                                    <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                                        </svg>
+                                    <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                        {user?.image ? (
+                                            <Image
+                                                src={user.image}
+                                                alt="Profile"
+                                                width={64}
+                                                height={64}
+                                                className="w-full h-full object-cover"
+                                                unoptimized
+                                            />
+                                        ) : (
+                                            <svg className="w-7 h-7 md:w-9 md:h-9 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                            </svg>
+                                        )}
                                     </div>
                                     {/* User Info */}
-                                    <div className="flex-1">
-                                        <h1 className="text-xl font-bold text-gray-900">{userName}</h1>
-                                        <p className="text-gray-500 text-sm">{user?.email || user?.mobile_number || ""}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <h1 className="text-sm md:text-lg font-bold text-gray-900 truncate">{userName}</h1>
+                                        <p className="text-gray-500 text-xs md:text-sm truncate">{user?.email || user?.mobile_number || ""}</p>
                                     </div>
-                                    {/* Edit Profile Button */}
+                                    {/* Edit Button */}
                                     <button
-                                        onClick={() => setActiveSection("profile")}
-                                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                        onClick={() => { setActiveSection("profile"); setIsEditing(true); }}
+                                        className="px-2.5 py-1.5 md:px-4 md:py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs md:text-sm font-medium text-gray-700 transition-colors whitespace-nowrap flex-shrink-0"
                                     >
-                                        EDIT PROFILE
+                                        Edit
                                     </button>
                                 </div>
 
                                 {/* Action Cards Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                                     {/* Orders Card */}
                                     <button
                                         onClick={() => setActiveSection("orders")}
-                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
                                     >
-                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
                                             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">Orders</h3>
-                                        <p className="text-xs text-gray-500">Check your order status</p>
+                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">Orders</h3>
+                                        <p className="text-[10px] md:text-xs text-gray-500">Check your order status</p>
                                     </button>
 
                                     {/* Wishlist Card */}
                                     <button
                                         onClick={() => setActiveSection("wishlist")}
-                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
                                     >
-                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
                                             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">Wishlist</h3>
-                                        <p className="text-xs text-gray-500">All your saved products</p>
+                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">Wishlist</h3>
+                                        <p className="text-[10px] md:text-xs text-gray-500">All your saved products</p>
                                     </button>
 
                                     {/* Coupons Card */}
                                     <button
                                         onClick={() => setActiveSection("coupons")}
-                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
                                     >
-                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
                                             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">Coupons</h3>
-                                        <p className="text-xs text-gray-500">Your available discounts</p>
+                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">Coupons</h3>
+                                        <p className="text-[10px] md:text-xs text-gray-500">Your available discounts</p>
                                     </button>
 
                                     {/* My Points Card */}
                                     <button
                                         onClick={() => setActiveSection("benefits")}
-                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
                                     >
-                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
                                             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">My Points</h3>
-                                        <p className="text-xs text-gray-500">Manage your rewards</p>
+                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">My Points</h3>
+                                        <p className="text-[10px] md:text-xs text-gray-500">Manage your rewards</p>
                                     </button>
 
                                     {/* Track Order Card */}
                                     <button
                                         onClick={() => setActiveSection("tracking")}
-                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
                                     >
-                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
                                             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">Track Order</h3>
-                                        <p className="text-xs text-gray-500">Track your shipments</p>
+                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">Track Order</h3>
+                                        <p className="text-[10px] md:text-xs text-gray-500">Track your shipments</p>
                                     </button>
 
                                     {/* Profile Card */}
                                     <button
-                                        onClick={() => setActiveSection("profile")}
-                                        className="bg-white border rounded-lg p-6 text-center hover:shadow-md transition-shadow group"
+                                        onClick={() => { setActiveSection("profile"); setIsEditing(true); }}
+                                        className="bg-white border rounded-lg p-4 md:p-6 text-center hover:shadow-md transition-shadow group"
                                     >
-                                        <div className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
+                                        <div className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 md:mb-4 text-gray-400 group-hover:text-[var(--brand-royal-red)] transition-colors">
                                             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">Profile</h3>
-                                        <p className="text-xs text-gray-500">Edit your account details</p>
+                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-0.5 md:mb-1">Profile</h3>
+                                        <p className="text-[10px] md:text-xs text-gray-500">Edit your account</p>
                                     </button>
                                 </div>
                             </>
@@ -854,6 +902,66 @@ export default function ProfileDashboard() {
 
                                 {isEditing ? (
                                     <form onSubmit={handleProfileUpdate} className="space-y-6">
+                                        {/* Profile Picture Upload */}
+                                        <div className="flex items-center gap-6 pb-6 border-b">
+                                            <div className="relative">
+                                                <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                                                    {profileImagePreview || user?.image ? (
+                                                        <Image
+                                                            src={profileImagePreview || user.image}
+                                                            alt="Profile"
+                                                            width={96}
+                                                            height={96}
+                                                            className="w-full h-full object-cover"
+                                                            unoptimized
+                                                        />
+                                                    ) : (
+                                                        <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                                {imageUploading && (
+                                                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                                                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="font-medium text-gray-900 mb-1">Profile Picture</h3>
+                                                <p className="text-sm text-gray-500 mb-3">Upload a new profile picture</p>
+                                                <div className="flex gap-2">
+                                                    <label className="cursor-pointer px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) {
+                                                                    setProfileImage(file);
+                                                                    setProfileImagePreview(URL.createObjectURL(file));
+                                                                }
+                                                            }}
+                                                        />
+                                                        Choose Image
+                                                    </label>
+                                                    {(profileImagePreview || user?.image) && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setProfileImage(null);
+                                                                setProfileImagePreview(null);
+                                                            }}
+                                                            className="px-4 py-2 text-red-600 text-sm font-medium hover:bg-red-50 rounded-lg transition-colors"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="grid md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
@@ -925,25 +1033,153 @@ export default function ProfileDashboard() {
                                         </div>
                                     </form>
                                 ) : (
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-500 mb-1">Full Name</label>
-                                            <p className="text-gray-900">{user.first_name ? `${user.first_name} ${user.last_name || ""}` : user.name || "N/A"}</p>
+                                    <div className="space-y-6">
+                                        {/* Profile Picture Display */}
+                                        <div className="flex items-center gap-4 pb-6 border-b">
+                                            <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                                                {user?.image ? (
+                                                    <Image
+                                                        src={user.image}
+                                                        alt="Profile"
+                                                        width={80}
+                                                        height={80}
+                                                        className="w-full h-full object-cover"
+                                                        unoptimized
+                                                    />
+                                                ) : (
+                                                    <svg className="w-10 h-10 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-gray-900">{user.first_name ? `${user.first_name} ${user.last_name || ""}` : user.name || "User"}</h3>
+                                                <p className="text-sm text-gray-500">{user.email}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
-                                            <p className="text-gray-900">{user.email || "N/A"}</p>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
-                                            <p className="text-gray-900">{user.mobile_number || user.phone || "N/A"}</p>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
-                                            <p className="text-gray-900">{user.address || "No address provided"}</p>
+
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-500 mb-1">Full Name</label>
+                                                <p className="text-gray-900">{user.first_name ? `${user.first_name} ${user.last_name || ""}` : user.name || "N/A"}</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                                                <p className="text-gray-900">{user.email || "N/A"}</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
+                                                <p className="text-gray-900">{user.mobile_number || user.phone || "N/A"}</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
+                                                <p className="text-gray-900">{user.address || "No address provided"}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
+                            </div>
+                        )}
+
+                        {/* Addresses Section */}
+                        {activeSection === "addresses" && (
+                            <div className="bg-white rounded-xl shadow-sm border p-6">
+                                <h2 className="text-2xl font-bold text-[var(--brand-royal-red)] mb-6">My Addresses</h2>
+                                <div className="space-y-4">
+                                    <div className="border rounded-lg p-4">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <h3 className="font-semibold text-gray-900 mb-1">Default Address</h3>
+                                                <p className="text-gray-600 text-sm">{user?.address || "No address saved"}</p>
+                                                <p className="text-gray-600 text-sm mt-1">{user?.mobile_number || user?.phone || ""}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => { setActiveSection("profile"); setIsEditing(true); }}
+                                                className="text-[var(--brand-royal-red)] text-sm font-medium hover:underline"
+                                            >
+                                                Edit
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p className="text-gray-500 text-sm">To update your address, please edit your profile.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Terms of Use Section */}
+                        {activeSection === "terms" && (
+                            <div className="bg-white rounded-xl shadow-sm border p-6">
+                                <h2 className="text-2xl font-bold text-[var(--brand-royal-red)] mb-2">Terms & Conditions</h2>
+                                <p className="text-gray-500 mb-6 text-sm">Last updated: January 1, 2026</p>
+                                <div className="prose prose-sm max-w-none text-gray-700 space-y-6">
+                                    <section>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">1. Agreement to Terms</h3>
+                                        <p className="text-sm">These Terms of Use constitute a legally binding agreement made between you, whether personally or on behalf of an entity ("you") and Brand Empire ("we," "us" or "our"), concerning your access to and use of the Brand Empire website as well as any other media form, media channel, mobile website or mobile application related, linked, or otherwise connected thereto.</p>
+                                    </section>
+                                    <section>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">2. User Representations</h3>
+                                        <p className="text-sm">By using the Site, you represent and warrant that:</p>
+                                        <ul className="list-disc pl-5 space-y-1 mt-2 text-sm">
+                                            <li>All registration information you submit will be true, accurate, current, and complete.</li>
+                                            <li>You will maintain the accuracy of such information and promptly update such registration information as necessary.</li>
+                                            <li>You have the legal capacity and you agree to comply with these Terms of Use.</li>
+                                            <li>You are not a minor in the jurisdiction in which you reside.</li>
+                                        </ul>
+                                    </section>
+                                    <section>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">3. Products</h3>
+                                        <p className="text-sm">We make every effort to display as accurately as possible the colors, features, specifications, and details of the products available on the Site. However, we do not guarantee that the colors, features, specifications, and details of the products will be accurate, complete, reliable, current, or free of other errors.</p>
+                                    </section>
+                                    <section>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">4. Purchases and Payment</h3>
+                                        <p className="text-sm">We accept varying forms of payment as indicated on the website. You agree to provide current, complete, and accurate purchase and account information for all purchases made via the Site. Sales tax will be added to the price of purchases as deemed required by us.</p>
+                                    </section>
+                                    <section>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">5. Contact Us</h3>
+                                        <p className="text-sm">In order to resolve a complaint regarding the Site or to receive further information regarding use of the Site, please contact us at: <a href="mailto:support@brandempire.com" className="text-red-600 hover:underline">support@brandempire.com</a>.</p>
+                                    </section>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Privacy Center Section */}
+                        {activeSection === "privacy" && (
+                            <div className="bg-white rounded-xl shadow-sm border p-6">
+                                <h2 className="text-2xl font-bold text-[var(--brand-royal-red)] mb-2">Privacy Policy</h2>
+                                <p className="text-gray-500 mb-6 text-sm">Last updated: January 1, 2026</p>
+                                <div className="prose prose-sm max-w-none text-gray-700 space-y-6">
+                                    <section>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">1. Introduction</h3>
+                                        <p className="text-sm">Welcome to Brand Empire. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website and tell you about your privacy rights and how the law protects you.</p>
+                                    </section>
+                                    <section>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">2. Data We Collect</h3>
+                                        <p className="text-sm">We may collect, use, store and transfer different kinds of personal data about you:</p>
+                                        <ul className="list-disc pl-5 space-y-1 mt-2 text-sm">
+                                            <li><strong>Identity Data:</strong> includes first name, last name, username or similar identifier.</li>
+                                            <li><strong>Contact Data:</strong> includes billing address, delivery address, email address and telephone numbers.</li>
+                                            <li><strong>Financial Data:</strong> includes payment card details (processed securely by our third-party payment processors).</li>
+                                            <li><strong>Transaction Data:</strong> includes details about payments to and from you and other details of products you have purchased from us.</li>
+                                        </ul>
+                                    </section>
+                                    <section>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">3. How We Use Your Data</h3>
+                                        <p className="text-sm">We will only use your personal data when the law allows us to:</p>
+                                        <ul className="list-disc pl-5 space-y-1 mt-2 text-sm">
+                                            <li>Where we need to perform the contract we are about to enter into or have entered into with you.</li>
+                                            <li>Where it is necessary for our legitimate interests and your interests do not override those interests.</li>
+                                            <li>Where we need to comply with a legal or regulatory obligation.</li>
+                                        </ul>
+                                    </section>
+                                    <section>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">4. Data Security</h3>
+                                        <p className="text-sm">We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorized way, altered or disclosed. In addition, we limit access to your personal data to those employees, agents, contractors and other third parties who have a business need to know.</p>
+                                    </section>
+                                    <section>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">5. Contact Details</h3>
+                                        <p className="text-sm">If you have any questions about this privacy policy or our privacy practices, please contact us at: <a href="mailto:privacy@brandempire.com" className="text-red-600 hover:underline">privacy@brandempire.com</a>.</p>
+                                    </section>
+                                </div>
                             </div>
                         )}
                     </div>
