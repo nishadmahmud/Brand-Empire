@@ -31,7 +31,7 @@ const STUDIO_POSTS = [
             time: "5 hours ago"
         },
         type: "video",
-        content: "https://videos.pexels.com/video-files/5865185/5865185-hd_1080_1920_30fps.mp4",
+        content: "https://res.cloudinary.com/demo/video/upload/v1689798029/samples/dance-2.mp4",
         description: "Gentlemen, elevate your formal game. 👔 #MensStyle #SuitedUp",
         likes: "856",
         products: [
@@ -46,8 +46,8 @@ const STUDIO_POSTS = [
             avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100",
             time: "1 day ago"
         },
-        type: "image", // Could be video in future
-        content: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=800",
+        type: "video",
+        content: "https://res.cloudinary.com/demo/video/upload/v1689798029/samples/sea-turtle.mp4",
         description: "Get the perfect glow with these essentials! ✨ #BeautyDrill #GlowUp",
         likes: "2.5k",
         products: [
@@ -62,8 +62,8 @@ const STUDIO_POSTS = [
             avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=100",
             time: "Just now"
         },
-        type: "image",
-        content: "https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&q=80&w=800",
+        type: "video",
+        content: "https://res.cloudinary.com/demo/video/upload/v1689798029/samples/elephants.mp4",
         description: "Streetwear aesthetic on point. 👟 #UrbanStyle #Sneakerhead",
         likes: "940",
         products: [
@@ -78,8 +78,8 @@ const STUDIO_POSTS = [
             avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100",
             time: "3 hours ago"
         },
-        type: "image",
-        content: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800",
+        type: "video",
+        content: "https://res.cloudinary.com/demo/video/upload/v1689798029/samples/cld-sample-video.mp4",
         description: "Elegance in every thread. 🌸 #TraditionalWear #Saree",
         likes: "3.1k",
         products: [
