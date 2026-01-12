@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getTopBrands } from "@/lib/api";
 
-const BrandRow = ({ title, brands }) => (
+const BrandRow = ({ title, brands, type }) => (
     <div className="mb-8 md:mb-16">
         <h3 className="text-lg md:text-2xl font-bold text-center mb-6 md:mb-10 tracking-[0.1em] md:tracking-[0.2em] text-[#282c3f] uppercase relative inline-block w-full">
             {title}
@@ -31,6 +31,21 @@ const BrandRow = ({ title, brands }) => (
                 </Link>
             ))}
         </div>
+        {/* View All Link */}
+        <div className="flex justify-center mt-8 md:mt-10">
+            <Link
+                href={`/brands${type ? `?type=${type}` : ''}`}
+                className="group inline-flex items-center gap-2 text-[var(--brand-royal-red)] text-sm tracking-widest uppercase font-medium hover:opacity-70 transition-opacity"
+            >
+                <span className="relative">
+                    View All
+                    <span className="absolute left-0 bottom-0 w-0 h-[1px] bg-[var(--brand-royal-red)] group-hover:w-full transition-all duration-300"></span>
+                </span>
+                <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+                </svg>
+            </Link>
+        </div>
     </div>
 );
 
@@ -55,10 +70,10 @@ const BrandsSection = () => {
                 const response = await getTopBrands();
                 if (response.success && response.data && response.data.length > 0) {
                     // Filter brands by description field
-                    const international = response.data.filter(brand => 
+                    const international = response.data.filter(brand =>
                         brand.description === "International"
                     );
-                    const bangladeshi = response.data.filter(brand => 
+                    const bangladeshi = response.data.filter(brand =>
                         brand.description === "Local"
                     );
 
@@ -93,12 +108,12 @@ const BrandsSection = () => {
         <section className="section-content py-12 md:py-16 overflow-hidden">
             {/* International Brands - Always visible if there are brands */}
             {internationalBrands.length > 0 && (
-                <BrandRow title="International Icons" brands={internationalBrands} />
+                <BrandRow title="International Icons" brands={internationalBrands} type="international" />
             )}
 
             {/* Bangladeshi Brands - Only visible if there are more than 6 brands total */}
             {localBrands.length > 0 && (
-                <BrandRow title="Bangladeshi Pride" brands={localBrands} />
+                <BrandRow title="Bangladeshi Pride" brands={localBrands} type="local" />
             )}
         </section>
     );
