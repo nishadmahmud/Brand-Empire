@@ -31,11 +31,11 @@ const STUDIO_POSTS = [
             time: "5 hours ago"
         },
         type: "image",
-        content: "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?auto=format&fit=crop&q=80&w=800",
+        content: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800",
         description: "Gentlemen, elevate your formal game. 👔 #MensStyle #SuitedUp",
         likes: "856",
         products: [
-            { id: 201, name: "Classic Navy Blazer", price: 5500, image: "https://images.unsplash.com/photo-1594938298603-c8148c47e356?auto=format&fit=crop&q=80&w=200" },
+            { id: 201, name: "Classic Navy Blazer", price: 5500, image: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&q=80&w=200" },
             { id: 202, name: "White Oxford Shirt", price: 1800, image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&q=80&w=200" }
         ]
     },
@@ -47,7 +47,7 @@ const STUDIO_POSTS = [
             time: "1 day ago"
         },
         type: "image", // Could be video in future
-        content: "https://images.unsplash.com/photo-1596462502278-27bfdd403348?auto=format&fit=crop&q=80&w=800",
+        content: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=800",
         description: "Get the perfect glow with these essentials! ✨ #BeautyDrill #GlowUp",
         likes: "2.5k",
         products: [
@@ -63,12 +63,12 @@ const STUDIO_POSTS = [
             time: "Just now"
         },
         type: "image",
-        content: "https://images.unsplash.com/photo-1550614000-4b9519e007d9?auto=format&fit=crop&q=80&w=800",
+        content: "https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&q=80&w=800",
         description: "Streetwear aesthetic on point. 👟 #UrbanStyle #Sneakerhead",
         likes: "940",
         products: [
-            { id: 401, name: "Oversized Hoodie", price: 2200, image: "https://images.unsplash.com/photo-1556906781-9a412961d289?auto=format&fit=crop&q=80&w=200" },
-            { id: 402, name: "Cargo Pants", price: 1800, image: "https://images.unsplash.com/photo-1517445312582-553941401b97?auto=format&fit=crop&q=80&w=200" }
+            { id: 401, name: "Oversized Hoodie", price: 2200, image: "https://images.unsplash.com/photo-1620799140188-3b2a02fd9a77?auto=format&fit=crop&q=80&w=200" },
+            { id: 402, name: "Cargo Pants", price: 1800, image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&q=80&w=200" }
         ]
     },
     {
@@ -79,19 +79,17 @@ const STUDIO_POSTS = [
             time: "3 hours ago"
         },
         type: "image",
-        content: "https://images.unsplash.com/photo-1583391733958-e026b1346331?auto=format&fit=crop&q=80&w=800",
+        content: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800",
         description: "Elegance in every thread. 🌸 #TraditionalWear #Saree",
         likes: "3.1k",
         products: [
-            { id: 501, name: "Silk Saree", price: 12500, image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=200" },
-            { id: 502, name: "Gold Necklace", price: 1500, image: "https://images.unsplash.com/photo-1599643478518-17488fbbcd75?auto=format&fit=crop&q=80&w=200" }
+            { id: 501, name: "Silk Saree", price: 12500, image: "https://images.unsplash.com/photo-1583391733958-e026b1346331?auto=format&fit=crop&q=80&w=200" },
+            { id: 502, name: "Gold Necklace", price: 1500, image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&q=80&w=200" }
         ]
     }
 ];
 
 export default function StudioPage() {
-    const [activeTab, setActiveTab] = useState("all");
-
     return (
         <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
             {/* Header */}
@@ -118,25 +116,6 @@ export default function StudioPage() {
                 </div>
             </div>
 
-            {/* Filter Tabs */}
-            <div className="sticky top-16 z-20 bg-white/95 backdrop-blur-sm border-b overflow-x-auto scrollbar-hide">
-                <div className="max-w-4xl mx-auto px-4 flex gap-6 md:gap-8 items-center h-12">
-                    {["For You", "Following", "Trending", "Masterclass", "Celeb Style"].map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`whitespace-nowrap text-sm font-medium transition-colors relative h-full flex items-center ${activeTab === tab ? "text-[#ff3f6c]" : "text-gray-500 hover:text-gray-800"
-                                }`}
-                        >
-                            {tab}
-                            {activeTab === tab && (
-                                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#ff3f6c] rounded-t-full" />
-                            )}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
             {/* Feed Content */}
             <div className="max-w-4xl mx-auto px-0 md:px-4 py-4 md:py-6">
                 <div className="md:columns-2 gap-6 space-y-6">
@@ -149,9 +128,10 @@ export default function StudioPage() {
     );
 }
 
-// Single Post Component
+// Single Post Component with Click-to-Expand
 function StudioPost({ post }) {
     const [liked, setLiked] = useState(false);
+    const [expanded, setExpanded] = useState(false);
 
     return (
         <div className="bg-white md:rounded-xl shadow-sm border-b md:border border-gray-100 overflow-hidden break-inside-avoid mb-6">
@@ -177,11 +157,11 @@ function StudioPost({ post }) {
                 </button>
             </div>
 
-            {/* Interaction Bar (Top of Image - Myntra style sometimes overlays, but we'll stick to bottom or side)
-                Actually Myntra Studio often has content full width.
-            */}
-
-            <div className="relative aspect-[4/5] w-full bg-gray-100">
+            {/* Clickable Image Area */}
+            <div
+                className="relative aspect-[4/5] w-full bg-gray-100 cursor-pointer"
+                onClick={() => setExpanded(!expanded)}
+            >
                 <Image
                     src={post.content}
                     alt={post.description}
@@ -190,58 +170,94 @@ function StudioPost({ post }) {
                     unoptimized
                 />
 
+                {/* Tap to View Indicator - Only show when collapsed */}
+                {!expanded && (
+                    <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-3 py-2 rounded-full">
+                        <ShoppingBag size={14} />
+                        <span>Tap to view {post.products.length} products</span>
+                    </div>
+                )}
+
                 {/* Overlay Action Buttons */}
                 <div className="absolute bottom-4 right-4 flex flex-col gap-3">
                     <button
-                        onClick={() => setLiked(!liked)}
+                        onClick={(e) => { e.stopPropagation(); setLiked(!liked); }}
                         className="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
                     >
                         <Heart size={20} className={liked ? "fill-red-500 text-red-500" : "text-gray-800"} />
                     </button>
-                    <button className="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+                    <button
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                    >
                         <Share2 size={20} className="text-gray-800" />
                     </button>
                 </div>
+
+                {/* Collapse hint when expanded */}
+                {expanded && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-3 py-2 rounded-full">
+                        <span>Tap to collapse</span>
+                    </div>
+                )}
             </div>
 
-            {/* Post Details */}
-            <div className="p-3 md:p-4">
-                <div className="flex items-center gap-2 mb-2">
-                    <div className="flex -space-x-2">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className="w-5 h-5 rounded-full bg-gray-200 border border-white" />
-                        ))}
+            {/* Expandable Post Details */}
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
+                <div className="p-3 md:p-4">
+                    {/* Likes */}
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="flex -space-x-2">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="w-5 h-5 rounded-full bg-gray-200 border border-white" />
+                            ))}
+                        </div>
+                        <span className="text-xs font-medium text-gray-600">{post.likes} likes</span>
                     </div>
-                    <span className="text-xs font-medium text-gray-600">{post.likes} likes</span>
+
+                    {/* Description */}
+                    <p className="text-sm text-gray-800 mb-4 leading-relaxed">
+                        <span className="font-bold mr-1">{post.user.name}</span>
+                        {post.description}
+                    </p>
+
+                    {/* Shop The Look Slider */}
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Shop The Look</h4>
+                            <span className="text-xs text-[#ff3f6c] font-medium">{post.products.length} items</span>
+                        </div>
+                        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                            {post.products.map((product) => (
+                                <Link key={product.id} href={`/product/${product.id}`} className="min-w-[120px] md:min-w-[140px] group">
+                                    <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-gray-50 mb-2 border border-gray-100">
+                                        <Image
+                                            src={product.image}
+                                            alt={product.name}
+                                            fill
+                                            className="object-cover group-hover:scale-105 transition-transform"
+                                            unoptimized
+                                        />
+                                        <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur rounded-md px-2 py-1.5 text-center">
+                                            <p className="text-xs font-bold text-[var(--brand-royal-red)]">৳{product.price}</p>
+                                        </div>
+                                    </div>
+                                    <h5 className="text-xs font-medium text-gray-900 truncate">{product.name}</h5>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <p className="text-sm text-gray-800 mb-4 leading-relaxed">
-                    <span className="font-bold mr-1">{post.user.name}</span>
-                    {post.description}
-                </p>
-
-                {/* Shop The Look Slider */}
-                <div>
-                    <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Shop The Look</h4>
+            {/* Collapsed Mini Preview */}
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${!expanded ? "max-h-16 opacity-100" : "max-h-0 opacity-0"}`}>
+                <div className="px-3 md:px-4 py-2 flex items-center justify-between border-t border-gray-50">
+                    <div className="flex items-center gap-2">
+                        <Heart size={16} className={liked ? "fill-red-500 text-red-500" : "text-gray-400"} />
+                        <span className="text-xs font-medium text-gray-500">{post.likes} likes</span>
                     </div>
-                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                        {post.products.map((product) => (
-                            <Link key={product.id} href={`/product/${product.id}`} className="min-w-[120px] md:min-w-[140px] group">
-                                <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-gray-50 mb-2 border border-gray-100">
-                                    <Image
-                                        src={product.image}
-                                        alt={product.name}
-                                        fill
-                                        className="object-cover group-hover:scale-105 transition-transform"
-                                        unoptimized
-                                    />
-                                </div>
-                                <h5 className="text-xs font-medium text-gray-900 truncate">{product.name}</h5>
-                                <p className="text-xs font-bold text-gray-900">৳{product.price}</p>
-                            </Link>
-                        ))}
-                    </div>
+                    <p className="text-xs text-gray-600 truncate max-w-[60%]">{post.description}</p>
                 </div>
             </div>
         </div>
