@@ -14,8 +14,8 @@ const STUDIO_POSTS = [
             avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100",
             time: "2 hours ago"
         },
-        type: "image",
-        content: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800",
+        type: "video",
+        content: "/vid.mp4",
         description: "Summer vibes in this stunning red dress! ❤️ #SummerFashion #BrandEmpire",
         likes: "1.2k",
         products: [
@@ -157,18 +157,29 @@ function StudioPost({ post }) {
                 </button>
             </div>
 
-            {/* Clickable Image Area */}
+            {/* Clickable Media Area */}
             <div
                 className="relative aspect-[4/5] w-full bg-gray-100 cursor-pointer"
                 onClick={() => setExpanded(!expanded)}
             >
-                <Image
-                    src={post.content}
-                    alt={post.description}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                />
+                {post.type === "video" ? (
+                    <video
+                        src={post.content}
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                    />
+                ) : (
+                    <Image
+                        src={post.content}
+                        alt={post.description}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                    />
+                )}
 
                 {/* Tap to View Indicator - Only show when collapsed */}
                 {!expanded && (
