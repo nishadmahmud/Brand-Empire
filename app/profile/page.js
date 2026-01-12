@@ -106,7 +106,12 @@ export default function ProfileDashboard() {
 
             // Step 2: Update profile with image URL
             const profileData = {
-                ...formData,
+                id: formData.id,
+                first_name: formData.first_name,
+                last_name: formData.last_name,
+                email: formData.email,
+                phone: formData.mobile_number, // Backend requires 'phone' key
+                address: formData.address,
                 image: imageUrl
             };
 

@@ -208,8 +208,8 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                             </Link>
                         </div>
 
-                        {/* Dynamic Categories from API */}
-                        {categories.map((category) => (
+                        {/* Dynamic Categories from API - Limited to 4 */}
+                        {categories.slice(0, 4).map((category) => (
                             <div
                                 key={category.category_id}
                                 className="relative h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-2"
@@ -221,6 +221,18 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 </Link>
                             </div>
                         ))}
+
+                        {/* Studio Link with NEW badge */}
+                        <div
+                            className="relative h-full flex items-center border-b-4 border-transparent hover:border-[var(--brand-royal-red)] transition-all px-2"
+                            onMouseEnter={() => setActiveMegaMenu('studio')}
+                            onMouseLeave={() => setActiveMegaMenu(null)}
+                        >
+                            <Link href="/studio" className="flex items-baseline gap-1" onClick={() => setActiveMegaMenu(null)}>
+                                <span className="font-medium">STUDIO</span>
+                                <sup className="text-[10px] font-bold text-[#ff3f6c] -translate-y-1">NEW</sup>
+                            </Link>
+                        </div>
                     </div>
 
                     {/* Right Section - Search & Icons */}
@@ -451,8 +463,89 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                             </div>
                         )}
 
+                        {/* Studio Mega Menu - Custom Design */}
+                        {activeMegaMenu === 'studio' && (
+                            <div className="p-8 flex flex-col items-center w-full">
+                                {/* Header */}
+                                <div className="text-center mb-6">
+                                    <div className="flex items-center justify-center gap-2 mb-2">
+                                        <div className="relative w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
+                                            <svg viewBox="0 0 24 24" className="w-8 h-8 text-[#ff3f6c]" fill="currentColor">
+                                                <path d="M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h18a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zm0 14H3V8h18v12zM9 10v8l7-4z" />
+                                            </svg>
+                                        </div>
+                                        <h2 className="text-3xl font-bold text-gray-900">Studio</h2>
+                                    </div>
+                                    <p className="text-gray-500 text-lg">Your daily inspiration for everything fashion</p>
+                                </div>
+
+                                {/* Angled Images Grid */}
+                                <div className="relative w-full max-w-4xl h-[400px] flex justify-center mb-8 bg-gray-50">
+                                    {/* Image 1 */}
+                                    {/* Note: Using clip-path for angled effect without distorting image */}
+                                    <div className="relative w-[28%] h-full -mr-[3%] overflow-hidden z-10" style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0% 100%)' }}>
+                                        <Image
+                                            src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=600"
+                                            alt="Style 1"
+                                            fill
+                                            className="object-cover hover:scale-110 transition-transform duration-700"
+                                            unoptimized
+                                        />
+                                    </div>
+                                    {/* Image 2 */}
+                                    <div className="relative w-[28%] h-full -mr-[3%] overflow-hidden z-20" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}>
+                                        <Image
+                                            src="https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?auto=format&fit=crop&q=80&w=600"
+                                            alt="Style 2"
+                                            fill
+                                            className="object-cover hover:scale-110 transition-transform duration-700"
+                                            unoptimized
+                                        />
+                                    </div>
+                                    {/* Image 3 */}
+                                    <div className="relative w-[28%] h-full -mr-[3%] overflow-hidden z-30" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}>
+                                        <Image
+                                            src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=600"
+                                            alt="Style 3"
+                                            fill
+                                            className="object-cover hover:scale-110 transition-transform duration-700"
+                                            unoptimized
+                                        />
+                                    </div>
+                                    {/* Image 4 */}
+                                    <div className="relative w-[28%] h-full overflow-hidden z-40" style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }}>
+                                        <Image
+                                            src="https://images.unsplash.com/photo-1548142813-c348350df52b?auto=format&fit=crop&q=80&w=600"
+                                            alt="Style 4"
+                                            fill
+                                            className="object-cover hover:scale-110 transition-transform duration-700"
+                                            unoptimized
+                                        />
+                                        {/* Circular Badge on last image */}
+                                        <div className="absolute bottom-8 right-8 w-24 h-24 bg-black/80 rounded-full flex flex-col items-center justify-center text-center p-2 border border-yellow-500/50 backdrop-blur-sm shadow-xl">
+                                            <span className="text-[#ff3f6c] font-bold text-lg leading-none">Brand</span>
+                                            <span className="text-white text-[10px] tracking-widest uppercase mt-1">Empire</span>
+                                            <span className="text-yellow-400 font-bold text-xs mt-0.5">STUDIO</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* CTA Button */}
+                                <Link
+                                    href="/studio"
+                                    className="border border-gray-300 px-12 py-3 rounded-sm flex items-center gap-3 font-bold text-gray-800 hover:border-gray-800 transition-colors uppercase tracking-widest text-sm"
+                                    onClick={() => setActiveMegaMenu(null)}
+                                >
+                                    Explore Studio
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </Link>
+                            </div>
+                        )}
+
                         {/* Dynamic Category Mega Menus */}
-                        {activeMegaMenu !== 'offers' && (
+                        {activeMegaMenu !== 'offers' && activeMegaMenu !== 'studio' && (
                             <div className="px-8 py-8">
                                 <div className="grid grid-cols-5 gap-6">
                                     {categories.find(c => c.category_id === activeMegaMenu)?.sub_category?.length > 0 ? (
