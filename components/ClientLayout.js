@@ -10,6 +10,7 @@ import Footer from "./Footer";
 import AuthModal from "./AuthModal";
 import CartModal from "./CartModal";
 import FloatingIcons from "./FloatingIcons";
+import FloatingIconsMobile from "./FloatingIconsMobile";
 
 export default function ClientLayout({ children }) {
     const pathname = usePathname();
@@ -40,7 +41,16 @@ export default function ClientLayout({ children }) {
             {/* Global Floating Elements */}
             <CartModal />
             <AuthModal />
-            <FloatingIcons />
+            
+            {/* Desktop Floating Icon - Hidden on Mobile */}
+            <div className="hidden lg:block">
+                <FloatingIcons />
+            </div>
+            
+            {/* Mobile Floating Icon - Hidden on Desktop */}
+            <div className="lg:hidden">
+                <FloatingIconsMobile />
+            </div>
 
             <Navbar
                 marqueeVisible={finalMarqueeVisible}

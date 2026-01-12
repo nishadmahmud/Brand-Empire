@@ -109,13 +109,8 @@ const FloatingIcons = () => {
                 />
             )}
 
-            {/* MOBILE VERSION - Top Right */}
-            <div className="lg:hidden fixed right-0 top-[106px] z-50 flex items-center">
-                <FloatingContent />
-            </div>
-
-            {/* DESKTOP VERSION - Middle Right */}
-            <div className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-50 items-center">
+            {/* DESKTOP ONLY - Middle Right */}
+            <div className="fixed right-0 top-1/2 -translate-y-1/2 z-50 flex items-center">
                 <FloatingContent />
             </div>
         </>
