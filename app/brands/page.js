@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getTopBrands } from "@/lib/api";
 
-export default function BrandsPage() {
+function BrandsContent() {
     const searchParams = useSearchParams();
     const typeFilter = searchParams.get("type");
 
@@ -73,8 +73,8 @@ export default function BrandsPage() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`px-4 md:px-6 py-2 md:py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${activeTab === tab.id
-                                        ? "bg-[var(--brand-royal-red)] text-white"
-                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                    ? "bg-[var(--brand-royal-red)] text-white"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                     }`}
                             >
                                 {tab.label}
@@ -128,5 +128,17 @@ export default function BrandsPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function BrandsPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand-royal-red)]"></div>
+            </div>
+        }>
+            <BrandsContent />
+        </Suspense>
     );
 }

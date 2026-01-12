@@ -161,8 +161,8 @@ const Footer = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-white text-sm mb-1">Phone Number</h4>
-                                    <a href="tel:+8801927708280" className="text-gray-400 text-sm hover:text-[var(--brand-royal-red)] transition-colors">
-                                        +880 1927-708280
+                                    <a href="tel:+8801814111716" className="text-gray-400 text-sm hover:text-[var(--brand-royal-red)] transition-colors">
+                                        +880 1814-111716
                                     </a>
                                 </div>
                             </div>

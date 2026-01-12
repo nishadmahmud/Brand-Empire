@@ -22,7 +22,7 @@ export default function ContactUs() {
                             <div>
                                 <h3 className="font-bold text-gray-900 mb-1">Phone</h3>
                                 <p className="text-gray-600 text-sm mb-2">Mon-Sat from 9am to 6pm</p>
-                                <a href="tel:+8801927708280" className="text-[var(--brand-royal-red)] font-semibold hover:underline">+880 1927-708280</a>
+                                <a href="tel:+8801814111716" className="text-[var(--brand-royal-red)] font-semibold hover:underline">+880 1814-111716</a>
                             </div>
                         </div>
 
