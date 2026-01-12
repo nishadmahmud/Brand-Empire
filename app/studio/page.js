@@ -30,8 +30,8 @@ const STUDIO_POSTS = [
             avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100",
             time: "5 hours ago"
         },
-        type: "image",
-        content: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800",
+        type: "video",
+        content: "https://videos.pexels.com/video-files/5865185/5865185-hd_1080_1920_30fps.mp4",
         description: "Gentlemen, elevate your formal game. 👔 #MensStyle #SuitedUp",
         likes: "856",
         products: [
@@ -132,9 +132,21 @@ export default function StudioPage() {
 function StudioPost({ post }) {
     const [liked, setLiked] = useState(false);
     const [expanded, setExpanded] = useState(false);
+    const cardRef = React.useRef(null);
+
+    // Click outside to collapse
+    React.useEffect(() => {
+        function handleClickOutside(event) {
+            if (expanded && cardRef.current && !cardRef.current.contains(event.target)) {
+                setExpanded(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [expanded]);
 
     return (
-        <div className="bg-white md:rounded-xl shadow-sm border-b md:border border-gray-100 overflow-hidden break-inside-avoid mb-6">
+        <div ref={cardRef} className="bg-white md:rounded-xl shadow-sm border-b md:border border-gray-100 overflow-hidden break-inside-avoid mb-6">
             {/* Post Header */}
             <div className="p-3 md:p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
