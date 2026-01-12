@@ -8,12 +8,124 @@ import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, tr
 import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Home, Package, Heart, Tag, User, LogOut, ChevronDown, Clock, CheckCircle, Truck, PackageCheck, XCircle } from "lucide-react";
+import { Home, Package, Heart, Tag, User, LogOut, ChevronDown, Clock, CheckCircle, Truck, PackageCheck, XCircle, CheckCircle2, PauseCircle, ClipboardList, DollarSign, MapPin } from "lucide-react";
+
+// Timeline stages configuration
+const timelineStages = [
+    { id: 1, label: "Order Received", icon: ClipboardList },
+    { id: 2, label: "Order Confirmed", icon: PackageCheck },
+    { id: 3, label: "Delivery Processing", icon: Truck },
+    { id: 4, label: "Order Delivered", icon: Home },
+];
+
+const OrderTimeline = ({ currentStatus }) => {
+    const status = Number(currentStatus);
+
+    return (
+        <div className="py-6 px-4">
+            {/* Desktop Timeline */}
+            <div className="hidden sm:block">
+                <div className="relative flex items-center justify-between">
+                    {/* Progress Line Background */}
+                    <div className="absolute left-0 right-0 top-5 h-1 bg-gray-200 rounded-full" />
+                    {/* Progress Line Active */}
+                    <div
+                        className="absolute left-0 top-5 h-1 bg-gradient-to-r from-[var(--brand-royal-red)] to-purple-500 rounded-full transition-all duration-500"
+                        style={{ width: `${((Math.min(status, 4) - 1) / 3) * 100}%` }}
+                    />
+
+                    {timelineStages.map((stage, index) => {
+                        const isCompleted = status >= stage.id;
+                        const isCurrent = status === stage.id;
+                        const StageIcon = stage.icon;
+
+                        return (
+                            <div key={stage.id} className="relative flex flex-col items-center z-10">
+                                {/* Circle */}
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isCompleted
+                                    ? "bg-gradient-to-br from-[var(--brand-royal-red)] to-purple-600 text-white shadow-lg"
+                                    : "bg-white border-2 border-gray-300 text-gray-400"
+                                    } ${isCurrent ? "ring-4 ring-purple-100 scale-110" : ""}`}>
+                                    {isCompleted ? (
+                                        <CheckCircle2 className="w-5 h-5" />
+                                    ) : (
+                                        <span className="text-sm font-medium">{stage.id}</span>
+                                    )}
+                                </div>
+
+                                {/* Icon & Label */}
+                                <div className={`mt-4 flex flex-col items-center ${isCompleted ? "text-gray-900" : "text-gray-400"}`}>
+                                    <StageIcon className={`w-6 h-6 mb-1 ${isCompleted ? "text-[var(--brand-royal-red)]" : ""}`} />
+                                    <span className={`text-xs font-medium text-center max-w-[80px] ${isCurrent ? "font-bold" : ""}`}>
+                                        {stage.label}
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Mobile Timeline - Vertical */}
+            <div className="sm:hidden space-y-4">
+                {timelineStages.map((stage, index) => {
+                    const isCompleted = status >= stage.id;
+                    const isCurrent = status === stage.id;
+                    const StageIcon = stage.icon;
+                    const isLast = index === timelineStages.length - 1;
+
+                    return (
+                        <div key={stage.id} className="flex items-start gap-4">
+                            <div className="flex flex-col items-center">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isCompleted
+                                    ? "bg-gradient-to-br from-[var(--brand-royal-red)] to-purple-600 text-white"
+                                    : "bg-white border-2 border-gray-300 text-gray-400"
+                                    } ${isCurrent ? "ring-2 ring-purple-100" : ""}`}>
+                                    {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <span className="text-xs">{stage.id}</span>}
+                                </div>
+                                {!isLast && (
+                                    <div className={`w-0.5 h-8 ${isCompleted ? "bg-[var(--brand-royal-red)]" : "bg-gray-200"}`} />
+                                )}
+                            </div>
+                            <div className={`flex items-center gap-2 pt-1 ${isCompleted ? "text-gray-900" : "text-gray-400"}`}>
+                                <StageIcon className={`w-5 h-5 ${isCompleted ? "text-[var(--brand-royal-red)]" : ""}`} />
+                                <span className={`text-sm ${isCurrent ? "font-bold" : "font-medium"}`}>{stage.label}</span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const SpecialStatusUI = ({ status }) => {
+    const isCanceled = Number(status) === 5;
+    const isOnHold = Number(status) === 6;
+
+    return (
+        <div className={`py-8 px-6 text-center rounded-xl ${isCanceled ? "bg-red-50" : "bg-orange-50"
+            }`}>
+            <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${isCanceled ? "bg-red-100 text-red-600" : "bg-orange-100 text-orange-600"
+                }`}>
+                {isCanceled ? <XCircle className="w-8 h-8" /> : <PauseCircle className="w-8 h-8" />}
+            </div>
+            <h3 className={`text-xl font-bold mb-2 ${isCanceled ? "text-red-700" : "text-orange-700"}`}>
+                {isCanceled ? "Order Canceled" : "Order On Hold"}
+            </h3>
+            <p className={`text-sm ${isCanceled ? "text-red-600" : "text-orange-600"}`}>
+                {isCanceled
+                    ? "This order has been canceled. If you have any questions, please contact support."
+                    : "This order is currently on hold. We will update you soon with more information."}
+            </p>
+        </div>
+    );
+};
 
 
 const ORDER_TABS = [
     { id: "1", label: "Order Processing", Icon: Clock },
-    { id: "2", label: "Order Completed", Icon: CheckCircle },
+    { id: "2", label: "Order Confirmed", Icon: CheckCircle },
     { id: "3", label: "Delivery Processing", Icon: Truck },
     { id: "4", label: "Delivery Completed", Icon: PackageCheck },
     { id: "5", label: "Delivery Canceled", Icon: XCircle },
@@ -213,19 +325,26 @@ export default function ProfileDashboard() {
     };
 
     const getStatusLabel = (status) => {
-        const labels = { 1: "Order Processing", 2: "Order Completed", 3: "Delivery Processing", 4: "Delivered", 5: "Canceled" };
-        return labels[Number(status)] || "Pending";
+        switch (Number(status)) {
+            case 1: return "Order Received";
+            case 2: return "Order Confirmed";
+            case 3: return "Delivery Processing";
+            case 4: return "Order Delivered";
+            case 5: return "Canceled";
+            case 6: return "On Hold";
+            default: return "Pending";
+        }
     };
 
     const getStatusColor = (status) => {
-        const colors = {
-            1: "border-blue-100 text-blue-700 bg-blue-50",
-            2: "border-green-100 text-green-700 bg-green-50",
-            3: "border-purple-100 text-purple-700 bg-purple-50",
-            4: "border-teal-100 text-teal-700 bg-teal-50",
-            5: "border-red-100 text-red-700 bg-red-50",
-        };
-        return colors[Number(status)] || "border-gray-200 text-gray-700 bg-gray-50";
+        const s = Number(status);
+        if (s === 1) return "bg-blue-50 text-blue-700 border-blue-100";
+        if (s === 2) return "bg-indigo-50 text-indigo-700 border-indigo-100";
+        if (s === 3) return "bg-purple-50 text-purple-700 border-purple-100";
+        if (s === 4) return "bg-green-50 text-green-700 border-green-100";
+        if (s === 5) return "bg-red-50 text-red-700 border-red-100";
+        if (s === 6) return "bg-orange-50 text-orange-700 border-orange-100";
+        return "bg-gray-100 text-gray-800";
     };
 
     if (loading || !user) {
@@ -598,20 +717,60 @@ export default function ProfileDashboard() {
                                     ) : orders.length > 0 ? (
                                         <div className="space-y-4">
                                             {orders.map(order => (
-                                                <div key={order.id} className="bg-gray-50 rounded-xl p-5 hover:shadow-md transition-shadow">
-                                                    <div className="flex justify-between mb-4">
-                                                        <div>
-                                                            <p className="font-mono font-bold text-gray-900">{order.invoice_id}</p>
-                                                            <p className="text-xs text-gray-500 mt-1">{new Date(order.created_at).toLocaleDateString()}</p>
+                                                <div key={order.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-lg transition-all duration-300 group">
+                                                    <div className="flex gap-4">
+                                                        {/* Product Image */}
+                                                        <div className="h-24 w-24 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden relative border border-gray-100">
+                                                            {order.sales_details?.[0]?.product_info?.image_path ? (
+                                                                <Image
+                                                                    src={order.sales_details[0].product_info.image_path}
+                                                                    alt="Product"
+                                                                    fill
+                                                                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                                                    unoptimized
+                                                                />
+                                                            ) : (
+                                                                <div className="flex h-full w-full items-center justify-center text-gray-300">
+                                                                    <Package className="h-8 w-8" />
+                                                                </div>
+                                                            )}
+                                                            {/* Count Badge if more than 1 item */}
+                                                            {order.sales_details?.length > 1 && (
+                                                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm text-white text-[10px] py-1 text-center font-medium">
+                                                                    + {order.sales_details.length - 1} more
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <div className="text-right">
-                                                            <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${getStatusColor(order.status)}`}>
-                                                                {getStatusLabel(order.status)}
-                                                            </span>
-                                                            <p className="text-xl font-bold text-[var(--brand-royal-red)] mt-2">৳{order.sub_total || order.total}</p>
+
+                                                        {/* Details */}
+                                                        <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                                                            <div>
+                                                                <div className="flex justify-between items-start gap-4">
+                                                                    <div>
+                                                                        <h3 className="font-semibold text-gray-900 text-sm md:text-base line-clamp-1 mb-1">
+                                                                            {order.sales_details?.[0]?.product_info?.name || `Order #${order.invoice_id}`}
+                                                                        </h3>
+                                                                        <p className="text-xs text-gray-500 font-mono">#{order.invoice_id}</p>
+                                                                    </div>
+                                                                    <div className="text-right flex-shrink-0">
+                                                                        <p className="text-2xl font-bold text-[var(--brand-royal-red)]">
+                                                                            ৳{(Number(order.sub_total ?? order.total ?? 0) + Number(order.delivery_fee ?? 0))}
+                                                                        </p>
+                                                                        <p className="text-sm font-medium text-gray-500 mt-1">
+                                                                            {new Date(order.created_at).toLocaleDateString("en-US", { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-2">
+                                                                <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                                                                <p className="truncate">
+                                                                    {order.delivery_customer_address || "No address provided"}
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <p className="text-sm text-gray-600">Items: {order.sales_details?.length || 0} • {order.delivery_customer_address}</p>
                                                 </div>
                                             ))}
                                         </div>
@@ -652,50 +811,121 @@ export default function ProfileDashboard() {
                                     </form>
 
                                     {trackOrderData && (
-                                        <div className="bg-gray-50 rounded-xl p-6">
-                                            <div className="flex justify-between items-start mb-6">
-                                                <div>
-                                                    <p className="font-mono font-bold text-lg text-gray-900">{trackOrderData.invoice_id}</p>
-                                                    <p className="text-sm text-gray-500 mt-1">{new Date(trackOrderData.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                                </div>
-                                                <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusColor(trackOrderData.status)}`}>
-                                                    {getStatusLabel(trackOrderData.status)}
-                                                </span>
-                                            </div>
-
-                                            <div className="grid md:grid-cols-2 gap-6 mb-6">
-                                                <div className="space-y-4">
-                                                    <div className="bg-white rounded-lg p-4">
-                                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Customer</p>
-                                                        <p className="text-sm font-medium text-gray-900">{trackOrderData.delivery_customer_name}</p>
-                                                        <p className="text-sm text-gray-600">{trackOrderData.delivery_customer_phone}</p>
+                                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-fade-in mt-6">
+                                            {/* Header */}
+                                            <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100 p-6">
+                                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                                    <div>
+                                                        <p className="text-sm text-gray-500 mb-1">Order</p>
+                                                        <h2 className="text-xl font-bold text-[var(--brand-royal-red)]">
+                                                            #{trackOrderData.invoice_id}
+                                                        </h2>
                                                     </div>
-                                                    <div className="bg-white rounded-lg p-4">
-                                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Delivery Address</p>
-                                                        <p className="text-sm text-gray-600">{trackOrderData.delivery_customer_address}</p>
+                                                    <div className="text-right">
+                                                        <p className="text-xs text-gray-500 mb-1">Order Date</p>
+                                                        <p className="text-sm font-medium text-gray-900">
+                                                            {new Date(trackOrderData.created_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                        </p>
                                                     </div>
-                                                </div>
-                                                <div className="bg-white rounded-lg p-4 flex flex-col justify-center">
-                                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Total Amount</p>
-                                                    <p className="text-3xl font-bold text-[var(--brand-royal-red)]">৳{trackOrderData.total || trackOrderData.sub_total}</p>
                                                 </div>
                                             </div>
 
-                                            <div className="border-t border-gray-200 pt-6">
-                                                <h3 className="font-bold text-gray-900 mb-4">Order Items</h3>
-                                                <div className="space-y-3">
-                                                    {trackOrderData.sales_details?.map((item, i) => (
-                                                        <div key={i} className="flex items-center gap-4 bg-white rounded-lg p-3">
-                                                            <div className="w-16 h-16 bg-gray-100 rounded-lg relative overflow-hidden">
-                                                                {item.product_info?.image_path && <Image src={item.product_info.image_path} alt={item.product_info.name} fill className="object-cover" unoptimized />}
+                                            {/* Timeline or Special Status */}
+                                            <div className="border-b border-gray-100 bg-white">
+                                                {Number(trackOrderData.tran_status) >= 5 ? (
+                                                    <SpecialStatusUI status={trackOrderData.tran_status} />
+                                                ) : (
+                                                    <OrderTimeline currentStatus={trackOrderData.tran_status} />
+                                                )}
+                                            </div>
+
+                                            {/* Order Details */}
+                                            <div className="p-6 sm:p-8 space-y-6">
+                                                {/* Info Grid */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    {/* Customer Info */}
+                                                    {trackOrderData.delivery_customer_name && (
+                                                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                                            <div className="bg-green-100 p-2.5 rounded-lg text-green-600">
+                                                                <Truck className="h-5 w-5" />
                                                             </div>
-                                                            <div className="flex-1">
-                                                                <p className="font-medium text-sm text-gray-900">{item.product_info?.name}</p>
-                                                                <p className="text-xs text-gray-500">Qty: {item.qty} {item.size && `• Size: ${item.size}`}</p>
+                                                            <div>
+                                                                <p className="text-sm font-semibold text-gray-900">Customer</p>
+                                                                <p className="text-sm text-gray-600 mt-1">
+                                                                    {trackOrderData.delivery_customer_name}
+                                                                </p>
+                                                                <p className="text-sm text-gray-500">
+                                                                    {trackOrderData.delivery_customer_phone}
+                                                                </p>
                                                             </div>
-                                                            <p className="font-bold text-gray-900">৳{item.price * item.qty}</p>
                                                         </div>
-                                                    ))}
+                                                    )}
+
+                                                    {/* Delivery Address */}
+                                                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                                        <div className="bg-purple-100 p-2.5 rounded-lg text-purple-600">
+                                                            <MapPin className="h-5 w-5" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-gray-900">Delivery Address</p>
+                                                            <p className="text-sm text-gray-600 mt-1">{trackOrderData.delivery_customer_address}</p>
+                                                            {trackOrderData.delivery_district && (
+                                                                <p className="text-xs text-gray-400 mt-1">{trackOrderData.delivery_district}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Total Amount */}
+                                                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[var(--brand-royal-red)]/5 to-purple-50 rounded-xl border border-[var(--brand-royal-red)]/10">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="bg-[var(--brand-royal-red)]/10 p-2.5 rounded-lg text-[var(--brand-royal-red)]">
+                                                            <DollarSign className="h-5 w-5" />
+                                                        </div>
+                                                        <span className="text-sm font-semibold text-gray-900">Total Amount</span>
+                                                    </div>
+                                                    <span className="text-xl font-bold text-[var(--brand-royal-red)]">
+                                                        ৳{trackOrderData.total || trackOrderData.sub_total}
+                                                    </span>
+                                                </div>
+
+                                                {/* Products List */}
+                                                <div>
+                                                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
+                                                        Order Items
+                                                    </h3>
+                                                    <div className="space-y-3">
+                                                        {trackOrderData.sales_details?.map((item, index) => (
+                                                            <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
+                                                                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white relative">
+                                                                    {item.product_info?.image_path ? (
+                                                                        <Image
+                                                                            src={item.product_info.image_path}
+                                                                            alt={item.product_info.name || "Product"}
+                                                                            fill
+                                                                            unoptimized
+                                                                            className="object-cover"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="flex h-full w-full items-center justify-center text-gray-300">
+                                                                            <Package className="h-6 w-6" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                                                        {item.product_info?.name}
+                                                                    </p>
+                                                                    <p className="text-xs text-gray-500 mt-1">
+                                                                        Qty: {item.qty} {item.size ? `· Size: ${item.size}` : ""}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="text-sm font-bold text-gray-900">
+                                                                    ৳{item.price * item.qty}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

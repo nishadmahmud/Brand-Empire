@@ -4,7 +4,7 @@ import { useState } from "react";
 import { trackOrder } from "../../lib/api";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Package, Calendar, DollarSign, MapPin, Truck } from "lucide-react";
+import { Search, Package, Calendar, DollarSign, MapPin, Truck, CheckCircle2, Clock, XCircle, PauseCircle, ClipboardList, PackageCheck, Home } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function TrackOrderPage() {
@@ -34,7 +34,6 @@ export default function TrackOrderPage() {
         try {
             const response = await trackOrder(formData);
 
-            // Based on user provided JSON: response.data.data is an array. We take the first item.
             if (response.success && response.data && response.data.data && response.data.data.length > 0) {
                 setOrderData(response.data.data[0]);
                 toast.success("Order details found!");
@@ -51,7 +50,6 @@ export default function TrackOrderPage() {
         }
     };
 
-    // Helper to format date
     const formatDate = (dateString) => {
         if (!dateString) return "";
         return new Date(dateString).toLocaleDateString("en-US", {
@@ -63,29 +61,130 @@ export default function TrackOrderPage() {
         });
     };
 
-    // Helper for status badge color
-    // Mapping numeric status from API if needed, or string
+    // Timeline stages configuration
+    const timelineStages = [
+        { id: 1, label: "Order Received", icon: ClipboardList },
+        { id: 2, label: "Order Confirmed", icon: PackageCheck },
+        { id: 3, label: "Delivery Processing", icon: Truck },
+        { id: 4, label: "Order Delivered", icon: Home },
+    ];
+
     const getStatusLabel = (status) => {
         switch (Number(status)) {
             case 1: return "Order Received";
-            case 2: return "Order Completed";
+            case 2: return "Order Confirmed";
             case 3: return "Delivery Processing";
-            case 4: return "Delivered";
+            case 4: return "Order Delivered";
             case 5: return "Canceled";
-            case 6: return "Hold";
+            case 6: return "On Hold";
             default: return "Pending";
         }
     };
 
-    const getStatusColor = (status) => {
-        const s = Number(status);
-        if (s === 1) return "bg-blue-50 text-blue-700 border-blue-100";
-        if (s === 2) return "bg-green-50 text-green-700 border-green-100";
-        if (s === 3) return "bg-purple-50 text-purple-700 border-purple-100";
-        if (s === 4) return "bg-teal-50 text-teal-700 border-teal-100";
-        if (s === 5) return "bg-red-50 text-red-700 border-red-100";
-        if (s === 6) return "bg-orange-50 text-orange-700 border-orange-100";
-        return "bg-gray-100 text-gray-800";
+    // Timeline Component
+    const OrderTimeline = ({ currentStatus }) => {
+        const status = Number(currentStatus);
+
+        return (
+            <div className="py-6 px-4">
+                {/* Desktop Timeline */}
+                <div className="hidden sm:block">
+                    <div className="relative flex items-center justify-between">
+                        {/* Progress Line Background */}
+                        <div className="absolute left-0 right-0 top-5 h-1 bg-gray-200 rounded-full" />
+                        {/* Progress Line Active */}
+                        <div
+                            className="absolute left-0 top-5 h-1 bg-gradient-to-r from-[var(--brand-royal-red)] to-purple-500 rounded-full transition-all duration-500"
+                            style={{ width: `${((Math.min(status, 4) - 1) / 3) * 100}%` }}
+                        />
+
+                        {timelineStages.map((stage, index) => {
+                            const isCompleted = status >= stage.id;
+                            const isCurrent = status === stage.id;
+                            const StageIcon = stage.icon;
+
+                            return (
+                                <div key={stage.id} className="relative flex flex-col items-center z-10">
+                                    {/* Circle */}
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isCompleted
+                                            ? "bg-gradient-to-br from-[var(--brand-royal-red)] to-purple-600 text-white shadow-lg"
+                                            : "bg-white border-2 border-gray-300 text-gray-400"
+                                        } ${isCurrent ? "ring-4 ring-purple-100 scale-110" : ""}`}>
+                                        {isCompleted ? (
+                                            <CheckCircle2 className="w-5 h-5" />
+                                        ) : (
+                                            <span className="text-sm font-medium">{stage.id}</span>
+                                        )}
+                                    </div>
+
+                                    {/* Icon & Label */}
+                                    <div className={`mt-4 flex flex-col items-center ${isCompleted ? "text-gray-900" : "text-gray-400"}`}>
+                                        <StageIcon className={`w-6 h-6 mb-1 ${isCompleted ? "text-[var(--brand-royal-red)]" : ""}`} />
+                                        <span className={`text-xs font-medium text-center max-w-[80px] ${isCurrent ? "font-bold" : ""}`}>
+                                            {stage.label}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Mobile Timeline - Vertical */}
+                <div className="sm:hidden space-y-4">
+                    {timelineStages.map((stage, index) => {
+                        const isCompleted = status >= stage.id;
+                        const isCurrent = status === stage.id;
+                        const StageIcon = stage.icon;
+                        const isLast = index === timelineStages.length - 1;
+
+                        return (
+                            <div key={stage.id} className="flex items-start gap-4">
+                                <div className="flex flex-col items-center">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isCompleted
+                                            ? "bg-gradient-to-br from-[var(--brand-royal-red)] to-purple-600 text-white"
+                                            : "bg-white border-2 border-gray-300 text-gray-400"
+                                        } ${isCurrent ? "ring-2 ring-purple-100" : ""}`}>
+                                        {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <span className="text-xs">{stage.id}</span>}
+                                    </div>
+                                    {!isLast && (
+                                        <div className={`w-0.5 h-8 ${isCompleted ? "bg-[var(--brand-royal-red)]" : "bg-gray-200"}`} />
+                                    )}
+                                </div>
+                                <div className={`flex items-center gap-2 pt-1 ${isCompleted ? "text-gray-900" : "text-gray-400"}`}>
+                                    <StageIcon className={`w-5 h-5 ${isCompleted ? "text-[var(--brand-royal-red)]" : ""}`} />
+                                    <span className={`text-sm ${isCurrent ? "font-bold" : "font-medium"}`}>{stage.label}</span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
+
+    // Canceled/On Hold UI
+    const SpecialStatusUI = ({ status }) => {
+        const isCanceled = Number(status) === 5;
+        const isOnHold = Number(status) === 6;
+
+        return (
+            <div className={`py-8 px-6 text-center rounded-xl ${isCanceled ? "bg-red-50" : "bg-orange-50"
+                }`}>
+                <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${isCanceled ? "bg-red-100 text-red-600" : "bg-orange-100 text-orange-600"
+                    }`}>
+                    {isCanceled ? <XCircle className="w-8 h-8" /> : <PauseCircle className="w-8 h-8" />}
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${isCanceled ? "text-red-700" : "text-orange-700"}`}>
+                    {isCanceled ? "Order Canceled" : "Order On Hold"}
+                </h3>
+                <p className={`text-sm ${isCanceled ? "text-red-600" : "text-orange-600"}`}>
+                    {isCanceled
+                        ? "This order has been canceled. If you have any questions, please contact support."
+                        : "This order is currently on hold. We will update you soon with more information."}
+                </p>
+            </div>
+        );
     };
 
     return (
@@ -136,84 +235,90 @@ export default function TrackOrderPage() {
                     {/* Results Section */}
                     {orderData ? (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-fade-in">
-                            <div className="border-b border-gray-100 bg-gray-50/50 p-6 flex flex-wrap items-center justify-between gap-4">
-                                <div>
-                                    <h2 className="text-xl font-bold text-gray-900">
-                                        Order Data
-                                    </h2>
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        ID: <span className="font-mono font-medium text-gray-900">{orderData.invoice_id}</span>
-                                    </p>
+                            {/* Header */}
+                            <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100 p-6">
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div>
+                                        <p className="text-sm text-gray-500 mb-1">Order</p>
+                                        <h2 className="text-xl font-bold text-[var(--brand-royal-red)]">
+                                            #{orderData.invoice_id}
+                                        </h2>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-gray-500 mb-1">Order Date</p>
+                                        <p className="text-sm font-medium text-gray-900">{formatDate(orderData.created_at)}</p>
+                                    </div>
                                 </div>
-                                <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${getStatusColor(orderData.status)}`}>
-                                    {getStatusLabel(orderData.status)}
-                                </span>
                             </div>
 
-                            <div className="p-6 sm:p-8 space-y-8">
-                                {/* Order Info Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-4">
-                                        <div className="flex items-start gap-4">
-                                            <div className="bg-blue-50 p-2.5 rounded-lg text-blue-600">
-                                                <Calendar className="h-5 w-5" />
+                            {/* Timeline or Special Status */}
+                            <div className="border-b border-gray-100 bg-white">
+                                {Number(orderData.tran_status) >= 5 ? (
+                                    <SpecialStatusUI status={orderData.tran_status} />
+                                ) : (
+                                    <OrderTimeline currentStatus={orderData.tran_status} />
+                                )}
+                            </div>
+
+                            {/* Order Details */}
+                            <div className="p-6 sm:p-8 space-y-6">
+                                {/* Info Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Customer Info */}
+                                    {orderData.delivery_customer_name && (
+                                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                            <div className="bg-green-100 p-2.5 rounded-lg text-green-600">
+                                                <Truck className="h-5 w-5" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-gray-900">Order Date</p>
-                                                <p className="text-sm text-gray-500">{formatDate(orderData.created_at)}</p>
+                                                <p className="text-sm font-semibold text-gray-900">Customer</p>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    {orderData.delivery_customer_name}
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    {orderData.delivery_customer_phone}
+                                                </p>
                                             </div>
                                         </div>
-                                        {orderData.delivery_customer_name && (
-                                            <div className="flex items-start gap-4">
-                                                <div className="bg-green-50 p-2.5 rounded-lg text-green-600">
-                                                    <Truck className="h-5 w-5" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-900">Customer</p>
-                                                    <p className="text-sm text-gray-500">
-                                                        {orderData.delivery_customer_name}
-                                                        <br />
-                                                        {orderData.delivery_customer_phone}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div className="flex items-start gap-4">
-                                            <div className="bg-purple-50 p-2.5 rounded-lg text-purple-600">
-                                                <MapPin className="h-5 w-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">Delivery Address</p>
-                                                <p className="text-sm text-gray-500">{orderData.delivery_customer_address}</p>
-                                                {orderData.delivery_district && (
-                                                    <p className="text-xs text-gray-400 mt-1">{orderData.delivery_district}</p>
-                                                )}
-                                            </div>
+                                    )}
+
+                                    {/* Delivery Address */}
+                                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                        <div className="bg-purple-100 p-2.5 rounded-lg text-purple-600">
+                                            <MapPin className="h-5 w-5" />
                                         </div>
-                                        <div className="flex items-start gap-4">
-                                            <div className="bg-orange-50 p-2.5 rounded-lg text-orange-600">
-                                                <DollarSign className="h-5 w-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">Total Amount</p>
-                                                <p className="text-lg font-bold text-gray-900">৳{orderData.total || orderData.sub_total || orderData.paid_amount}</p>
-                                            </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-900">Delivery Address</p>
+                                            <p className="text-sm text-gray-600 mt-1">{orderData.delivery_customer_address}</p>
+                                            {orderData.delivery_district && (
+                                                <p className="text-xs text-gray-400 mt-1">{orderData.delivery_district}</p>
+                                            )}
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Total Amount */}
+                                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[var(--brand-royal-red)]/5 to-purple-50 rounded-xl border border-[var(--brand-royal-red)]/10">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-[var(--brand-royal-red)]/10 p-2.5 rounded-lg text-[var(--brand-royal-red)]">
+                                            <DollarSign className="h-5 w-5" />
+                                        </div>
+                                        <span className="text-sm font-semibold text-gray-900">Total Amount</span>
+                                    </div>
+                                    <span className="text-xl font-bold text-[var(--brand-royal-red)]">
+                                        ৳{orderData.sub_total + (orderData.delivery_fee || 0)}
+                                    </span>
                                 </div>
 
                                 {/* Products List */}
                                 <div>
-                                    <h3 className="text-sm font-body font-semibold text-gray-900 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">
+                                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
                                         Order Items
                                     </h3>
-                                    <div className="space-y-4">
-                                        {/* Using sales_details for product list as per new json */}
+                                    <div className="space-y-3">
                                         {orderData.sales_details?.map((item, index) => (
-                                            <div key={index} className="flex items-center gap-4 py-2">
-                                                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50 relative">
+                                            <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
+                                                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white relative">
                                                     {item.product_info?.image_path ? (
                                                         <Image
                                                             src={item.product_info.image_path}
@@ -232,11 +337,11 @@ export default function TrackOrderPage() {
                                                     <p className="text-sm font-medium text-gray-900 truncate">
                                                         {item.product_info?.name}
                                                     </p>
-                                                    <p className="text-xs text-gray-500">
+                                                    <p className="text-xs text-gray-500 mt-1">
                                                         Qty: {item.qty} {item.size ? `· Size: ${item.size}` : ""}
                                                     </p>
                                                 </div>
-                                                <div className="text-sm font-medium text-gray-900">
+                                                <div className="text-sm font-bold text-gray-900">
                                                     ৳{item.price * item.qty}
                                                 </div>
                                             </div>

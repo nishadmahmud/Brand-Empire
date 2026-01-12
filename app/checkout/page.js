@@ -234,7 +234,7 @@ export default function CheckoutPage() {
             customer_phone: formData.phone,
             sales_id: process.env.NEXT_PUBLIC_USER_ID,
             wholeseller_id: 1, // Hardcoded as per request
-            status: 3, // Pending status
+            status: 1, // Order Received
             delivery_city: selectedCity, // Added for completeness
             delivery_district: selectedDistrict, // Added for completeness
             detailed_address: formData.address, // Sending the text area address too
@@ -251,11 +251,9 @@ export default function CheckoutPage() {
             if (response.success) {
                 clearCart();
                 toast.success("Order placed successfully!");
-                // Redirect to success page with invoice ID
-                router.push(
-                    `/order-success?invoice=${response.invoice_id || "INV-" + Date.now()
-                    }`
-                );
+                // Redirect to success page with invoice ID from API response
+                const invoiceId = response.data?.invoice_id || response.invoice_id || "INV-" + Date.now();
+                router.push(`/order-success?invoice=${invoiceId}`);
             } else {
                 toast.error("Failed to place order. Please try again.");
                 console.error("Order failed:", response);
