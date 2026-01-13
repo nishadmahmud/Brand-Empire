@@ -1,95 +1,139 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Share2, Bookmark, Play, ShoppingBag, ArrowLeft } from "lucide-react";
-
-// Mock Data for Studio Posts
-const STUDIO_POSTS = [
-    {
-        id: 1,
-        user: {
-            name: "Style with Sarah",
-            avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100",
-            time: "2 hours ago"
-        },
-        type: "video",
-        content: "/vid.mp4",
-        description: "Summer vibes in this stunning red dress! ❤️ #SummerFashion #BrandEmpire",
-        likes: "1.2k",
-        products: [
-            { id: 101, name: "Red Summer Dress", price: 2500, image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=200" },
-            { id: 102, name: "Gold Earrings", price: 450, image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80&w=200" }
-        ]
-    },
-    {
-        id: 2,
-        user: {
-            name: "Mens Fashion Hub",
-            avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100",
-            time: "5 hours ago"
-        },
-        type: "video",
-        content: "https://res.cloudinary.com/demo/video/upload/v1689798029/samples/dance-2.mp4",
-        description: "Gentlemen, elevate your formal game. 👔 #MensStyle #SuitedUp",
-        likes: "856",
-        products: [
-            { id: 201, name: "Classic Navy Blazer", price: 5500, image: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&q=80&w=200" },
-            { id: 202, name: "White Oxford Shirt", price: 1800, image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&q=80&w=200" }
-        ]
-    },
-    {
-        id: 3,
-        user: {
-            name: "Makeup by Mina",
-            avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100",
-            time: "1 day ago"
-        },
-        type: "video",
-        content: "https://res.cloudinary.com/demo/video/upload/v1689798029/samples/sea-turtle.mp4",
-        description: "Get the perfect glow with these essentials! ✨ #BeautyDrill #GlowUp",
-        likes: "2.5k",
-        products: [
-            { id: 301, name: "Liquid Foundation", price: 1200, image: "https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?auto=format&fit=crop&q=80&w=200" },
-            { id: 302, name: "Matte Lipstick", price: 650, image: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&q=80&w=200" }
-        ]
-    },
-    {
-        id: 4,
-        user: {
-            name: "Urban Street",
-            avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=100",
-            time: "Just now"
-        },
-        type: "video",
-        content: "https://res.cloudinary.com/demo/video/upload/v1689798029/samples/elephants.mp4",
-        description: "Streetwear aesthetic on point. 👟 #UrbanStyle #Sneakerhead",
-        likes: "940",
-        products: [
-            { id: 401, name: "Oversized Hoodie", price: 2200, image: "https://images.unsplash.com/photo-1620799140188-3b2a02fd9a77?auto=format&fit=crop&q=80&w=200" },
-            { id: 402, name: "Cargo Pants", price: 1800, image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&q=80&w=200" }
-        ]
-    },
-    {
-        id: 5,
-        user: {
-            name: "Traditional Tales",
-            avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100",
-            time: "3 hours ago"
-        },
-        type: "video",
-        content: "https://res.cloudinary.com/demo/video/upload/v1689798029/samples/cld-sample-video.mp4",
-        description: "Elegance in every thread. 🌸 #TraditionalWear #Saree",
-        likes: "3.1k",
-        products: [
-            { id: 501, name: "Silk Saree", price: 12500, image: "https://images.unsplash.com/photo-1583391733958-e026b1346331?auto=format&fit=crop&q=80&w=200" },
-            { id: 502, name: "Gold Necklace", price: 1500, image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&q=80&w=200" }
-        ]
-    }
-];
+import { Heart, Share2, Bookmark, ShoppingBag, ArrowLeft } from "lucide-react";
+import { getStudioList } from "@/lib/api";
 
 export default function StudioPage() {
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStudioPosts = async () => {
+            try {
+                const response = await getStudioList();
+                if (response.success && response.data?.data) {
+                    // Transform API data to component format
+                    const transformedPosts = response.data.data.map((item) => ({
+                        id: item.id,
+                        user: {
+                            name: item.vendor?.name || "Brand Empire",
+                            avatar: item.vendor?.vendor_logo || item.vendor?.image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(item.vendor?.name || "BE"),
+                            time: formatTimeAgo(item.created_at)
+                        },
+                        type: "video",
+                        content: item.video_link,
+                        description: item.description || "",
+                        likes: Math.floor(Math.random() * 1000) + 100, // Placeholder since API doesn't have likes
+                        products: item.products?.map(product => ({
+                            id: product.id,
+                            name: product.name,
+                            price: calculateDiscountedPrice(product.retails_price, product.discount),
+                            originalPrice: product.retails_price,
+                            discount: product.discount,
+                            image: product.image_path
+                        })) || []
+                    }));
+                    setPosts(transformedPosts);
+                }
+            } catch (error) {
+                console.error("Error fetching studio posts:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStudioPosts();
+    }, []);
+
+    // Helper function to format time ago
+    function formatTimeAgo(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+
+        if (diffInSeconds < 60) return "Just now";
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+        if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+        return date.toLocaleDateString();
+    }
+
+    // Helper function to calculate discounted price
+    function calculateDiscountedPrice(price, discount) {
+        if (!discount) return price;
+        return Math.round(price - (price * discount / 100));
+    }
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+                {/* Header */}
+                <div className="sticky top-0 z-30 bg-white border-b shadow-sm">
+                    <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Link href="/" className="md:hidden">
+                                <ArrowLeft size={24} className="text-gray-700" />
+                            </Link>
+                            <div className="flex items-baseline gap-1">
+                                <h1 className="text-xl font-black text-gray-900 tracking-tight">Brand</h1>
+                                <span className="text-[10px] uppercase tracking-widest text-[#ff3f6c] font-bold">Studio</span>
+                                <span className="bg-yellow-400 text-[10px] font-bold px-1 rounded text-black ml-1">NEW</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {/* Loading State */}
+                <div className="max-w-4xl mx-auto px-4 py-6">
+                    <div className="md:columns-2 gap-6 space-y-6">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden break-inside-avoid mb-6">
+                                <div className="p-4 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
+                                    <div className="flex-1">
+                                        <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                                        <div className="h-3 w-16 bg-gray-100 rounded mt-1 animate-pulse" />
+                                    </div>
+                                </div>
+                                <div className="aspect-[4/5] bg-gray-200 animate-pulse" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (posts.length === 0) {
+        return (
+            <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+                {/* Header */}
+                <div className="sticky top-0 z-30 bg-white border-b shadow-sm">
+                    <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Link href="/" className="md:hidden">
+                                <ArrowLeft size={24} className="text-gray-700" />
+                            </Link>
+                            <div className="flex items-baseline gap-1">
+                                <h1 className="text-xl font-black text-gray-900 tracking-tight">Brand</h1>
+                                <span className="text-[10px] uppercase tracking-widest text-[#ff3f6c] font-bold">Studio</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+                    <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                        <ShoppingBag size={40} className="text-gray-300" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">No Studio Posts Yet</h2>
+                    <p className="text-gray-500">Check back later for new style inspiration!</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
             {/* Header */}
@@ -119,7 +163,7 @@ export default function StudioPage() {
             {/* Feed Content */}
             <div className="max-w-4xl mx-auto px-0 md:px-4 py-4 md:py-6">
                 <div className="md:columns-2 gap-6 space-y-6">
-                    {STUDIO_POSTS.map((post) => (
+                    {posts.map((post) => (
                         <StudioPost key={post.id} post={post} />
                     ))}
                 </div>
@@ -150,7 +194,7 @@ function StudioPost({ post }) {
             {/* Post Header */}
             <div className="p-3 md:p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-100">
+                    <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-100 bg-gray-100">
                         <Image
                             src={post.user.avatar}
                             alt={post.user.name}
@@ -194,7 +238,7 @@ function StudioPost({ post }) {
                 )}
 
                 {/* Tap to View Indicator - Only show when collapsed */}
-                {!expanded && (
+                {!expanded && post.products.length > 0 && (
                     <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-3 py-2 rounded-full">
                         <ShoppingBag size={14} />
                         <span>Tap to view {post.products.length} products</span>
@@ -239,37 +283,44 @@ function StudioPost({ post }) {
                     </div>
 
                     {/* Description */}
-                    <p className="text-sm text-gray-800 mb-4 leading-relaxed">
-                        <span className="font-bold mr-1">{post.user.name}</span>
-                        {post.description}
-                    </p>
+                    {post.description && (
+                        <p className="text-sm text-gray-800 mb-4 leading-relaxed">
+                            <span className="font-bold mr-1">{post.user.name}</span>
+                            {post.description}
+                        </p>
+                    )}
 
                     {/* Shop The Look Slider */}
-                    <div>
-                        <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Shop The Look</h4>
-                            <span className="text-xs text-[#ff3f6c] font-medium">{post.products.length} items</span>
-                        </div>
-                        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                            {post.products.map((product) => (
-                                <Link key={product.id} href={`/product/${product.id}`} className="min-w-[120px] md:min-w-[140px] group">
-                                    <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-gray-50 mb-2 border border-gray-100">
-                                        <Image
-                                            src={product.image}
-                                            alt={product.name}
-                                            fill
-                                            className="object-cover group-hover:scale-105 transition-transform"
-                                            unoptimized
-                                        />
-                                        <div className="absolute bottom-2 left-2 right-2 bg-white/95 backdrop-blur rounded-md px-2 py-1.5 text-center">
-                                            <p className="text-xs font-bold text-[var(--brand-royal-red)]">৳{product.price}</p>
+                    {post.products.length > 0 && (
+                        <div>
+                            <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Shop The Look</h4>
+                                <span className="text-xs text-[#ff3f6c] font-medium">{post.products.length} items</span>
+                            </div>
+                            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                                {post.products.map((product) => (
+                                    <Link key={product.id} href={`/product/${product.id}`} className="flex-shrink-0 w-[130px] group">
+                                        <div className="relative w-full h-[160px] rounded-lg overflow-hidden bg-gray-50 mb-2 border border-gray-100">
+                                            <Image
+                                                src={product.image}
+                                                alt={product.name}
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform"
+                                                unoptimized
+                                            />
+                                            <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur px-2 py-1.5 text-center">
+                                                <p className="text-xs font-bold text-[var(--brand-royal-red)]">৳{product.price}</p>
+                                                {product.discount > 0 && (
+                                                    <p className="text-[10px] text-gray-400 line-through">৳{product.originalPrice}</p>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <h5 className="text-xs font-medium text-gray-900 truncate">{product.name}</h5>
-                                </Link>
-                            ))}
+                                        <h5 className="text-xs font-medium text-gray-900 line-clamp-2 h-8">{product.name}</h5>
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
 
