@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Share2, Bookmark, ShoppingBag, ArrowLeft } from "lucide-react";
+import { Share2, Bookmark, ShoppingBag, ArrowLeft, Play, Pause } from "lucide-react";
 import { getStudioList } from "@/lib/api";
 
 export default function StudioPage() {
@@ -174,9 +174,10 @@ export default function StudioPage() {
 
 // Single Post Component with Click-to-Expand
 function StudioPost({ post }) {
-    const [liked, setLiked] = useState(false);
     const [expanded, setExpanded] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
     const cardRef = React.useRef(null);
+    const videoRef = React.useRef(null);
 
     // Click outside to collapse
     React.useEffect(() => {
@@ -188,6 +189,18 @@ function StudioPost({ post }) {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [expanded]);
+
+    const togglePlayPause = (e) => {
+        e.stopPropagation();
+        if (videoRef.current) {
+            if (isPlaying) {
+                videoRef.current.pause();
+            } else {
+                videoRef.current.play();
+            }
+            setIsPlaying(!isPlaying);
+        }
+    };
 
     return (
         <div ref={cardRef} className="bg-white md:rounded-xl shadow-sm border-b md:border border-gray-100 overflow-hidden break-inside-avoid mb-6">
@@ -220,12 +233,14 @@ function StudioPost({ post }) {
             >
                 {post.type === "video" ? (
                     <video
+                        ref={videoRef}
                         src={post.content}
                         className="w-full h-full object-cover"
-                        autoPlay
                         loop
                         muted
                         playsInline
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
                     />
                 ) : (
                     <Image
@@ -247,14 +262,33 @@ function StudioPost({ post }) {
 
                 {/* Overlay Action Buttons */}
                 <div className="absolute bottom-4 right-4 flex flex-col gap-3">
+                    {/* Play/Pause Button - Only for videos */}
+                    {post.type === "video" && (
+                        <button
+                            onClick={togglePlayPause}
+                            className="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                        >
+                            {isPlaying ? (
+                                <Pause size={20} className="text-gray-800" />
+                            ) : (
+                                <Play size={20} className="text-gray-800 ml-0.5" />
+                            )}
+                        </button>
+                    )}
                     <button
-                        onClick={(e) => { e.stopPropagation(); setLiked(!liked); }}
-                        className="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-                    >
-                        <Heart size={20} className={liked ? "fill-red-500 text-red-500" : "text-gray-800"} />
-                    </button>
-                    <button
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (navigator.share) {
+                                navigator.share({
+                                    title: post.user.name,
+                                    text: post.description,
+                                    url: window.location.href
+                                });
+                            } else {
+                                navigator.clipboard.writeText(window.location.href);
+                                alert('Link copied to clipboard!');
+                            }
+                        }}
                         className="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
                     >
                         <Share2 size={20} className="text-gray-800" />
@@ -272,16 +306,6 @@ function StudioPost({ post }) {
             {/* Expandable Post Details */}
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
                 <div className="p-3 md:p-4">
-                    {/* Likes */}
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="flex -space-x-2">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="w-5 h-5 rounded-full bg-gray-200 border border-white" />
-                            ))}
-                        </div>
-                        <span className="text-xs font-medium text-gray-600">{post.likes} likes</span>
-                    </div>
-
                     {/* Description */}
                     {post.description && (
                         <p className="text-sm text-gray-800 mb-4 leading-relaxed">
@@ -325,13 +349,12 @@ function StudioPost({ post }) {
             </div>
 
             {/* Collapsed Mini Preview */}
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${!expanded ? "max-h-16 opacity-100" : "max-h-0 opacity-0"}`}>
-                <div className="px-3 md:px-4 py-2 flex items-center justify-between border-t border-gray-50">
-                    <div className="flex items-center gap-2">
-                        <Heart size={16} className={liked ? "fill-red-500 text-red-500" : "text-gray-400"} />
-                        <span className="text-xs font-medium text-gray-500">{post.likes} likes</span>
-                    </div>
-                    <p className="text-xs text-gray-600 truncate max-w-[60%]">{post.description}</p>
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${!expanded ? "max-h-32 opacity-100" : "max-h-0 opacity-0"}`}>
+                <div className="px-3 md:px-4 py-3 border-t border-gray-50">
+                    <p className="text-sm text-gray-800 leading-relaxed line-clamp-3">
+                        <span className="font-bold mr-1">{post.user.name}</span>
+                        {post.description}
+                    </p>
                 </div>
             </div>
         </div>
