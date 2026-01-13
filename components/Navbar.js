@@ -623,19 +623,32 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                 <div className="overflow-y-auto h-[calc(100%-60px)]">
 
                     {/* User Section */}
-                    <div className="p-4 border-b border-gray-100 relative">
-                        <div className="absolute top-0 left-0 w-full h-16 bg-[var(--brand-royal-red)] opacity-10 -z-10"></div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                            </div>
+                    <div className="p-4 border-b border-gray-100 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-[var(--brand-royal-red)] to-red-500 opacity-10"></div>
+                        <div className="flex items-center gap-3 relative z-10">
+                            {user ? (
+                                <div className="w-12 h-12 rounded-full overflow-hidden shadow-sm border-2 border-white">
+                                    <Image
+                                        src={user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`}
+                                        alt={user.name || "Profile"}
+                                        width={48}
+                                        height={48}
+                                        className="object-cover w-full h-full"
+                                        unoptimized
+                                    />
+                                </div>
+                            ) : (
+                                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </div>
+                            )}
                             <div>
                                 {user ? (
                                     <>
-                                        <p className="font-bold text-gray-800 text-sm">Welcome Back</p>
+                                        <p className="font-bold text-gray-800 text-sm">{user.name || 'Welcome Back'}</p>
                                         <Link href="/profile" className="text-xs text-[var(--brand-royal-red)] font-bold" onClick={() => setMobileMenuOpen(false)}>View Profile</Link>
                                     </>
                                 ) : (
@@ -663,7 +676,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 className="px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex justify-between items-center"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
-                                <span className="text-[var(--brand-royal-red)]">New Arrivals & Offers</span>
+                                <span className="text-[var(--brand-royal-red)]">Offers</span>
                             </Link>
 
                             {categories.slice(0, 4).map((category) => (
@@ -774,6 +787,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                         <h3 className="px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Quick Links</h3>
                         <div className="flex flex-col">
                             <Link href="/track-order" className="px-4 py-3 text-sm text-gray-600 hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>Track Order</Link>
+                            <Link href="/blogs" className="px-4 py-3 text-sm text-gray-600 hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>Blogs</Link>
                             <Link href="/contact" className="px-4 py-3 text-sm text-gray-600 hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>Contact Us</Link>
                             <Link href="/faqs" className="px-4 py-3 text-sm text-gray-600 hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>FAQs</Link>
                         </div>

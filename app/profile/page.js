@@ -362,7 +362,7 @@ export default function ProfileDashboard() {
             {/* Mobile Backdrop */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    className="fixed inset-0 bg-black/50 z-[65] lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 ></div>
             )}
@@ -388,7 +388,7 @@ export default function ProfileDashboard() {
                         top-0 lg:top-auto left-0 lg:left-auto
                         w-72
                         bg-white
-                        z-50 lg:z-auto
+                        z-[70] lg:z-auto
                         transform lg:transform-none transition-transform duration-300
                         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
                         lg:block
@@ -937,31 +937,31 @@ export default function ProfileDashboard() {
                         {/* My Benefits */}
                         {activeSection === "benefits" && (
                             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                                <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
-                                    <h2 className="text-2xl font-bold text-white">My Points & Benefits</h2>
-                                    <p className="text-white/60 text-sm mt-1">Track your rewards and membership tier</p>
+                                <div className="p-4 md:p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                                    <h2 className="text-lg md:text-2xl font-bold text-white">My Points & Benefits</h2>
+                                    <p className="text-white/60 text-xs md:text-sm mt-0.5">Track your rewards and membership tier</p>
                                 </div>
-                                <div className="p-6 space-y-6">
-                                    {/* Points & Credit Cards */}
-                                    <div className="grid md:grid-cols-3 gap-4">
+                                <div className="p-3 md:p-6 space-y-4 md:space-y-6">
+                                    {/* Points & Credit - 2 on mobile, 3 on desktop */}
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                                         {/* Your Points */}
-                                        <div className="bg-white rounded-xl shadow-sm border p-6">
-                                            <div className="flex items-start gap-4">
-                                                <div className="bg-[var(--brand-royal-red)] p-3 rounded-xl">
-                                                    <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
+                                        <div className="bg-white rounded-xl shadow-sm border p-3 md:p-6">
+                                            <div className="flex items-center gap-3 md:gap-4">
+                                                <div className="bg-[var(--brand-royal-red)] p-2 md:p-3 rounded-lg md:rounded-xl">
+                                                    <svg width="18" height="18" className="md:w-6 md:h-6" fill="white" stroke="white" strokeWidth="2">
                                                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
                                                     </svg>
                                                 </div>
-                                                <div className="flex-1">
-                                                    <p className="text-xs text-gray-500 mb-1">Your Points Now:</p>
-                                                    <p className="text-3xl font-bold text-gray-900">283,000</p>
-                                                    <p className="text-xs text-gray-500 mt-1">Equal: 1,504 BDT credit</p>
+                                                <div className="min-w-0">
+                                                    <p className="text-[10px] md:text-xs text-gray-500">Your Points</p>
+                                                    <p className="text-lg md:text-3xl font-bold text-gray-900">283K</p>
+                                                    <p className="text-[10px] md:text-xs text-gray-500">≈ ৳1,504</p>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Shop Now */}
-                                        <div className="bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-xl shadow-sm p-6 flex flex-col items-center justify-center">
+                                        {/* Shop Now - Hidden on mobile */}
+                                        <Link href="/" className="hidden md:flex bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-xl shadow-sm p-6 flex-col items-center justify-center">
                                             <div className="bg-white p-3 rounded-xl mb-3">
                                                 <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <circle cx="9" cy="21" r="1"></circle>
@@ -969,32 +969,30 @@ export default function ProfileDashboard() {
                                                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                                                 </svg>
                                             </div>
-                                            <Link href="/" className="bg-white text-[var(--brand-royal-red)] px-6 py-2 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors">
-                                                Shop now
-                                            </Link>
-                                        </div>
+                                            <span className="text-white text-sm font-semibold">Shop now</span>
+                                        </Link>
 
                                         {/* Your Credit */}
-                                        <div className="bg-white rounded-xl shadow-sm border p-6">
-                                            <div className="flex items-start gap-4">
-                                                <div className="bg-blue-600 p-3 rounded-xl">
-                                                    <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
+                                        <div className="bg-white rounded-xl shadow-sm border p-3 md:p-6">
+                                            <div className="flex items-center gap-3 md:gap-4">
+                                                <div className="bg-blue-600 p-2 md:p-3 rounded-lg md:rounded-xl">
+                                                    <svg width="18" height="18" className="md:w-6 md:h-6" fill="white" stroke="white" strokeWidth="2">
                                                         <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
                                                         <line x1="1" y1="10" x2="23" y2="10"></line>
                                                     </svg>
                                                 </div>
-                                                <div className="flex-1">
-                                                    <p className="text-xs text-gray-500 mb-1">Your Credit Now:</p>
-                                                    <p className="text-3xl font-bold text-gray-900">৳500</p>
-                                                    <p className="text-xs text-gray-500 mt-1">📅 Exp in: 30 Dec 2026</p>
+                                                <div className="min-w-0">
+                                                    <p className="text-[10px] md:text-xs text-gray-500">Your Credit</p>
+                                                    <p className="text-lg md:text-3xl font-bold text-gray-900">৳500</p>
+                                                    <p className="text-[10px] md:text-xs text-gray-500">📅 Dec 2026</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Membership Tier Progress */}
-                                    <div className="bg-white rounded-xl shadow-sm border p-6">
-                                        <h3 className="font-bold text-lg mb-6">Membership Tier</h3>
+                                    <div className="bg-white rounded-xl shadow-sm border p-4 md:p-6">
+                                        <h3 className="font-bold text-base md:text-lg mb-4 md:mb-6">Membership Tier</h3>
                                         <div className="relative">
                                             <div className="flex justify-between items-start mb-4">
                                                 {[
@@ -1033,22 +1031,22 @@ export default function ProfileDashboard() {
                                             <h3 className="font-bold text-lg">Featured Coupons</h3>
                                             <button onClick={() => setActiveSection("coupons")} className="text-sm text-[var(--brand-royal-red)] font-semibold hover:underline">View All</button>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                                             {[
-                                                { name: "Delivery Coupon", discount: "10%", amount: "৳100", badge: "Renewal", expiry: "15 Dec 2025", color: "bg-green-500" },
-                                                { name: "Basic Coupon", discount: "75%", amount: "৳750", badge: "New", expiry: "15 Dec 2025", color: "bg-blue-600" },
-                                                { name: "Login Coupon", discount: "50%", amount: "৳500", badge: "New", expiry: "15 Dec 2025", color: "bg-indigo-700" },
-                                                { name: "Premium Coupon", discount: "50%", amount: "৳500", badge: "Renewal", expiry: "15 Dec 2025", color: "bg-orange-500" },
+                                                { name: "Delivery", discount: "10%", amount: "৳100", badge: "Renewal", expiry: "Dec 25", color: "bg-green-500" },
+                                                { name: "Basic", discount: "75%", amount: "৳750", badge: "New", expiry: "Dec 25", color: "bg-blue-600" },
+                                                { name: "Login", discount: "50%", amount: "৳500", badge: "New", expiry: "Dec 25", color: "bg-indigo-700" },
+                                                { name: "Premium", discount: "50%", amount: "৳500", badge: "Renewal", expiry: "Dec 25", color: "bg-orange-500" },
                                             ].map((coupon, i) => (
-                                                <div key={i} className={`${coupon.color} rounded-xl p-4 text-white`}>
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <span className="bg-white/20 px-2 py-1 rounded text-xs font-semibold">{coupon.badge}</span>
-                                                        <span className="text-xs opacity-90">Until {coupon.expiry}</span>
+                                                <div key={i} className={`${coupon.color} rounded-lg md:rounded-xl p-2.5 md:p-4 text-white`}>
+                                                    <div className="flex items-center justify-between mb-1 md:mb-2">
+                                                        <span className="bg-white/20 px-1.5 md:px-2 py-0.5 md:py-1 rounded text-[9px] md:text-xs font-semibold">{coupon.badge}</span>
+                                                        <span className="text-[8px] md:text-xs opacity-90">{coupon.expiry}</span>
                                                     </div>
-                                                    <h4 className="font-bold mb-2">{coupon.name}</h4>
-                                                    <div className="flex items-baseline gap-2">
-                                                        <span className="text-3xl font-bold">{coupon.discount}</span>
-                                                        <span className="text-sm opacity-90">{coupon.amount}</span>
+                                                    <h4 className="font-bold text-xs md:text-base mb-1 md:mb-2">{coupon.name}</h4>
+                                                    <div className="flex items-baseline gap-1">
+                                                        <span className="text-xl md:text-3xl font-bold">{coupon.discount}</span>
+                                                        <span className="text-[10px] md:text-sm opacity-90">{coupon.amount}</span>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1526,7 +1524,7 @@ export default function ProfileDashboard() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 

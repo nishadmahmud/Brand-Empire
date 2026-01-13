@@ -379,7 +379,7 @@ export default function CategoryPage() {
         : [];
 
     return (
-        <div className="min-h-screen bg-gray-50 pt-4 md:pt-4">
+        <div className="min-h-screen bg-gray-50 pt-0 md:pt-4">
 
             {/* Banner */}
             {bannerImage && (
