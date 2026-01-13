@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Share2, Bookmark, ShoppingBag, ArrowLeft, Play, Pause } from "lucide-react";
 import { getStudioList } from "@/lib/api";
+import { useCart } from "@/context/CartContext";
 
 export default function StudioPage() {
     const [posts, setPosts] = useState([]);
@@ -26,7 +27,6 @@ export default function StudioPage() {
                         type: "video",
                         content: item.video_link,
                         description: item.description || "",
-                        likes: Math.floor(Math.random() * 1000) + 100, // Placeholder since API doesn't have likes
                         products: item.products?.map(product => ({
                             id: product.id,
                             name: product.name,
@@ -90,14 +90,11 @@ export default function StudioPage() {
                     <div className="md:columns-2 gap-6 space-y-6">
                         {[1, 2, 3].map((i) => (
                             <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden break-inside-avoid mb-6">
-                                <div className="p-4 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
-                                    <div className="flex-1">
-                                        <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-                                        <div className="h-3 w-16 bg-gray-100 rounded mt-1 animate-pulse" />
-                                    </div>
-                                </div>
                                 <div className="aspect-[4/5] bg-gray-200 animate-pulse" />
+                                <div className="p-3">
+                                    <div className="h-12 bg-gray-100 rounded animate-pulse mb-2" />
+                                    <div className="h-16 bg-gray-100 rounded animate-pulse" />
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -172,23 +169,11 @@ export default function StudioPage() {
     );
 }
 
-// Single Post Component with Click-to-Expand
+// Single Post Component - Always Open Layout
 function StudioPost({ post }) {
-    const [expanded, setExpanded] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
-    const cardRef = React.useRef(null);
     const videoRef = React.useRef(null);
-
-    // Click outside to collapse
-    React.useEffect(() => {
-        function handleClickOutside(event) {
-            if (expanded && cardRef.current && !cardRef.current.contains(event.target)) {
-                setExpanded(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [expanded]);
+    const { addToCart, setIsCartOpen } = useCart();
 
     const togglePlayPause = (e) => {
         e.stopPropagation();
@@ -202,12 +187,25 @@ function StudioPost({ post }) {
         }
     };
 
+    const handleShare = () => {
+        if (navigator.share) {
+            navigator.share({
+                title: post.user.name,
+                text: post.description,
+                url: window.location.href
+            });
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Link copied to clipboard!');
+        }
+    };
+
     return (
-        <div ref={cardRef} className="bg-white md:rounded-xl shadow-sm border-b md:border border-gray-100 overflow-hidden break-inside-avoid mb-6">
+        <div className="bg-white md:rounded-xl shadow-sm border-b md:border border-gray-100 overflow-hidden break-inside-avoid mb-6">
             {/* Post Header */}
-            <div className="p-3 md:p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-100 bg-gray-100">
+            <div className="p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="relative w-9 h-9 rounded-full overflow-hidden border border-gray-100 bg-gray-100">
                         <Image
                             src={post.user.avatar}
                             alt={post.user.name}
@@ -217,20 +215,14 @@ function StudioPost({ post }) {
                         />
                     </div>
                     <div>
-                        <h3 className="font-bold text-sm text-gray-900 leading-none">{post.user.name}</h3>
-                        <p className="text-[10px] text-gray-500 mt-1">{post.user.time}</p>
+                        <h3 className="font-bold text-sm text-gray-900">{post.user.name}</h3>
+                        <p className="text-[10px] text-gray-500">{post.user.time}</p>
                     </div>
                 </div>
-                <button className="text-[var(--brand-royal-red)] text-xs font-bold border border-[var(--brand-royal-red)] px-3 py-1 rounded-full hover:bg-red-50 transition-colors">
-                    + Follow
-                </button>
             </div>
 
-            {/* Clickable Media Area */}
-            <div
-                className="relative aspect-[4/5] w-full bg-gray-100 cursor-pointer"
-                onClick={() => setExpanded(!expanded)}
-            >
+            {/* Video/Media Area */}
+            <div className="relative aspect-[4/5] w-full bg-gray-100">
                 {post.type === "video" ? (
                     <video
                         ref={videoRef}
@@ -252,14 +244,6 @@ function StudioPost({ post }) {
                     />
                 )}
 
-                {/* Tap to View Indicator - Only show when collapsed */}
-                {!expanded && post.products.length > 0 && (
-                    <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-3 py-2 rounded-full">
-                        <ShoppingBag size={14} />
-                        <span>Tap to view {post.products.length} products</span>
-                    </div>
-                )}
-
                 {/* Overlay Action Buttons */}
                 <div className="absolute bottom-4 right-4 flex flex-col gap-3">
                     {/* Play/Pause Button - Only for videos */}
@@ -276,87 +260,82 @@ function StudioPost({ post }) {
                         </button>
                     )}
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (navigator.share) {
-                                navigator.share({
-                                    title: post.user.name,
-                                    text: post.description,
-                                    url: window.location.href
-                                });
-                            } else {
-                                navigator.clipboard.writeText(window.location.href);
-                                alert('Link copied to clipboard!');
-                            }
-                        }}
+                        onClick={handleShare}
                         className="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
                     >
                         <Share2 size={20} className="text-gray-800" />
                     </button>
                 </div>
+            </div>
 
-                {/* Collapse hint when expanded */}
-                {expanded && (
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-3 py-2 rounded-full">
-                        <span>Tap to collapse</span>
+            {/* Products Row - Horizontal Scrollable */}
+            {post.products.length > 0 && (
+                <div className="px-3 py-2 border-b border-gray-100">
+                    <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+                        {/* Shop All Button - Add all products to cart */}
+                        <button
+                            onClick={() => {
+                                post.products.forEach(product => {
+                                    addToCart({
+                                        id: product.id,
+                                        name: product.name,
+                                        price: product.price,
+                                        originalPrice: product.originalPrice,
+                                        discount: product.discount,
+                                        image: product.image
+                                    }, 1);
+                                });
+                                setIsCartOpen(true);
+                            }}
+                            className="flex-shrink-0 w-10 h-10 rounded-full bg-[#ff3f6c]/10 flex items-center justify-center hover:bg-[#ff3f6c]/20 transition-colors"
+                        >
+                            <ShoppingBag size={18} className="text-[#ff3f6c]" />
+                        </button>
+                        <span className="text-[10px] text-[#ff3f6c] font-bold uppercase -ml-1">Shop All</span>
+
+                        {/* Product Cards */}
+                        {post.products.map((product) => (
+                            <Link
+                                key={product.id}
+                                href={`/product/${product.id}`}
+                                className="flex-shrink-0 flex items-center gap-2 bg-gray-50 rounded-lg p-1.5 pr-3 border border-gray-100 hover:border-gray-200 transition-colors"
+                            >
+                                <div className="relative w-12 h-14 rounded overflow-hidden bg-white">
+                                    <Image
+                                        src={product.image}
+                                        alt={product.name}
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
+                                    />
+                                </div>
+                                <div className="min-w-[70px]">
+                                    <p className="text-xs font-medium text-gray-900 truncate max-w-[80px]">{product.name.split(' ').slice(0, 2).join(' ')}</p>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-xs font-bold text-gray-900">৳{product.price}</span>
+                                        {product.originalPrice > product.price && (
+                                            <span className="text-[10px] text-gray-400 line-through">৳{product.originalPrice}</span>
+                                        )}
+                                    </div>
+                                    {product.discount > 0 && (
+                                        <span className="text-[10px] font-bold text-[#ff3f6c]">{product.discount}% OFF</span>
+                                    )}
+                                </div>
+                            </Link>
+                        ))}
                     </div>
-                )}
-            </div>
-
-            {/* Expandable Post Details */}
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${expanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
-                <div className="p-3 md:p-4">
-                    {/* Description */}
-                    {post.description && (
-                        <p className="text-sm text-gray-800 mb-4 leading-relaxed">
-                            <span className="font-bold mr-1">{post.user.name}</span>
-                            {post.description}
-                        </p>
-                    )}
-
-                    {/* Shop The Look Slider */}
-                    {post.products.length > 0 && (
-                        <div>
-                            <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Shop The Look</h4>
-                                <span className="text-xs text-[#ff3f6c] font-medium">{post.products.length} items</span>
-                            </div>
-                            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                                {post.products.map((product) => (
-                                    <Link key={product.id} href={`/product/${product.id}`} className="flex-shrink-0 w-[130px] group">
-                                        <div className="relative w-full h-[160px] rounded-lg overflow-hidden bg-gray-50 mb-2 border border-gray-100">
-                                            <Image
-                                                src={product.image}
-                                                alt={product.name}
-                                                fill
-                                                className="object-cover group-hover:scale-105 transition-transform"
-                                                unoptimized
-                                            />
-                                            <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur px-2 py-1.5 text-center">
-                                                <p className="text-xs font-bold text-[var(--brand-royal-red)]">৳{product.price}</p>
-                                                {product.discount > 0 && (
-                                                    <p className="text-[10px] text-gray-400 line-through">৳{product.originalPrice}</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <h5 className="text-xs font-medium text-gray-900 line-clamp-2 h-8">{product.name}</h5>
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
-            </div>
+            )}
 
-            {/* Collapsed Mini Preview */}
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${!expanded ? "max-h-32 opacity-100" : "max-h-0 opacity-0"}`}>
-                <div className="px-3 md:px-4 py-3 border-t border-gray-50">
-                    <p className="text-sm text-gray-800 leading-relaxed line-clamp-3">
+            {/* Description */}
+            {post.description && (
+                <div className="px-3 py-3">
+                    <p className="text-sm text-gray-800 leading-relaxed">
                         <span className="font-bold mr-1">{post.user.name}</span>
                         {post.description}
                     </p>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
