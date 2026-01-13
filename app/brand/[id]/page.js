@@ -93,9 +93,9 @@ export default function BrandPage() {
                 let productsArray = [];
                 let response;
 
-                // If attribute filters are selected, use the filter-products API
+                // If attribute filters are selected, use the filter-products API with brand_id
                 if (filters.attributeValues.length > 0) {
-                    response = await filterProductsByAttributes(filters.attributeValues, page);
+                    response = await filterProductsByAttributes(filters.attributeValues, page, brandId);
                     if (response.success && response.data?.data) {
                         productsArray = response.data.data;
                     }

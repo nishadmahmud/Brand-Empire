@@ -157,6 +157,17 @@ const ProductDetailsPage = ({ productId }) => {
                         if (finalPrice < 0) finalPrice = 0;
                     }
 
+                    // Check if product is out of stock
+                    const isOutOfStock = apiProduct.current_stock === 0 || apiProduct.status === "Stock Out";
+
+                    // Get variant stock info
+                    const variantStockMap = {};
+                    if (apiProduct.product_variants) {
+                        apiProduct.product_variants.forEach(v => {
+                            variantStockMap[v.name] = v.quantity || 0;
+                        });
+                    }
+
                     const transformedProduct = {
                         id: apiProduct.id,
                         name: apiProduct.name,
@@ -176,6 +187,10 @@ const ProductDetailsPage = ({ productId }) => {
                         unavailableSizes: apiProduct.product_variants
                             ? apiProduct.product_variants.filter(v => v.quantity === 0).map(v => v.name)
                             : [],
+                        variantStockMap: variantStockMap,
+                        currentStock: apiProduct.current_stock || 0,
+                        stockStatus: apiProduct.status || "In Stock",
+                        isOutOfStock: isOutOfStock,
                         description: apiProduct.description,
                         details: {
                             fit: apiProduct.specifications?.find(s => s.name === "Fit")?.description || "Regular Fit",
@@ -592,6 +607,18 @@ const ProductDetailsPage = ({ productId }) => {
                         </div>
                         <p className="text-xs text-green-600 font-medium -mt-4">inclusive of all taxes</p>
 
+                        {/* Out of Stock Label */}
+                        {product.isOutOfStock && (
+                            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                </svg>
+                                <span className="text-red-600 font-semibold">Currently Out of Stock</span>
+                            </div>
+                        )}
+
                         {/* Size Selector */}
                         <div id="size-selector" className="mb-6">
                             <div className="flex justify-between items-center mb-4">
@@ -604,21 +631,34 @@ const ProductDetailsPage = ({ productId }) => {
                                 </button>
                             </div>
                             <div className="flex flex-wrap gap-2 sm:gap-3">
-                                {product.sizes.map((size, index) => (
-                                    <button
-                                        key={`size-${index}-${size}`}
-                                        onClick={() => {
-                                            setSelectedSize(size);
-                                            setSizeError(false);
-                                        }}
-                                        className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full border-2 font-bold text-sm sm:text-base transition-all ${selectedSize === size
-                                            ? 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]'
-                                            : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                                            }`}
-                                    >
-                                        {size}
-                                    </button>
-                                ))}
+                                {product.sizes.map((size, index) => {
+                                    const isSizeOutOfStock = product.unavailableSizes?.includes(size) || product.isOutOfStock;
+                                    return (
+                                        <button
+                                            key={`size-${index}-${size}`}
+                                            onClick={() => {
+                                                if (!isSizeOutOfStock) {
+                                                    setSelectedSize(size);
+                                                    setSizeError(false);
+                                                }
+                                            }}
+                                            disabled={isSizeOutOfStock}
+                                            className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full border-2 font-bold text-sm sm:text-base transition-all relative ${selectedSize === size
+                                                ? 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]'
+                                                : isSizeOutOfStock
+                                                    ? 'border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50'
+                                                    : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                                                }`}
+                                        >
+                                            {size}
+                                            {isSizeOutOfStock && (
+                                                <span className="absolute inset-0 flex items-center justify-center">
+                                                    <span className="w-full h-[2px] bg-gray-300 rotate-45 absolute"></span>
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
                             </div>
                             {sizeError && (
                                 <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded flex items-center gap-2 text-red-700 text-sm animate-shake">
@@ -636,24 +676,32 @@ const ProductDetailsPage = ({ productId }) => {
                         <div className="flex flex-col sm:flex-row gap-3">
                             <button
                                 onClick={handleAddToBag}
-                                className="flex-1 bg-[var(--brand-royal-red)] text-white py-4 rounded font-bold text-sm uppercase hover:bg-[#a01830] transition-colors flex items-center justify-center gap-2"
+                                disabled={product.isOutOfStock}
+                                className={`flex-1 py-4 rounded font-bold text-sm uppercase transition-colors flex items-center justify-center gap-2 ${product.isOutOfStock
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : 'bg-[var(--brand-royal-red)] text-white hover:bg-[#a01830]'
+                                    }`}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
                                     <line x1="3" y1="6" x2="21" y2="6"></line>
                                     <path d="M16 10a4 4 0 0 1-8 0"></path>
                                 </svg>
-                                Add to Bag
+                                {product.isOutOfStock ? 'Out of Stock' : 'Add to Bag'}
                             </button>
                             <button
                                 onClick={handleOrderNow}
-                                className="flex-1 px-6 py-4 border-2 border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-red-50 rounded font-bold text-sm uppercase hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                                disabled={product.isOutOfStock}
+                                className={`flex-1 px-6 py-4 border-2 rounded font-bold text-sm uppercase transition-colors flex items-center justify-center gap-2 ${product.isOutOfStock
+                                        ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed'
+                                        : 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-red-50 hover:bg-red-100'
+                                    }`}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M5 12h14"></path>
                                     <path d="M12 5l7 7-7 7"></path>
                                 </svg>
-                                Order Now
+                                {product.isOutOfStock ? 'Unavailable' : 'Order Now'}
                             </button>
                         </div>
 
