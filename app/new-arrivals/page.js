@@ -82,7 +82,14 @@ export default function NewArrivalsPage() {
             try {
                 const response = await getCategoriesFromServer();
                 if (response.success && response.data) {
-                    setAllCategories(response.data);
+                    // Transform categories to ensure products_count is a number
+                    const transformedCategories = response.data.map(cat => ({
+                        ...cat,
+                        id: cat.category_id || cat.id,
+                        name: cat.name,
+                        products_count: typeof cat.products_count === 'number' ? cat.products_count : parseInt(cat.products_count) || 0
+                    }));
+                    setAllCategories(transformedCategories);
                 }
             } catch (err) {
                 console.error("Error fetching categories:", err);

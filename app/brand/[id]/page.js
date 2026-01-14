@@ -6,7 +6,7 @@ import Link from "next/link";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
-import { getBrandwiseProducts, getTopBrands, filterProductsByAttributes } from "@/lib/api";
+import { getBrandwiseProducts, getTopBrands, filterProductsByAttributes, getCategoriesFromServer } from "@/lib/api";
 
 export default function BrandPage() {
     const params = useParams();
@@ -35,6 +35,10 @@ export default function BrandPage() {
         discount: 0,
         attributeValues: [],
     });
+
+    // Categories for filtering
+    const [allCategories, setAllCategories] = useState([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState(null);
 
     // Extract unique sizes from products
     const availableSizes = useMemo(() => {
@@ -85,6 +89,27 @@ export default function BrandPage() {
         }
     }, [brandId]);
 
+    // Fetch categories for filtering
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await getCategoriesFromServer();
+                if (response.success && response.data) {
+                    // Transform categories to the format expected by FilterSidebar
+                    const categories = response.data.map(cat => ({
+                        id: cat.category_id,
+                        name: cat.name,
+                        category_id: cat.category_id
+                    }));
+                    setAllCategories(categories);
+                }
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
     // Fetch products
     useEffect(() => {
         const fetchProducts = async () => {
@@ -93,9 +118,13 @@ export default function BrandPage() {
                 let productsArray = [];
                 let response;
 
-                // If attribute filters are selected, use the filter-products API with brand_id
-                if (filters.attributeValues.length > 0) {
-                    response = await filterProductsByAttributes(filters.attributeValues, page, brandId);
+                // If attribute filters or category is selected, use the filter-products API
+                if (filters.attributeValues.length > 0 || selectedCategoryId) {
+                    response = await filterProductsByAttributes(
+                        filters.attributeValues,
+                        page,
+                        { brandId, categoryId: selectedCategoryId }
+                    );
                     if (response.success && response.data?.data) {
                         productsArray = response.data.data;
                     }
@@ -194,7 +223,7 @@ export default function BrandPage() {
         if (brandId) {
             fetchProducts();
         }
-    }, [brandId, page, brandName, filters.attributeValues]);
+    }, [brandId, page, brandName, filters.attributeValues, selectedCategoryId]);
 
     // Apply filters and sorting
     const filteredAndSortedProducts = useMemo(() => {
@@ -256,7 +285,9 @@ export default function BrandPage() {
             colors: [],
             sizes: [],
             discount: 0,
+            attributeValues: [],
         });
+        setSelectedCategoryId(null);
     };
 
     return (
@@ -380,6 +411,9 @@ export default function BrandPage() {
                             onClearAll={handleClearAll}
                             products={products}
                             hideBrandFilter={true}
+                            categories={allCategories}
+                            selectedCategoryId={selectedCategoryId}
+                            onCategoryChange={setSelectedCategoryId}
                         />
                     </div>
 
@@ -493,6 +527,9 @@ export default function BrandPage() {
                             onClearAll={handleClearAll}
                             products={products}
                             hideBrandFilter={true}
+                            categories={allCategories}
+                            selectedCategoryId={selectedCategoryId}
+                            onCategoryChange={setSelectedCategoryId}
                         />
                     </div>
                 </div>

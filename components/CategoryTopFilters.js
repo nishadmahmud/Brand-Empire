@@ -14,7 +14,8 @@ export default function CategoryTopFilters({
     availableSizes = [],
     selectedSizes = [],
     onSizeChange,
-    className = ""
+    className = "",
+    hiddenAttributeNames = [] // Array of attribute names to hide (case-insensitive) - e.g., ["Gender"] when on Men/Women category
 }) {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [attributes, setAttributes] = useState([]);
@@ -91,6 +92,34 @@ export default function CategoryTopFilters({
         return attribute.values.filter(v => selectedAttributeValues.includes(v.id)).length;
     };
 
+    // Check if an attribute should be hidden based on its values matching category names
+    const shouldHideAttribute = (attribute) => {
+        if (!hiddenAttributeNames || hiddenAttributeNames.length === 0) return false;
+
+        // Filter out empty/null names and convert to lowercase
+        const validHiddenNames = hiddenAttributeNames.filter(n => n && n.trim() !== '');
+        if (validHiddenNames.length === 0) return false;
+
+        const lowerHiddenNames = validHiddenNames.map(n => n.toLowerCase().trim());
+
+        // Check if any of the attribute values match the hidden names (case-insensitive)
+        // Note: API returns `value` property, not `name`
+        const shouldHide = attribute.values.some(v => {
+            const valueName = v.value || v.name; // Support both property names
+            if (!valueName) return false;
+            return lowerHiddenNames.includes(valueName.toLowerCase().trim());
+        });
+
+    };
+
+    // Filter out hidden attributes
+    const visibleAttributes = attributes.filter(attr => !shouldHideAttribute(attr));
+
+    // Temp debug
+    if (hiddenAttributeNames && hiddenAttributeNames.length > 0) {
+        console.log('Filter hiding check - hiddenNames:', hiddenAttributeNames, 'visible:', visibleAttributes.map(a => a.name));
+    }
+
     if (loading) {
         return (
             <div className={`flex gap-2 md:gap-3 py-2 md:py-0 ${className}`}>
@@ -105,7 +134,7 @@ export default function CategoryTopFilters({
         <div className={`flex gap-2 md:gap-3 py-2 md:py-0 relative z-30 overflow-x-auto md:overflow-visible scrollbar-hide ${className}`}>
 
             {/* Dynamic Attribute Filters */}
-            {attributes.map((attribute) => (
+            {visibleAttributes.map((attribute) => (
                 <div
                     key={attribute.id}
                     className="relative flex-shrink-0"

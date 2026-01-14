@@ -121,7 +121,9 @@ const FilterSidebar = ({
                                     />
                                     <span className="ml-3 text-sm text-gray-700 group-hover:text-black">
                                         {category.name}
-                                        {category.products_count && <span className="text-gray-400 ml-1">({category.products_count})</span>}
+                                        {typeof category.products_count === 'number' && (
+                                            <span className="text-gray-400 ml-1">({category.products_count})</span>
+                                        )}
                                     </span>
                                 </label>
                             );

@@ -203,9 +203,9 @@ export default function CategoryPage() {
                 setLoading(true);
                 let allProducts = [];
 
-                // If attribute filters are selected, use the filter-products API
+                // If attribute filters are selected, use the filter-products API with category_id
                 if (filters.attributeValues.length > 0) {
-                    const response = await filterProductsByAttributes(filters.attributeValues, page);
+                    const response = await filterProductsByAttributes(filters.attributeValues, page, { categoryId });
                     if (response.success && response.data?.data) {
                         allProducts = response.data.data;
                     }
@@ -559,6 +559,7 @@ export default function CategoryPage() {
                     }}
                     selectedAttributeValues={filters.attributeValues}
                     onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
+                    hiddenAttributeNames={[categoryName, subcategoryName, childName].filter(Boolean)}
                 />
             </div>
 
@@ -595,6 +596,7 @@ export default function CategoryPage() {
                                     selectedAttributeValues={filters.attributeValues}
                                     onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
                                     className="ml-0"
+                                    hiddenAttributeNames={[categoryName, subcategoryName, childName].filter(Boolean)}
                                 />
                             </div>
 
