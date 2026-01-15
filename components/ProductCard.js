@@ -143,7 +143,11 @@ const ProductCard = ({ product, tag, categoryId, onClick }) => {
                     {product.color && product.color !== 'Default' && (
                         <div className="flex items-center gap-2">
                             <div className={`w-4 h-4 rounded-full border border-gray-200 p-[2px]`}>
-                                <div className="w-full h-full rounded-full" style={{ backgroundColor: product.color }}></div>
+                                <div
+                                    className="w-full h-full rounded-full"
+                                    style={{ backgroundColor: product.colorCode || product.color }}
+                                    title={product.color}
+                                ></div>
                             </div>
                             <span className="text-[10px] text-gray-500 uppercase">{product.color}</span>
                         </div>

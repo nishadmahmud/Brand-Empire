@@ -155,9 +155,8 @@ export default function NewArrivalsPage() {
                         unavailableSizes: product.items && product.items.length > 0
                             ? product.items.filter(item => item.quantity === 0).map(item => item.size)
                             : [],
-                        color: product.name.toLowerCase().includes("black") ? "black" :
-                            product.name.toLowerCase().includes("blue") ? "blue" :
-                                product.name.toLowerCase().includes("white") ? "white" : "default",
+                        color: product.color || "Default",
+                        colorCode: product.color_code || null,
                         rating: product.review_summary?.average_rating || 0,
                         reviews: product.review_summary?.total_reviews || 0,
                         rawPrice: finalPrice,
