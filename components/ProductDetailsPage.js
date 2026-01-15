@@ -201,15 +201,21 @@ const ProductDetailsPage = ({ productId }) => {
                             }
                         },
                         materialCare: {
-                            material: "Cotton", // Placeholder
-                            wash: "Machine Wash"
+                            material: apiProduct.specifications?.find(s => s.name?.toLowerCase().includes('fabric'))?.description || "Cotton",
+                            wash: apiProduct.specifications?.find(s => s.name?.toLowerCase().includes('wash') || s.name?.toLowerCase().includes('care'))?.description || "Machine Wash"
                         },
-                        specifications: {
-                            sleeveLength: "Short Sleeves",
-                            neck: "Round Neck",
-                            fit: "Regular Fit",
-                            printOrPatternType: "Solid"
-                        },
+                        // Map API specifications array to key-value pairs for display
+                        specifications: apiProduct.specifications && apiProduct.specifications.length > 0
+                            ? apiProduct.specifications.reduce((acc, spec) => {
+                                acc[spec.name] = spec.description;
+                                return acc;
+                            }, {})
+                            : { // Fallback if no specs
+                                "Fabric": "Cotton",
+                                "Fit": "Regular Fit",
+                                "Neck": "Round Neck",
+                                "Sleeve Length": "Short Sleeves"
+                            },
                         offers: [ // Static offers for now or fetch if available
                             {
                                 code: "BRAND20",
@@ -678,8 +684,8 @@ const ProductDetailsPage = ({ productId }) => {
                                 onClick={handleAddToBag}
                                 disabled={product.isOutOfStock}
                                 className={`flex-1 py-4 rounded font-bold text-sm uppercase transition-colors flex items-center justify-center gap-2 ${product.isOutOfStock
-                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                        : 'bg-[var(--brand-royal-red)] text-white hover:bg-[#a01830]'
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-[var(--brand-royal-red)] text-white hover:bg-[#a01830]'
                                     }`}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -693,8 +699,8 @@ const ProductDetailsPage = ({ productId }) => {
                                 onClick={handleOrderNow}
                                 disabled={product.isOutOfStock}
                                 className={`flex-1 px-6 py-4 border-2 rounded font-bold text-sm uppercase transition-colors flex items-center justify-center gap-2 ${product.isOutOfStock
-                                        ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed'
-                                        : 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-red-50 hover:bg-red-100'
+                                    ? 'border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed'
+                                    : 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)] bg-red-50 hover:bg-red-100'
                                     }`}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1042,24 +1048,35 @@ const ProductDetailsSection = ({ product }) => {
                 </details>
 
                 {/* Specifications */}
-                <details open className="border-b border-gray-200 pb-6 group">
-                    <summary className="text-sm font-bold uppercase cursor-pointer flex items-center justify-between list-none">
-                        <span>Specifications</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-180">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </summary>
-                    <div className="mt-4 text-sm">
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-                            {Object.entries(product.specifications).map(([key, value]) => (
-                                <div key={key} className="flex justify-between py-1 border-b border-gray-50">
-                                    <span className="text-gray-500 capitalize text-xs">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                                    <span className="font-medium text-gray-900 text-right">{value}</span>
+                <div className="py-6 border-b border-gray-200">
+                    <h3 className="text-sm font-bold uppercase mb-4">Specifications</h3>
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                            {Object.entries(product.specifications).slice(0, activeTab === 'all_specs' ? undefined : 6).map(([key, value]) => (
+                                <div key={key} className="border-b border-gray-100 pb-2">
+                                    <p className="text-xs text-gray-500 mb-1">{key}</p>
+                                    <p className="text-base font-medium text-gray-900 leading-tight">{value}</p>
                                 </div>
                             ))}
                         </div>
+                        {Object.keys(product.specifications).length > 6 && (
+                            <button
+                                onClick={() => setActiveTab(activeTab === 'all_specs' ? 'details' : 'all_specs')}
+                                className="text-[var(--brand-royal-red)] text-sm font-bold uppercase hover:underline mt-2"
+                            >
+                                {activeTab === 'all_specs' ? 'See Less' : 'See More'}
+                            </button>
+                        )}
                     </div>
-                </details>
+
+                    {/* Product Code */}
+                    <div className="mt-6 pt-4 border-t border-gray-100">
+                        <p className="text-sm text-gray-900">
+                            <span className="font-bold text-gray-500 uppercase mr-2">Product Code :</span>
+                            <span className="font-medium">{product.id}</span>
+                        </p>
+                    </div>
+                </div>
 
                 {/* Ratings & Reviews */}
                 <RatingsSection product={product} />
