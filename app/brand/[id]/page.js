@@ -89,26 +89,15 @@ export default function BrandPage() {
         }
     }, [brandId]);
 
-    // Fetch categories for filtering
+    // Categories extraction state
+    const [extractedCategories, setExtractedCategories] = useState([]);
+
+    // Use extracted categories if available, otherwise empty
     useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const response = await getCategoriesFromServer();
-                if (response.success && response.data) {
-                    // Transform categories to the format expected by FilterSidebar
-                    const categories = response.data.map(cat => ({
-                        id: cat.category_id,
-                        name: cat.name,
-                        category_id: cat.category_id
-                    }));
-                    setAllCategories(categories);
-                }
-            } catch (error) {
-                console.error("Error fetching categories:", error);
-            }
-        };
-        fetchCategories();
-    }, []);
+        if (extractedCategories.length > 0) {
+            setAllCategories(extractedCategories);
+        }
+    }, [extractedCategories]);
 
     // Fetch products
     useEffect(() => {
@@ -139,6 +128,41 @@ export default function BrandPage() {
                             productsArray = response.data;
                         } else if (response.data.data && Array.isArray(response.data.data)) {
                             productsArray = response.data.data;
+                        }
+
+                        // Extract categories from initial products fetch (when no filters active)
+                        // This ensures we get the list of available categories for this brand
+                        if (page === 1 && filters.attributeValues.length === 0 && !selectedCategoryId) {
+                            const uniqueCategories = [];
+                            const seenIds = new Set();
+
+                            productsArray.forEach(p => {
+                                if (p.category_id && p.category_name && !seenIds.has(p.category_id)) {
+                                    seenIds.add(p.category_id);
+                                    uniqueCategories.push({
+                                        id: p.category_id,
+                                        category_id: p.category_id,
+                                        name: p.category_name,
+                                        // Assuming we might want to count products, but paginated data makes it inaccurate
+                                        // so we'll just list them
+                                    });
+                                }
+                            });
+
+                            if (uniqueCategories.length > 0) {
+                                setExtractedCategories(prev => {
+                                    // Merge with previous to avoid losing categories when paginating? 
+                                    // Or just set to unique from page 1? usually page 1 has mix.
+                                    // Better to append unique ones.
+                                    const combined = [...prev];
+                                    uniqueCategories.forEach(c => {
+                                        if (!combined.some(existing => existing.id === c.id)) {
+                                            combined.push(c);
+                                        }
+                                    });
+                                    return combined;
+                                });
+                            }
                         }
 
                         // Extract banner image from the first product's brands data if available
