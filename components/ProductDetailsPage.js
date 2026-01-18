@@ -216,6 +216,11 @@ const ProductDetailsPage = ({ productId }) => {
                                 "Neck": "Round Neck",
                                 "Sleeve Length": "Short Sleeves"
                             },
+                        // Manufacturer/Seller info from API
+                        manufacturerDetails: apiProduct.manufacturer_details || null,
+                        packerDetails: apiProduct.packer_details || null,
+                        importerDetails: apiProduct.importer_details || null,
+                        sellerDetails: apiProduct.seller_details || null,
                         offers: [ // Static offers for now or fetch if available
                             {
                                 code: "BRAND20",
@@ -1030,6 +1035,9 @@ const ProductDetailsSection = ({ product }) => {
                             <p>Chest: {product.details.modelStats.chest}</p>
                             <p>Height: {product.details.modelStats.height}</p>
                         </div>
+
+                        {/* Manufacturer & Seller Information */}
+
                     </div>
                 </details>
 
@@ -1075,6 +1083,35 @@ const ProductDetailsSection = ({ product }) => {
                             <span className="font-bold text-gray-500 uppercase mr-2">Product Code :</span>
                             <span className="font-medium">{product.id}</span>
                         </p>
+
+                        {(product.manufacturerDetails || product.packerDetails || product.importerDetails || product.sellerDetails) && (
+                            <div className="mt-6 pt-4 border-t border-gray-100 space-y-3">
+                                {product.manufacturerDetails && (
+                                    <div>
+                                        <span className="font-semibold text-gray-800">Manufacturer Details: </span>
+                                        <span className="text-gray-600">{product.manufacturerDetails}</span>
+                                    </div>
+                                )}
+                                {product.packerDetails && (
+                                    <div>
+                                        <span className="font-semibold text-gray-800">Packer Details: </span>
+                                        <span className="text-gray-600">{product.packerDetails}</span>
+                                    </div>
+                                )}
+                                {product.importerDetails && (
+                                    <div>
+                                        <span className="font-semibold text-gray-800">Importer Details: </span>
+                                        <span className="text-gray-600">{product.importerDetails}</span>
+                                    </div>
+                                )}
+                                {product.sellerDetails && (
+                                    <div>
+                                        <span className="font-semibold text-gray-800">Seller Details: </span>
+                                        <span className="text-gray-600">{product.sellerDetails}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
