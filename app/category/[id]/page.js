@@ -37,7 +37,7 @@ export default function CategoryPage() {
     const [filters, setFilters] = useState({
         categories: [],
         brands: [],
-        priceRange: [0, 10000],
+        priceRange: [0, 1000000], // High max to not filter out expensive products by default
         colors: [],
         sizes: [],
         discount: 0,
@@ -581,7 +581,7 @@ export default function CategoryPage() {
                     {/* Products Section */}
                     <div className="flex-1">
                         {/* Header with Filters and Sort - Desktop */}
-                        <div className="hidden md:flex items-center justify-between mb-6 gap-4 border-b border-gray-200 pb-4">
+                        <div className="hidden md:flex items-start justify-between mb-6 gap-4 border-b border-gray-200 pb-4">
                             {/* Left: Filters */}
                             <div className="flex-1">
                                 <CategoryTopFilters

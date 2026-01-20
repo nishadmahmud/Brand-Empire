@@ -21,6 +21,18 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    const MAX_CHARS = 2000;
+
+    // Get plain text length from HTML content
+    const getPlainTextLength = (html) => {
+        if (!html) return 0;
+        const temp = document.createElement("div");
+        temp.innerHTML = html;
+        return (temp.textContent || temp.innerText || "").trim().length;
+    };
+
+    const charCount = getPlainTextLength(comment);
+
     // Handle file selection
     const handleFileChange = (e) => {
         if (e.target.files) {
@@ -43,6 +55,11 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
         }
         if (!comment || comment === "<p><br></p>") {
             setError("Please write a review.");
+            return;
+        }
+
+        if (charCount > MAX_CHARS) {
+            setError(`Review is too long. Maximum ${MAX_CHARS} characters allowed.`);
             return;
         }
 
@@ -186,7 +203,9 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
                                 className="h-40 mb-12" // mb-12 to account for toolbar
                             />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 text-right">Min 10 characters</p>
+                        <p className={`text-xs mt-1 text-right ${charCount > MAX_CHARS ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
+                            {charCount} / {MAX_CHARS} characters
+                        </p>
                     </div>
 
                     {/* File Upload */}

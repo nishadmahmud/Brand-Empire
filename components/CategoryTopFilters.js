@@ -131,7 +131,7 @@ export default function CategoryTopFilters({
     }
 
     return (
-        <div className={`flex gap-2 md:gap-3 py-2 md:py-0 relative z-30 overflow-x-auto md:overflow-visible scrollbar-hide ${className}`}>
+        <div className={`flex flex-wrap gap-2 md:gap-3 py-2 md:py-0 relative z-30 ${className}`}>
 
             {/* Dynamic Attribute Filters */}
             {visibleAttributes.map((attribute) => (

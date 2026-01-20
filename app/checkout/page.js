@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
-import { saveSalesOrder, getCouponList } from "../../lib/api";
+import { saveSalesOrder, getCouponList, applyCoupon } from "../../lib/api";
 import {
     MapPin,
     CreditCard,
@@ -138,6 +138,7 @@ export default function CheckoutPage() {
 
                     // Calculate discount based on coupon_amount_type
                     const couponAmount = parseFloat(matchingCoupon.amount) || 0;
+                    const amountLimit = parseFloat(matchingCoupon.amount_limit) || 0;
                     let discount = 0;
 
                     if (matchingCoupon.coupon_amount_type === "percentage") {
@@ -145,6 +146,11 @@ export default function CheckoutPage() {
                     } else {
                         // fixed amount
                         discount = couponAmount;
+                    }
+
+                    // Cap discount by amount_limit if it's set (greater than 0)
+                    if (amountLimit > 0 && discount > amountLimit) {
+                        discount = amountLimit;
                     }
 
                     // Don't let discount exceed subtotal
@@ -246,6 +252,20 @@ export default function CheckoutPage() {
         orderPayload.delivery_customer_address = `${formData.address}, ${selectedCity}, ${selectedDistrict}`;
 
         try {
+            // If a coupon is applied, call the apply-coupon API to track usage
+            if (appliedCoupon && couponCode) {
+                try {
+                    const couponResponse = await applyCoupon(couponCode);
+                    if (!couponResponse.success) {
+                        console.warn("Coupon tracking failed:", couponResponse.message);
+                        // Don't block the order, just log the warning
+                    }
+                } catch (couponError) {
+                    console.warn("Error tracking coupon usage:", couponError);
+                    // Don't block the order, continue with checkout
+                }
+            }
+
             const response = await saveSalesOrder(orderPayload);
 
             if (response.success) {
@@ -501,8 +521,8 @@ export default function CheckoutPage() {
                                 </h2>
 
                                 <div className="mb-6 max-h-[300px] space-y-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200">
-                                    {cartItems.map((item) => (
-                                        <div key={item.id} className="flex gap-4">
+                                    {cartItems.map((item, index) => (
+                                        <div key={`${item.id}-${item.selectedSize || index}`} className="flex gap-4">
                                             <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-100 bg-gray-50">
                                                 <Image
                                                     src={item.image}

@@ -193,16 +193,11 @@ const ProductDetailsPage = ({ productId }) => {
                         isOutOfStock: isOutOfStock,
                         description: apiProduct.description,
                         details: {
-                            fit: apiProduct.specifications?.find(s => s.name === "Fit")?.description || "Regular Fit",
-                            sizeWornByModel: "M",
-                            modelStats: {
-                                chest: "38",
-                                height: "6'0\""
-                            }
+                            fit: apiProduct.specifications?.find(s => s.name === "Fit")?.description || null
                         },
                         materialCare: {
-                            material: apiProduct.specifications?.find(s => s.name?.toLowerCase().includes('fabric'))?.description || "Cotton",
-                            wash: apiProduct.specifications?.find(s => s.name?.toLowerCase().includes('wash') || s.name?.toLowerCase().includes('care'))?.description || "Machine Wash"
+                            material: apiProduct.specifications?.find(s => s.name?.toLowerCase().includes('fabric'))?.description || null,
+                            wash: apiProduct.specifications?.find(s => s.name?.toLowerCase().includes('wash') || s.name?.toLowerCase().includes('care'))?.description || null
                         },
                         // Map API specifications array to key-value pairs for display
                         specifications: apiProduct.specifications && apiProduct.specifications.length > 0
@@ -210,24 +205,13 @@ const ProductDetailsPage = ({ productId }) => {
                                 acc[spec.name] = spec.description;
                                 return acc;
                             }, {})
-                            : { // Fallback if no specs
-                                "Fabric": "Cotton",
-                                "Fit": "Regular Fit",
-                                "Neck": "Round Neck",
-                                "Sleeve Length": "Short Sleeves"
-                            },
+                            : {},
                         // Manufacturer/Seller info from API
                         manufacturerDetails: apiProduct.manufacturer_details || null,
                         packerDetails: apiProduct.packer_details || null,
                         importerDetails: apiProduct.importer_details || null,
                         sellerDetails: apiProduct.seller_details || null,
-                        offers: [ // Static offers for now or fetch if available
-                            {
-                                code: "BRAND20",
-                                title: "Get 20% off on your first order",
-                                discount: "20% Off"
-                            }
-                        ],
+                        offers: apiProduct.offers || [],
                         reviews: reviewsData.data || [], // Use fetched reviews
                         ratings: reviewsData.summary?.rating_counts || { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } // Use fetched rating counts
                     };
@@ -654,7 +638,7 @@ const ProductDetailsPage = ({ productId }) => {
                                                 }
                                             }}
                                             disabled={isSizeOutOfStock}
-                                            className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full border-2 font-bold text-sm sm:text-base transition-all relative ${selectedSize === size
+                                            className={`min-w-11 h-11 sm:min-w-14 sm:h-14 px-3 sm:px-4 rounded-full border-2 font-bold text-xs sm:text-sm transition-all relative flex items-center justify-center whitespace-nowrap ${selectedSize === size
                                                 ? 'border-[var(--brand-royal-red)] text-[var(--brand-royal-red)]'
                                                 : isSizeOutOfStock
                                                     ? 'border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50'
@@ -1028,32 +1012,62 @@ const ProductDetailsSection = ({ product }) => {
                     </summary>
                     <div className="mt-4 text-sm text-gray-700 space-y-2">
                         <div dangerouslySetInnerHTML={{ __html: product.description }} />
-                        <div className="mt-4">
-                            <h4 className="font-bold mb-2">Size & Fit</h4>
-                            <p>{product.details.fit}</p>
-                            <p>Size worn by the model: {product.details.sizeWornByModel}</p>
-                            <p>Chest: {product.details.modelStats.chest}</p>
-                            <p>Height: {product.details.modelStats.height}</p>
-                        </div>
+
+                        {/* Size & Fit - Only show if fit info exists */}
+                        {product.details?.fit && (
+                            <div className="mt-4">
+                                <h4 className="font-bold mb-2">Size & Fit</h4>
+                                <p>{product.details.fit}</p>
+                            </div>
+                        )}
 
                         {/* Manufacturer & Seller Information */}
-
+                        {(product.manufacturerDetails || product.packerDetails || product.importerDetails || product.sellerDetails) && (
+                            <div className="mt-6 pt-4 border-t border-gray-100 space-y-3">
+                                {product.manufacturerDetails && (
+                                    <div>
+                                        <span className="font-semibold text-gray-800">Manufacturer Details: </span>
+                                        <span className="text-gray-600">{product.manufacturerDetails}</span>
+                                    </div>
+                                )}
+                                {product.packerDetails && (
+                                    <div>
+                                        <span className="font-semibold text-gray-800">Packer Details: </span>
+                                        <span className="text-gray-600">{product.packerDetails}</span>
+                                    </div>
+                                )}
+                                {product.importerDetails && (
+                                    <div>
+                                        <span className="font-semibold text-gray-800">Importer Details: </span>
+                                        <span className="text-gray-600">{product.importerDetails}</span>
+                                    </div>
+                                )}
+                                {product.sellerDetails && (
+                                    <div>
+                                        <span className="font-semibold text-gray-800">Seller Details: </span>
+                                        <span className="text-gray-600">{product.sellerDetails}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </details>
 
-                {/* Material & Care */}
-                <details open className="border-b border-gray-200 pb-6 group">
-                    <summary className="text-sm font-bold uppercase cursor-pointer flex items-center justify-between list-none">
-                        <span>Material & Care</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-180">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </summary>
-                    <div className="mt-4 text-sm text-gray-700">
-                        <p>{product.materialCare.material}</p>
-                        <p>{product.materialCare.wash}</p>
-                    </div>
-                </details>
+                {/* Material & Care - Only show if data exists */}
+                {(product.materialCare?.material || product.materialCare?.wash) && (
+                    <details open className="border-b border-gray-200 pb-6 group">
+                        <summary className="text-sm font-bold uppercase cursor-pointer flex items-center justify-between list-none">
+                            <span>Material & Care</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-180">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </summary>
+                        <div className="mt-4 text-sm text-gray-700">
+                            {product.materialCare.material && <p>{product.materialCare.material}</p>}
+                            {product.materialCare.wash && <p>{product.materialCare.wash}</p>}
+                        </div>
+                    </details>
+                )}
 
                 {/* Specifications */}
                 <div className="py-6 border-b border-gray-200">
