@@ -8,7 +8,7 @@ import { searchLocation } from "@/data/deliveryData";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useToast } from "@/context/ToastContext";
-import { getProductById, getRelatedProduct, getProducts, getCategoriesFromServer, saveProductReview, getProductReviews } from "@/lib/api";
+import { getProductById, getRelatedProduct, getProducts, getCategoriesFromServer, saveProductReview, getProductReviews, getCouponList } from "@/lib/api";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import SizeChartModal from "./SizeChartModal";
@@ -43,6 +43,9 @@ const ProductDetailsPage = ({ productId }) => {
     const [relatedProducts, setRelatedProducts] = useState([]);
 
     const [categoryProducts, setCategoryProducts] = useState([]);
+
+    // Coupons state for Best Offers section
+    const [coupons, setCoupons] = useState([]);
 
     const { user, openAuthModal } = useAuth();
     const router = useRouter();
@@ -211,6 +214,7 @@ const ProductDetailsPage = ({ productId }) => {
                         packerDetails: apiProduct.packer_details || null,
                         importerDetails: apiProduct.importer_details || null,
                         sellerDetails: apiProduct.seller_details || null,
+                        return_delivery_days: apiProduct.return_delivery_days || null, // Map return info
                         offers: apiProduct.offers || [],
                         reviews: reviewsData.data || [], // Use fetched reviews
                         ratings: reviewsData.summary?.rating_counts || { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } // Use fetched rating counts
@@ -307,6 +311,21 @@ const ProductDetailsPage = ({ productId }) => {
         fetchRelatedProducts();
     }, [productId]);
 
+    // Fetch coupons for Best Offers section
+    useEffect(() => {
+        const fetchCoupons = async () => {
+            try {
+                const response = await getCouponList();
+                if (response.success && response.data) {
+                    setCoupons(response.data);
+                }
+            } catch (error) {
+                console.error("Error fetching coupons:", error);
+                setCoupons([]);
+            }
+        };
+        fetchCoupons();
+    }, []);
     // Fetch products from the same category for "Customers Also Liked"
     useEffect(() => {
         const fetchCategoryProducts = async () => {
@@ -856,29 +875,69 @@ const ProductDetailsPage = ({ productId }) => {
                                 </svg>
                             </button>
                             {showOffers && (
-                                <div className="space-y-4">
-                                    {product.offers.map((offer, index) => (
-                                        <div key={index} className="p-4 bg-gray-50 rounded border border-gray-200">
-                                            <p className="text-sm font-bold mb-1">Best Price: ৳{product.price}</p>
-                                            {offer.code && (
-                                                <p className="text-sm mb-1">
-                                                    Coupon code: <span className="font-bold">{offer.code}</span>
-                                                </p>
-                                            )}
-                                            <p className="text-sm text-gray-600">{offer.title}</p>
-                                            {offer.discount && (
-                                                <p className="text-sm text-gray-600">{offer.discount}</p>
-                                            )}
-                                            {offer.minSpend && (
-                                                <p className="text-sm text-gray-600">
-                                                    Min Spend {offer.minSpend}, Max Discount {offer.maxDiscount}
-                                                </p>
-                                            )}
-                                            <button className="text-[var(--brand-royal-red)] text-sm font-bold mt-2 hover:underline">
-                                                Terms & Condition
-                                            </button>
-                                        </div>
-                                    ))}
+                                <div className="space-y-3">
+                                    {coupons.length > 0 ? (
+                                        coupons.map((coupon, index) => {
+                                            // Calculate savings for this coupon based on product price
+                                            const productPrice = product.rawPrice || parseFloat(String(product.price).replace(/[^0-9.]/g, '')) || 0;
+                                            const couponAmount = parseFloat(coupon.amount) || 0;
+                                            const isPercentage = coupon.coupon_amount_type === 'percentage';
+
+                                            let savings = 0;
+
+                                            if (isPercentage) {
+                                                savings = Math.round(productPrice * (couponAmount / 100));
+                                                // Apply amount_limit cap if set
+                                                if (coupon.amount_limit && coupon.amount_limit > 0 && savings > coupon.amount_limit) {
+                                                    savings = parseFloat(coupon.amount_limit);
+                                                }
+                                            } else {
+                                                savings = couponAmount;
+                                            }
+
+                                            // Check if product meets minimum order requirement
+                                            const minOrder = parseFloat(coupon.minimum_order_amount) || 0;
+                                            const meetsMinOrder = minOrder === 0 || productPrice >= minOrder;
+
+                                            return (
+                                                <div key={coupon.id || index} className={`p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border ${meetsMinOrder ? 'border-green-200' : 'border-gray-200'}`}>
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="px-2 py-0.5 bg-[var(--brand-royal-red)] text-white text-xs font-bold rounded">
+                                                                    {coupon.coupon_code}
+                                                                </span>
+                                                                {isPercentage ? (
+                                                                    <span className="text-sm font-bold text-green-600">{parseInt(couponAmount)}% OFF</span>
+                                                                ) : (
+                                                                    <span className="text-sm font-bold text-green-600">৳{parseInt(couponAmount)} OFF</span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-sm text-gray-700">{coupon.title || coupon.coupon_name}</p>
+                                                            {minOrder > 0 && (
+                                                                <p className="text-xs text-gray-500 mt-1">Min. order: ৳{minOrder.toLocaleString()}</p>
+                                                            )}
+                                                            {coupon.amount_limit > 0 && isPercentage && (
+                                                                <p className="text-xs text-gray-500">Max discount: ৳{parseFloat(coupon.amount_limit).toLocaleString()}</p>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-right flex-shrink-0">
+                                                            {meetsMinOrder && savings > 0 ? (
+                                                                <>
+                                                                    <p className="text-xs text-gray-500">You save</p>
+                                                                    <p className="text-lg font-bold text-green-600">৳{savings.toLocaleString()}</p>
+                                                                </>
+                                                            ) : !meetsMinOrder ? (
+                                                                <p className="text-xs text-orange-500">Add more items</p>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <p className="text-sm text-gray-500 text-center py-4">No offers available right now</p>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -997,6 +1056,7 @@ const ProductDetailsPage = ({ productId }) => {
 
 // Product Details Section Component
 const ProductDetailsSection = ({ product }) => {
+    console.log("Product Data in Section:", product); // DEBUG: Check if return_delivery_days exists
     const [activeTab, setActiveTab] = useState('details');
 
     return (
@@ -1021,35 +1081,18 @@ const ProductDetailsSection = ({ product }) => {
                             </div>
                         )}
 
-                        {/* Manufacturer & Seller Information */}
-                        {(product.manufacturerDetails || product.packerDetails || product.importerDetails || product.sellerDetails) && (
-                            <div className="mt-6 pt-4 border-t border-gray-100 space-y-3">
-                                {product.manufacturerDetails && (
-                                    <div>
-                                        <span className="font-semibold text-gray-800">Manufacturer Details: </span>
-                                        <span className="text-gray-600">{product.manufacturerDetails}</span>
-                                    </div>
-                                )}
-                                {product.packerDetails && (
-                                    <div>
-                                        <span className="font-semibold text-gray-800">Packer Details: </span>
-                                        <span className="text-gray-600">{product.packerDetails}</span>
-                                    </div>
-                                )}
-                                {product.importerDetails && (
-                                    <div>
-                                        <span className="font-semibold text-gray-800">Importer Details: </span>
-                                        <span className="text-gray-600">{product.importerDetails}</span>
-                                    </div>
-                                )}
-                                {product.sellerDetails && (
-                                    <div>
-                                        <span className="font-semibold text-gray-800">Seller Details: </span>
-                                        <span className="text-gray-600">{product.sellerDetails}</span>
-                                    </div>
-                                )}
+                        {/* Return & Delivery Information */}
+                        {product.return_delivery_days && (
+                            <div className="mt-4 flex items-center gap-2 text-gray-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--brand-royal-red)]">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                <span className="font-medium">{product.return_delivery_days}</span>
                             </div>
                         )}
+
+
                     </div>
                 </details>
 
