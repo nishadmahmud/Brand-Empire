@@ -56,6 +56,31 @@ export default function CheckoutPage() {
     const formRef = useRef(null);
 
     // Prefill form with user data
+    // Load saved details on mount
+    useEffect(() => {
+        const savedDetails = localStorage.getItem("brandEmpireCheckoutDetails");
+        if (savedDetails) {
+            try {
+                const parsed = JSON.parse(savedDetails);
+                setFormData(prev => ({
+                    ...prev,
+                    firstName: parsed.firstName || prev.firstName,
+                    phone: parsed.phone || prev.phone,
+                    email: parsed.email || prev.email,
+                    address: parsed.address || prev.address,
+                }));
+                if (parsed.district) setSelectedDistrict(parsed.district);
+                if (parsed.city) setSelectedCity(parsed.city);
+            } catch (e) {
+                console.error("Failed to parse saved checkout details", e);
+            }
+        }
+    }, []);
+
+    // Prefill form with user data (User data takes precedence if available/loaded later, 
+    // unless you want LS to win. Currently letting User win if fields match, but LS fills gaps)
+    // Actually, usually we want User Profile to be the source of truth if logged in.
+    // If the user modifies it and saves, it's in LS for next time.
     useEffect(() => {
         if (user) {
             setFormData((prev) => ({
@@ -207,6 +232,21 @@ export default function CheckoutPage() {
         }
 
         setIsSubmitting(true);
+
+        // Save details to Local Storage for future autofill
+        try {
+            const detailsToSave = {
+                firstName: formData.firstName,
+                phone: formData.phone,
+                email: formData.email,
+                address: formData.address,
+                district: selectedDistrict,
+                city: selectedCity
+            };
+            localStorage.setItem("brandEmpireCheckoutDetails", JSON.stringify(detailsToSave));
+        } catch (error) {
+            console.error("Failed to save checkout details to local storage", error);
+        }
 
         // Construct the payload as per user requirements
         const orderPayload = {
