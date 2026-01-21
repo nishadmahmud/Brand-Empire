@@ -137,7 +137,13 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
         ],
     };
 
-    return (
+    // Use Portal to render at document body level
+    if (typeof window === 'undefined') return null;
+
+    // We need to access createPortal from react-dom
+    const { createPortal } = require('react-dom');
+
+    return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center pt-16 sm:pt-0 pb-20 sm:pb-4 p-0 sm:p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
             <div
                 className="bg-white w-full h-[calc(100vh-9rem)] sm:h-auto sm:max-h-[75vh] sm:max-w-2xl sm:rounded-lg shadow-xl flex flex-col overflow-hidden rounded-t-2xl sm:rounded-b-lg"
@@ -291,7 +297,8 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
                     min-height: 160px;
                 }
             `}</style>
-        </div>
+        </div>,
+        document.body
     );
 };
 
