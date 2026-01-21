@@ -841,7 +841,7 @@ const ProductDetailsPage = ({ productId }) => {
                                 </p>
                                 <p className="flex items-center gap-2">
                                     <span className="text-green-600">✓</span>
-                                    <span>Easy 14 days returns and exchanges</span>
+                                    <span>{product.return_delivery_days || "Easy 14 days returns and exchanges"}</span>
                                 </p>
                             </div>
                         </div>
@@ -1081,16 +1081,7 @@ const ProductDetailsSection = ({ product }) => {
                             </div>
                         )}
 
-                        {/* Return & Delivery Information */}
-                        {product.return_delivery_days && (
-                            <div className="mt-4 flex items-center gap-2 text-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--brand-royal-red)]">
-                                    <polyline points="23 4 23 10 17 10"></polyline>
-                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                                </svg>
-                                <span className="font-medium">{product.return_delivery_days}</span>
-                            </div>
-                        )}
+
 
 
                     </div>
