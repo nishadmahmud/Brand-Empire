@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 
 const CartPage = () => {
     const {
@@ -22,6 +23,7 @@ const CartPage = () => {
     } = useCart();
 
     const { user, openAuthModal } = useAuth();
+    const { showToast } = useToast();
     const router = useRouter();
 
     const [openSizeModal, setOpenSizeModal] = React.useState(null); // stores item ID to show modal for
@@ -181,7 +183,15 @@ const CartPage = () => {
                                                         <span>{item.quantity}</span>
                                                         <button
                                                             className="hover:text-[var(--brand-royal-red)]"
-                                                            onClick={() => updateQuantity(item.id, item.quantity + 1, item.selectedSize, item.selectedColor)}
+                                                            onClick={() => {
+                                                                const maxLimit = item.variantStockMap?.[item.selectedSize] ?? item.maxStock ?? 99;
+                                                                if (item.quantity >= maxLimit) {
+                                                                    const sizeMsg = item.selectedSize ? ` for Size ${item.selectedSize}` : '';
+                                                                    showToast({ message: `Only ${maxLimit} is in stock${sizeMsg}`, type: 'error' });
+                                                                    return;
+                                                                }
+                                                                updateQuantity(item.id, item.quantity + 1, item.selectedSize, item.selectedColor);
+                                                            }}
                                                         >+</button>
                                                     </div>
                                                 </div>
@@ -194,7 +204,7 @@ const CartPage = () => {
                                                     <span className="text-xs text-gray-400 line-through">{formatPrice(item.originalPrice * item.quantity)}</span>
                                                 )}
                                                 {item.discount && (
-                                                    <span className="text-xs text-[var(--brand-royal-red)] font-bold">{item.discount}% OFF</span>
+                                                    <span className="text-xs text-[var(--brand-royal-red)] font-bold">{item.discount}</span>
                                                 )}
                                             </div>
 

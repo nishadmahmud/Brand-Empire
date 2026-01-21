@@ -47,7 +47,21 @@ export const CartProvider = ({ children }) => {
             if (existingItemIndex > -1) {
                 // Update quantity of existing item
                 const updatedItems = [...prevItems];
-                updatedItems[existingItemIndex].quantity += quantity;
+                const item = updatedItems[existingItemIndex];
+
+                // Calculate stock limit
+                let maxLimit = item.maxStock || 99;
+                if (item.variantStockMap && item.selectedSize && item.variantStockMap[item.selectedSize] !== undefined) {
+                    maxLimit = item.variantStockMap[item.selectedSize];
+                }
+
+                // Check if adding quantity would exceed limit
+                if (item.quantity + quantity <= maxLimit) {
+                    item.quantity += quantity;
+                } else {
+                    item.quantity = maxLimit; // Capped at max
+                }
+
                 return updatedItems;
             } else {
                 // Add new item
@@ -57,14 +71,15 @@ export const CartProvider = ({ children }) => {
                     price: parseFloat(product.price),
                     originalPrice: product.originalPrice ? parseFloat(product.originalPrice) : null,
                     discount: product.discount || null,
-                    image: product.images?.[0] || product.image,
+                    image: product.images?.[0] || product.image, // Fixed: Handle both array and single string
                     quantity: quantity,
                     selectedSize: selectedSize,
                     selectedColor: selectedColor,
                     brand: product.brand || null,
-                    maxStock: product.stock || 99,
-                    availableSizes: product.sizes || [], // Store available sizes for later changes
-                    selected: true // Default to selected
+                    maxStock: product.currentStock || 99, // Use currentStock from transformedProduct
+                    variantStockMap: product.variantStockMap || {}, // Store variant stock info
+                    availableSizes: product.sizes || [],
+                    selected: true
                 }];
             }
         });
@@ -93,9 +108,16 @@ export const CartProvider = ({ children }) => {
                 if (item.id === productId &&
                     item.selectedSize === selectedSize &&
                     item.selectedColor === selectedColor) {
+
+                    // Calculate stock limit
+                    let maxLimit = item.maxStock || 99;
+                    if (item.variantStockMap && item.selectedSize && item.variantStockMap[item.selectedSize] !== undefined) {
+                        maxLimit = item.variantStockMap[item.selectedSize];
+                    }
+
                     return {
                         ...item,
-                        quantity: Math.min(quantity, item.maxStock)
+                        quantity: Math.min(quantity, maxLimit)
                     };
                 }
                 return item;
@@ -119,21 +141,41 @@ export const CartProvider = ({ children }) => {
                     item.selectedColor === selectedColor
             );
 
-            if (sourceItemIndex === -1) return prevItems; // Should not happen
+            if (sourceItemIndex === -1) return prevItems;
 
             if (targetItemIndex > -1) {
                 // Merge quantities
                 const updatedItems = [...prevItems];
-                updatedItems[targetItemIndex].quantity += updatedItems[sourceItemIndex].quantity;
+                const sourceItem = updatedItems[sourceItemIndex];
+                const targetItem = updatedItems[targetItemIndex];
+
+                // Calculate stock limit for target size
+                let maxLimit = targetItem.maxStock || 99;
+                if (targetItem.variantStockMap && targetItem.selectedSize && targetItem.variantStockMap[targetItem.selectedSize] !== undefined) {
+                    maxLimit = targetItem.variantStockMap[targetItem.selectedSize];
+                }
+
+                const totalQty = targetItem.quantity + sourceItem.quantity;
+                updatedItems[targetItemIndex].quantity = Math.min(totalQty, maxLimit);
+
                 // Remove the old item
                 updatedItems.splice(sourceItemIndex, 1);
                 return updatedItems;
             } else {
                 // Just update the size of the existing item
                 const updatedItems = [...prevItems];
+                const item = updatedItems[sourceItemIndex];
+
+                // Calculate stock limit for NEW size
+                let maxLimit = item.maxStock || 99;
+                if (item.variantStockMap && newSize && item.variantStockMap[newSize] !== undefined) {
+                    maxLimit = item.variantStockMap[newSize];
+                }
+
                 updatedItems[sourceItemIndex] = {
-                    ...updatedItems[sourceItemIndex],
-                    selectedSize: newSize
+                    ...item,
+                    selectedSize: newSize,
+                    quantity: Math.min(item.quantity, maxLimit) // Clamp quantity to new size's stock
                 };
                 return updatedItems;
             }

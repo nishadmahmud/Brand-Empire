@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
+import { useToast } from '@/context/ToastContext';
 
 const CartModal = () => {
     const {
@@ -15,6 +16,8 @@ const CartModal = () => {
         getSubtotal,
         getCartCount
     } = useCart();
+
+    const { showToast } = useToast();
 
     // Prevent body scroll when cart is open
     useEffect(() => {
@@ -114,7 +117,15 @@ const CartModal = () => {
                                                 </button>
                                                 <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
                                                 <button
-                                                    onClick={() => updateQuantity(item.id, item.quantity + 1, item.selectedSize, item.selectedColor)}
+                                                    onClick={() => {
+                                                        const maxLimit = item.variantStockMap?.[item.selectedSize] ?? item.maxStock ?? 99;
+                                                        if (item.quantity >= maxLimit) {
+                                                            const sizeMsg = item.selectedSize ? ` for Size ${item.selectedSize}` : '';
+                                                            showToast({ message: `Only ${maxLimit} is in stock${sizeMsg}`, type: 'error' });
+                                                            return;
+                                                        }
+                                                        updateQuantity(item.id, item.quantity + 1, item.selectedSize, item.selectedColor);
+                                                    }}
                                                     className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100"
                                                 >
                                                     +
