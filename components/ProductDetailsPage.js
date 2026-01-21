@@ -1113,9 +1113,14 @@ const ProductDetailsSection = ({ product }) => {
                 )}
 
                 {/* Specifications */}
-                <div className="py-6 border-b border-gray-200">
-                    <h3 className="text-sm font-bold uppercase mb-4">Specifications</h3>
-                    <div className="space-y-4">
+                <details open className="border-b border-gray-200 py-6 group">
+                    <summary className="text-sm font-bold uppercase cursor-pointer flex items-center justify-between list-none">
+                        <span>Specifications</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-180">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </summary>
+                    <div className="mt-4 space-y-4">
                         <div className="grid grid-cols-2 gap-x-8 gap-y-6">
                             {Object.entries(product.specifications).slice(0, activeTab === 'all_specs' ? undefined : 6).map(([key, value]) => (
                                 <div key={key} className="border-b border-gray-100 pb-2">
@@ -1140,37 +1145,46 @@ const ProductDetailsSection = ({ product }) => {
                             <span className="font-bold text-gray-500 uppercase mr-2">Product Code :</span>
                             <span className="font-medium">{product.id}</span>
                         </p>
-
-                        {(product.manufacturerDetails || product.packerDetails || product.importerDetails || product.sellerDetails) && (
-                            <div className="mt-6 pt-4 border-t border-gray-100 space-y-3">
-                                {product.manufacturerDetails && (
-                                    <div>
-                                        <span className="font-semibold text-gray-800">Manufacturer Details: </span>
-                                        <span className="text-gray-600">{product.manufacturerDetails}</span>
-                                    </div>
-                                )}
-                                {product.packerDetails && (
-                                    <div>
-                                        <span className="font-semibold text-gray-800">Packer Details: </span>
-                                        <span className="text-gray-600">{product.packerDetails}</span>
-                                    </div>
-                                )}
-                                {product.importerDetails && (
-                                    <div>
-                                        <span className="font-semibold text-gray-800">Importer Details: </span>
-                                        <span className="text-gray-600">{product.importerDetails}</span>
-                                    </div>
-                                )}
-                                {product.sellerDetails && (
-                                    <div>
-                                        <span className="font-semibold text-gray-800">Seller Details: </span>
-                                        <span className="text-gray-600">{product.sellerDetails}</span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
-                </div>
+                </details>
+
+                {/* Additional Info - Manufacturer, Packer, etc */}
+                {(product.manufacturerDetails || product.packerDetails || product.importerDetails || product.sellerDetails) && (
+                    <details className="border-b border-gray-200 py-6 group">
+                        <summary className="text-sm font-bold uppercase cursor-pointer flex items-center justify-between list-none">
+                            <span>Additional Info</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-180">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </summary>
+                        <div className="mt-4 pt-2 space-y-3">
+                            {product.manufacturerDetails && (
+                                <div>
+                                    <span className="font-semibold text-gray-800">Manufacturer Details: </span>
+                                    <span className="text-gray-600">{product.manufacturerDetails}</span>
+                                </div>
+                            )}
+                            {product.packerDetails && (
+                                <div>
+                                    <span className="font-semibold text-gray-800">Packer Details: </span>
+                                    <span className="text-gray-600">{product.packerDetails}</span>
+                                </div>
+                            )}
+                            {product.importerDetails && (
+                                <div>
+                                    <span className="font-semibold text-gray-800">Importer Details: </span>
+                                    <span className="text-gray-600">{product.importerDetails}</span>
+                                </div>
+                            )}
+                            {product.sellerDetails && (
+                                <div>
+                                    <span className="font-semibold text-gray-800">Seller Details: </span>
+                                    <span className="text-gray-600">{product.sellerDetails}</span>
+                                </div>
+                            )}
+                        </div>
+                    </details>
+                )}
 
                 {/* Ratings & Reviews */}
                 <RatingsSection product={product} />
