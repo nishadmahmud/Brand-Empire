@@ -126,6 +126,15 @@ const ProductDetailsPage = ({ productId }) => {
                     // retails_price is the MRP (original price)
                     // discount is applied to MRP to get final selling price
                     let mrp = apiProduct.retails_price || 0;
+
+                    // Fallback to variant price if MRP is 0
+                    if (mrp === 0 && apiProduct.product_variants && apiProduct.product_variants.length > 0) {
+                        const firstVariant = apiProduct.product_variants[0];
+                        if (firstVariant.price && parseFloat(firstVariant.price) > 0) {
+                            mrp = parseFloat(firstVariant.price);
+                        }
+                    }
+
                     let finalPrice = mrp;
                     let discountLabel = "";
 
@@ -173,6 +182,7 @@ const ProductDetailsPage = ({ productId }) => {
 
                     const transformedProduct = {
                         id: apiProduct.id,
+                        code: apiProduct.sku || apiProduct.barcode || apiProduct.id,
                         name: apiProduct.name,
                         price: finalPrice,
                         mrp: mrp,
@@ -1131,12 +1141,6 @@ const ProductDetailsSection = ({ product }) => {
                     </div>
 
                     {/* Product Code */}
-                    <div className="mt-6 pt-4 border-t border-gray-100">
-                        <p className="text-sm text-gray-900">
-                            <span className="font-bold text-gray-500 uppercase mr-2">Product Code :</span>
-                            <span className="font-medium">{product.id}</span>
-                        </p>
-                    </div>
                 </details>
 
                 {/* Additional Info - Manufacturer, Packer, etc */}
@@ -1149,6 +1153,11 @@ const ProductDetailsSection = ({ product }) => {
                             </svg>
                         </summary>
                         <div className="mt-4 pt-2 space-y-3">
+                            {/* Product Code */}
+                            <div>
+                                <span className="font-semibold text-gray-800">Product Code: </span>
+                                <span className="text-gray-600">{product.code}</span>
+                            </div>
                             {product.manufacturerDetails && (
                                 <div>
                                     <span className="font-semibold text-gray-800">Manufacturer Details: </span>

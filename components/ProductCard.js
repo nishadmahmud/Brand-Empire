@@ -40,6 +40,23 @@ const ProductCard = ({ product, tag, categoryId, onClick }) => {
         ? `/product/${product.id}?category=${categoryId}`
         : `/product/${product.id}`;
 
+    // Price Fallback Logic
+    let displayPrice = product.price;
+    const rawPrice = String(product.price).replace(/[^0-9.]/g, '');
+    const isPriceZero = !product.price || parseFloat(rawPrice) === 0;
+
+    if (isPriceZero && product.product_variants && product.product_variants.length > 0) {
+        const vPrice = product.product_variants[0].price;
+        // Ensure formatting matches (if product.price was just number, keep it number. If it had "TK", add it?)
+        // Assuming if passed as number string "3199.00", we just show it. 
+        // But usually cards show "TK 3199.00".
+        // If input product.price was "TK 0.00", we should probably output "TK 3199.00".
+        // Let's assume we maintain the prefix if it existed, or just output the value if uncertain.
+        // Safer: If original has "TK", add "TK ".
+        const hasTK = String(product.price).includes("TK");
+        displayPrice = hasTK ? `TK ${parseFloat(vPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : vPrice;
+    }
+
     return (
         <Link href={productUrl} onClick={onClick}>
             <div
@@ -130,7 +147,7 @@ const ProductCard = ({ product, tag, categoryId, onClick }) => {
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{product.brand}</h4>
                     <h3 className="text-sm font-medium text-gray-900 truncate mb-1" title={product.name}>{product.name}</h3>
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-extrabold text-gray-900" style={{ fontWeight: 800 }}>{product.price}</span>
+                        <span className="text-sm font-extrabold text-gray-900" style={{ fontWeight: 800 }}>{displayPrice}</span>
                         {product.originalPrice && (
                             <span className="text-xs text-gray-400 line-through">{product.originalPrice}</span>
                         )}
