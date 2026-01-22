@@ -45,7 +45,7 @@ export const CartProvider = ({ children }) => {
             );
 
             if (existingItemIndex > -1) {
-                // Update quantity of existing item
+                // Update quantity of existing item AND refresh product data
                 const updatedItems = [...prevItems];
                 const item = updatedItems[existingItemIndex];
 
@@ -61,6 +61,17 @@ export const CartProvider = ({ children }) => {
                 } else {
                     item.quantity = maxLimit; // Capped at max
                 }
+
+                // Update other product properties (like return_delivery_days) from the latest product data
+                item.return_delivery_days = product.return_delivery_days || item.return_delivery_days || null;
+                item.price = parseFloat(product.price);
+                item.originalPrice = product.originalPrice ? parseFloat(product.originalPrice) : null;
+                item.discount = product.discount || null;
+                item.image = product.images?.[0] || product.image;
+                item.brand = product.brand || item.brand;
+                item.maxStock = product.currentStock || item.maxStock || 99;
+                item.variantStockMap = product.variantStockMap || item.variantStockMap || {};
+                item.availableSizes = product.sizes || item.availableSizes || [];
 
                 return updatedItems;
             } else {
@@ -79,6 +90,7 @@ export const CartProvider = ({ children }) => {
                     maxStock: product.currentStock || 99, // Use currentStock from transformedProduct
                     variantStockMap: product.variantStockMap || {}, // Store variant stock info
                     availableSizes: product.sizes || [],
+                    return_delivery_days: product.return_delivery_days || null, // Add return delivery days from API
                     selected: true
                 }];
             }

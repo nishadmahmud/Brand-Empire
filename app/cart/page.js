@@ -61,7 +61,7 @@ const CartPage = () => {
                     </div>
                     <h2 className="text-xl font-bold text-gray-900 mb-2">Your Bag is Empty</h2>
                     <p className="text-gray-500 mb-8 text-sm">
-                        Looks like you haven't added anything to your bag yet.
+                        Looks like you haven&apos;t added anything to your bag yet.
                     </p>
                     <Link
                         href="/"
@@ -212,7 +212,7 @@ const CartPage = () => {
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                     <polyline points="20 6 9 17 4 12"></polyline>
                                                 </svg>
-                                                <span>7 days return available</span>
+                                                <span>{item.return_delivery_days || "7-Days Return Available"}</span>
                                             </div>
                                         </div>
                                     </div>
