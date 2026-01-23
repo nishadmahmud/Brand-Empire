@@ -133,7 +133,7 @@ const ORDER_TABS = [
 
 export default function ProfileDashboard() {
     const { user, logout, loading, token, updateProfile } = useAuth();
-    const { wishlist } = useWishlist();
+    const { wishlist, removeFromWishlist } = useWishlist();
     const router = useRouter();
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1156,31 +1156,54 @@ export default function ProfileDashboard() {
                                     {wishlist.length > 0 ? (
                                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                             {wishlist.map((product) => (
-                                                <Link key={product.id} href={`/product/${product.slug}`} className="group">
-                                                    <div className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                                                        <div className="relative aspect-square bg-gray-100">
-                                                            <Image
-                                                                src={product.image}
-                                                                alt={product.name}
-                                                                fill
-                                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                                                unoptimized
-                                                            />
-                                                        </div>
-                                                        <div className="p-3">
-                                                            <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 mb-1">
-                                                                {product.name}
-                                                            </h3>
-                                                            <p className="text-xs text-gray-500 mb-2">{product.brand}</p>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-bold text-sm text-[var(--brand-royal-red)]">৳{product.price}</span>
-                                                                {product.originalPrice && (
-                                                                    <span className="text-xs text-gray-400 line-through">৳{product.originalPrice}</span>
+                                                <div key={product.id} className="relative group/wishcard">
+                                                    {/* Remove Button */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            removeFromWishlist(product.id);
+                                                        }}
+                                                        className="absolute top-2 right-2 z-20 w-7 h-7 bg-white rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover/wishcard:opacity-100"
+                                                        title="Remove from wishlist"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                        </svg>
+                                                    </button>
+                                                    <Link href={`/product/${product.id}`} className="group">
+                                                        <div className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                                                            <div className="relative aspect-square bg-gray-100">
+                                                                {product.images?.[0] ? (
+                                                                    <Image
+                                                                        src={product.images[0]}
+                                                                        alt={product.name || "Product"}
+                                                                        fill
+                                                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                        unoptimized
+                                                                    />
+                                                                ) : (
+                                                                    <div className="flex h-full w-full items-center justify-center text-gray-300">
+                                                                        <Heart className="h-8 w-8" />
+                                                                    </div>
                                                                 )}
                                                             </div>
+                                                            <div className="p-3">
+                                                                <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 mb-1">
+                                                                    {product.name}
+                                                                </h3>
+                                                                <p className="text-xs text-gray-500 mb-2">{product.brand}</p>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-bold text-sm text-[var(--brand-royal-red)]">৳{product.price}</span>
+                                                                    {product.originalPrice && (
+                                                                        <span className="text-xs text-gray-400 line-through">৳{product.originalPrice}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </Link>
+                                                    </Link>
+                                                </div>
                                             ))}
                                         </div>
                                     ) : (

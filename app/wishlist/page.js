@@ -4,10 +4,9 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useWishlist } from "@/context/WishlistContext";
-import ProductCard from "@/components/ProductCard";
 
 const WishlistPage = () => {
-    const { wishlist } = useWishlist();
+    const { wishlist, removeFromWishlist } = useWishlist();
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
@@ -22,9 +21,60 @@ const WishlistPage = () => {
             {/* Content */}
             <div className="max-w-[1400px] mx-auto px-4 py-8">
                 {wishlist.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-y-8 gap-x-4 md:gap-x-8">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                         {wishlist.map((product) => (
-                            <ProductCard key={product.id} product={product} />
+                            <div key={product.id} className="relative group/card">
+                                {/* Remove Button */}
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        removeFromWishlist(product.id);
+                                    }}
+                                    className="absolute top-2 right-2 z-20 w-7 h-7 bg-white rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover/card:opacity-100"
+                                    title="Remove from wishlist"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                                <Link href={`/product/${product.id}`} className="group">
+                                    <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-100">
+                                        <div className="relative aspect-square bg-gray-100">
+                                            {product.images?.[0] ? (
+                                                <Image
+                                                    src={product.images[0]}
+                                                    alt={product.name || "Product"}
+                                                    fill
+                                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    unoptimized
+                                                />
+                                            ) : (
+                                                <div className="flex h-full w-full items-center justify-center text-gray-300">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="p-3">
+                                            <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 mb-1">
+                                                {product.name}
+                                            </h3>
+                                            <p className="text-xs text-gray-500 mb-2">{product.brand}</p>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-sm text-[var(--brand-royal-red)]">৳{product.price}</span>
+                                                {product.originalPrice && (
+                                                    <span className="text-xs text-gray-400 line-through">৳{product.originalPrice}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Link>
+                            </div>
                         ))}
                     </div>
                 ) : (
