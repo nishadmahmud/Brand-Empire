@@ -165,6 +165,9 @@ export default function ProfileDashboard() {
     const [trackOrderData, setTrackOrderData] = useState(null);
     const [trackLoading, setTrackLoading] = useState(false);
 
+    // Order details modal state
+    const [selectedOrder, setSelectedOrder] = useState(null);
+
     useEffect(() => {
         if (!loading && !user) {
             router.push("/");
@@ -762,13 +765,20 @@ export default function ProfileDashboard() {
                                                                     </div>
                                                                 </div>
                                                             </div>
-
                                                             <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-2">
                                                                 <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                                                                 <p className="truncate">
                                                                     {order.delivery_customer_address || "No address provided"}
                                                                 </p>
                                                             </div>
+
+                                                            {/* View Details Button */}
+                                                            <button
+                                                                onClick={() => setSelectedOrder(order)}
+                                                                className="mt-3 w-full py-2 px-4 bg-gray-100 hover:bg-[var(--brand-royal-red)] hover:text-white text-gray-700 text-xs font-semibold rounded-lg transition-all duration-200"
+                                                            >
+                                                                View Details
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -786,6 +796,159 @@ export default function ProfileDashboard() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Order Details Modal */}
+                                {selectedOrder && (
+                                    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
+                                        <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+                                            {/* Modal Header */}
+                                            <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800 sticky top-0 z-10">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <h3 className="text-xl font-bold text-white">Order Details</h3>
+                                                        <p className="text-white/60 text-sm mt-1">#{selectedOrder.invoice_id}</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setSelectedOrder(null)}
+                                                        className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+                                                    >
+                                                        <XCircle size={20} />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Modal Content */}
+                                            <div className="p-6 space-y-6">
+                                                {/* Order Status & Date */}
+                                                <div className="flex flex-wrap gap-4 justify-between items-center p-4 bg-gray-50 rounded-xl">
+                                                    <div>
+                                                        <p className="text-xs text-gray-500 mb-1">Order Date</p>
+                                                        <p className="font-semibold text-gray-900">
+                                                            {new Date(selectedOrder.created_at).toLocaleDateString("en-US", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                                        </p>
+                                                    </div>
+                                                    <div className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(selectedOrder.tran_status || selectedOrder.status)}`}>
+                                                        {getStatusLabel(selectedOrder.tran_status || selectedOrder.status)}
+                                                    </div>
+                                                </div>
+
+                                                {/* Products List */}
+                                                <div>
+                                                    <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                                        <Package size={18} />
+                                                        Products ({selectedOrder.sales_details?.length || 0})
+                                                    </h4>
+                                                    <div className="space-y-3">
+                                                        {selectedOrder.sales_details?.map((item, index) => (
+                                                            <Link
+                                                                key={index}
+                                                                href={`/product/${item.product_id || item.product_info?.id}`}
+                                                                className="flex gap-4 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 hover:shadow-sm transition-all cursor-pointer group"
+                                                            >
+                                                                <div className="h-16 w-16 flex-shrink-0 bg-gray-200 rounded-lg overflow-hidden relative">
+                                                                    {item.product_info?.image_path ? (
+                                                                        <Image
+                                                                            src={item.product_info.image_path}
+                                                                            alt={item.product_info?.name || "Product"}
+                                                                            fill
+                                                                            className="object-cover group-hover:scale-105 transition-transform"
+                                                                            unoptimized
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="flex h-full w-full items-center justify-center text-gray-400">
+                                                                            <Package size={20} />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-medium text-gray-900 text-sm line-clamp-1 group-hover:text-[var(--brand-royal-red)] transition-colors">{item.product_info?.name || "Product"}</p>
+                                                                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-500">
+                                                                        <span>Qty: {item.qty}</span>
+                                                                        {item.size && <span>• Size: {item.size}</span>}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="font-bold text-[var(--brand-royal-red)]">৳{item.price * item.qty}</p>
+                                                                    <p className="text-xs text-gray-400">৳{item.price} each</p>
+                                                                </div>
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Delivery Info */}
+                                                <div className="p-4 bg-blue-50 rounded-xl">
+                                                    <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                                        <Truck size={18} />
+                                                        Delivery Information
+                                                    </h4>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                        <div>
+                                                            <p className="text-gray-500 text-xs mb-1">Customer Name</p>
+                                                            <p className="font-medium text-gray-900">{selectedOrder.delivery_customer_name || "N/A"}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-gray-500 text-xs mb-1">Phone</p>
+                                                            <p className="font-medium text-gray-900">{selectedOrder.delivery_customer_phone || "N/A"}</p>
+                                                        </div>
+                                                        <div className="md:col-span-2">
+                                                            <p className="text-gray-500 text-xs mb-1">Address</p>
+                                                            <p className="font-medium text-gray-900">{selectedOrder.delivery_customer_address || "N/A"}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Price Breakdown */}
+                                                <div className="p-4 bg-gray-50 rounded-xl">
+                                                    <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                                        <DollarSign size={18} />
+                                                        Price Breakdown
+                                                    </h4>
+                                                    <div className="space-y-2 text-sm">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-600">Subtotal</span>
+                                                            <span className="font-medium">৳{selectedOrder.sub_total || 0}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-600">Delivery Fee</span>
+                                                            <span className="font-medium">৳{selectedOrder.delivery_fee || 0}</span>
+                                                        </div>
+                                                        {selectedOrder.discount > 0 && (
+                                                            <div className="flex justify-between text-green-600">
+                                                                <span>Discount</span>
+                                                                <span>-৳{selectedOrder.discount}</span>
+                                                            </div>
+                                                        )}
+                                                        {selectedOrder.donation > 0 && (
+                                                            <div className="flex justify-between text-[var(--brand-royal-red)]">
+                                                                <span>Donation</span>
+                                                                <span>+৳{selectedOrder.donation}</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex justify-between pt-3 border-t border-gray-200 text-lg font-bold">
+                                                            <span>Total</span>
+                                                            <span className="text-[var(--brand-royal-red)]">
+                                                                ৳{(Number(selectedOrder.sub_total || 0) + Number(selectedOrder.delivery_fee || 0) - Number(selectedOrder.discount || 0) + Number(selectedOrder.donation || 0))}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Payment Info */}
+                                                <div className="flex justify-between items-center p-4 bg-green-50 rounded-xl">
+                                                    <div>
+                                                        <p className="text-xs text-gray-500 mb-1">Payment Method</p>
+                                                        <p className="font-semibold text-gray-900">{selectedOrder.pay_mode || "Cash on Delivery"}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs text-gray-500 mb-1">Paid Amount</p>
+                                                        <p className="font-semibold text-gray-900">৳{selectedOrder.paid_amount || 0}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
