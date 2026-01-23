@@ -86,7 +86,8 @@ export default function CheckoutPage() {
             setFormData((prev) => ({
                 ...prev,
                 firstName: user.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : user.name || prev.firstName,
-                phone: user.phone || prev.phone,
+                phone: user.mobile_number || user.phone || prev.phone,
+                email: user.email || prev.email,
                 address: user.address || prev.address,
             }));
         }
