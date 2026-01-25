@@ -286,7 +286,7 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
             <style jsx global>{`
                 .quill-wrapper .ql-container {
                     border: none !important;
-                    font-size: 0.875rem;
+                    font-size: 16px; /* Must be 16px+ to prevent iOS Safari zoom on focus */
                 }
                 .quill-wrapper .ql-toolbar {
                     border: none !important;
@@ -295,6 +295,10 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
                 }
                 .quill-wrapper .ql-editor {
                     min-height: 160px;
+                    font-size: 16px; /* Prevent iOS zoom */
+                }
+                .quill-wrapper .ql-editor.ql-blank::before {
+                    font-size: 16px; /* Placeholder text too */
                 }
             `}</style>
         </div>,
