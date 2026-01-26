@@ -20,8 +20,11 @@ import toast from "react-hot-toast";
 import AddressSelect from "../../components/AddressSelect";
 
 export default function CheckoutPage() {
-    const { cartItems, getSubtotal, deliveryFee, updateDeliveryFee, clearCart } =
+    const { cartItems: allCartItems, getSubtotal, deliveryFee, updateDeliveryFee, clearCart } =
         useCart();
+
+    // Filter to get only selected items for checkout
+    const cartItems = allCartItems.filter(item => item.selected);
     const { user } = useAuth();
     const router = useRouter();
 
