@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { getBannerFromServer } from "@/lib/api";
 
 const CategoryCard = ({ image, title, link }) => {
     return (
@@ -24,44 +25,34 @@ const CategoryCard = ({ image, title, link }) => {
 };
 
 const TrendingSection = () => {
-    const trendingCategories = [
-        {
-            id: 1,
-            image: "https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=400&auto=format&fit=crop",
-            title: "Men's Jeans",
-            link: "/category/men"
-        },
-        {
-            id: 2,
-            image: "https://images.unsplash.com/photo-1582418702059-97ebafb35d09?q=80&w=400&auto=format&fit=crop",
-            title: "Women's Jeans",
-            link: "/category/women"
-        },
-        {
-            id: 3,
-            image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?q=80&w=400&auto=format&fit=crop",
-            title: "Men's Shirts",
-            link: "/category/men"
-        },
-        {
-            id: 4,
-            image: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=400&auto=format&fit=crop",
-            title: "Women's Tops",
-            link: "/category/women"
-        },
-        {
-            id: 5,
-            image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=400&auto=format&fit=crop",
-            title: "Men's Jackets",
-            link: "/category/men"
-        },
-        {
-            id: 6,
-            image: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?q=80&w=400&auto=format&fit=crop",
-            title: "Women's Jackets",
-            link: "/category/women"
-        }
-    ];
+    const [trendingCategories, setTrendingCategories] = useState([]);
+
+    useEffect(() => {
+        const fetchBanners = async () => {
+            try {
+                const response = await getBannerFromServer();
+                if (response?.success && response?.banners) {
+                    const formattedBanners = response.banners
+                        .filter(banner => banner.type === 'trending' && banner.status === 1)
+                        .map(banner => ({
+                            id: banner.id,
+                            image: banner.image_path,
+                            title: banner.title,
+                            link: banner.button_url || '#'
+                        }));
+                    setTrendingCategories(formattedBanners);
+                }
+            } catch (error) {
+                console.error("Error fetching trending banners:", error);
+            }
+        };
+
+        fetchBanners();
+    }, []);
+
+    if (trendingCategories.length === 0) {
+        return null;
+    }
 
     return (
         <section className="section-content py-12 md:py-16">
