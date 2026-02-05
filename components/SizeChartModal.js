@@ -9,7 +9,7 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
     const [unit, setUnit] = useState("in"); // "in" or "cm"
     const [productType, setProductType] = useState("generic");
 
-    // Detect product type when product changes
+    // Detect product type when product changes (fallback for static data or "How to Measure" text)
     useEffect(() => {
         if (product) {
             const type = detectProductType(product.name || "", product.category || "", product.subcategory || "");
@@ -31,17 +31,70 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
 
     if (!isOpen) return null;
 
-    const chartData = sizeChartData[productType] || sizeChartData.generic;
-    const columns = unit === "in" ? chartData.columns : chartData.columnsCm;
+    // Prepare Data Logic
+    let displayColumns = [];
+    let displayRows = [];
+    let howToMeasure = [];
 
-    // Convert row values based on unit
-    const getRowValues = (row) => {
-        const values = Object.values(row).slice(1); // Skip the size key
-        if (unit === "cm") {
-            return values.map(val => typeof val === "number" ? inchesToCm(val) : val);
-        }
-        return values;
-    };
+    // Check if dynamic data exists
+    if (product?.size_chart_category?.size_chart_values?.length > 0) {
+        const apiValues = product.size_chart_category.size_chart_values;
+        const potentialKeys = [
+            { key: 'chest', label: 'Chest' },
+            { key: 'waist', label: 'Waist' },
+            { key: 'hip', label: 'Hip' },
+            { key: 'length', label: 'Length' },
+            { key: 'shoulder', label: 'Shoulder' },
+            { key: 'inseam', label: 'Inseam' },
+            { key: 'foot_length', label: 'Foot Length' },
+            { key: 'bust', label: 'Bust' },
+        ];
+
+        // Determine active columns (keys that have at least one non-null value)
+        const activeKeys = potentialKeys.filter(k =>
+            apiValues.some(v => v[k.key] !== null && v[k.key] !== undefined && v[k.key] !== "")
+        );
+
+        // Generate headers matching the active keys
+        displayColumns = ["Size", ...activeKeys.map(k => `${k.label} (${unit})`)];
+
+        // Generate rows
+        displayRows = apiValues.map(v => {
+            const values = activeKeys.map(k => {
+                let val = v[k.key];
+                if (val == null || val === "") return "-";
+                // API values are strings/numbers representing inches. Convert if unit is cm.
+                if (unit === "cm") return inchesToCm(parseFloat(val));
+                return val;
+            });
+            return {
+                label: v.size_label,
+                values: values
+            };
+        });
+
+        // For "How to Measure", use static data based on detected type as API doesn't seem to provide instructions yet
+        const staticData = sizeChartData[productType] || sizeChartData.generic;
+        howToMeasure = staticData.howToMeasure;
+
+    } else {
+        // Fallback to static data
+        const staticData = sizeChartData[productType] || sizeChartData.generic;
+        displayColumns = unit === "in" ? staticData.columns : staticData.columnsCm;
+        howToMeasure = staticData.howToMeasure;
+
+        displayRows = staticData.rows.map(row => {
+            // Extract values excluding the first 'size' key
+            const values = Object.values(row).slice(1);
+            const convertedValues = unit === "cm"
+                ? values.map(val => typeof val === "number" ? inchesToCm(val) : val)
+                : values;
+            return {
+                label: row.size,
+                values: convertedValues
+            };
+        });
+    }
 
     return (
         <>
@@ -55,7 +108,9 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
             <div className="fixed top-0 right-0 w-full sm:w-[500px] h-full bg-white z-[101] shadow-2xl flex flex-col animate-slide-in-right">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                    <h2 className="text-lg font-bold text-gray-900">Size Chart</h2>
+                    <h2 className="text-lg font-bold text-gray-900">
+                        Size Chart {product?.size_chart_category?.name ? `- ${product.size_chart_category.name}` : ""}
+                    </h2>
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -86,10 +141,10 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
                             <p className="text-sm text-gray-600 truncate">{product.name}</p>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="font-bold text-gray-900">৳{product.price}</span>
-                                {product.discount > 0 && (
+                                {product.discount && (
                                     <>
                                         <span className="text-sm text-gray-400 line-through">৳{product.mrp}</span>
-                                        <span className="text-sm text-[var(--brand-royal-red)] font-bold">({product.discount}% OFF)</span>
+                                        <span className="text-sm text-[var(--brand-royal-red)] font-bold">({product.discount})</span>
                                     </>
                                 )}
                             </div>
@@ -102,8 +157,8 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
                     <button
                         onClick={() => setActiveTab("chart")}
                         className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === "chart"
-                                ? "text-[var(--brand-royal-red)] border-b-2 border-[var(--brand-royal-red)]"
-                                : "text-gray-500 hover:text-gray-700"
+                            ? "text-[var(--brand-royal-red)] border-b-2 border-[var(--brand-royal-red)]"
+                            : "text-gray-500 hover:text-gray-700"
                             }`}
                     >
                         Size Chart
@@ -111,8 +166,8 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
                     <button
                         onClick={() => setActiveTab("measure")}
                         className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors ${activeTab === "measure"
-                                ? "text-[var(--brand-royal-red)] border-b-2 border-[var(--brand-royal-red)]"
-                                : "text-gray-500 hover:text-gray-700"
+                            ? "text-[var(--brand-royal-red)] border-b-2 border-[var(--brand-royal-red)]"
+                            : "text-gray-500 hover:text-gray-700"
                             }`}
                     >
                         How to Measure
@@ -129,8 +184,8 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
                                     <button
                                         onClick={() => setUnit("in")}
                                         className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${unit === "in"
-                                                ? "bg-gray-800 text-white"
-                                                : "text-gray-600 hover:text-gray-800"
+                                            ? "bg-gray-800 text-white"
+                                            : "text-gray-600 hover:text-gray-800"
                                             }`}
                                     >
                                         in
@@ -138,8 +193,8 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
                                     <button
                                         onClick={() => setUnit("cm")}
                                         className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${unit === "cm"
-                                                ? "bg-gray-800 text-white"
-                                                : "text-gray-600 hover:text-gray-800"
+                                            ? "bg-gray-800 text-white"
+                                            : "text-gray-600 hover:text-gray-800"
                                             }`}
                                     >
                                         cm
@@ -152,7 +207,7 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b border-gray-200">
-                                            {columns.map((col, index) => (
+                                            {displayColumns.map((col, index) => (
                                                 <th
                                                     key={index}
                                                     className="py-3 px-3 text-left font-bold text-gray-700 whitespace-nowrap"
@@ -163,21 +218,29 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {chartData.rows.map((row, rowIndex) => (
-                                            <tr
-                                                key={rowIndex}
-                                                className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                                            >
-                                                <td className="py-3 px-3 font-medium text-gray-900">
-                                                    {row.size}
-                                                </td>
-                                                {getRowValues(row).map((val, valIndex) => (
-                                                    <td key={valIndex} className="py-3 px-3 text-gray-600">
-                                                        {val}
+                                        {displayRows.length > 0 ? (
+                                            displayRows.map((row, rowIndex) => (
+                                                <tr
+                                                    key={rowIndex}
+                                                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                                                >
+                                                    <td className="py-3 px-3 font-medium text-gray-900">
+                                                        {row.label}
                                                     </td>
-                                                ))}
+                                                    {row.values.map((val, valIndex) => (
+                                                        <td key={valIndex} className="py-3 px-3 text-gray-600">
+                                                            {val}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={displayColumns.length} className="py-4 text-center text-gray-500">
+                                                    No size chart data available.
+                                                </td>
                                             </tr>
-                                        ))}
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -192,7 +255,7 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
                             <p className="text-sm text-gray-600">
                                 Follow these tips to get accurate measurements:
                             </p>
-                            {chartData.howToMeasure.map((item, index) => (
+                            {howToMeasure.map((item, index) => (
                                 <div key={index} className="flex gap-4">
                                     <div className="w-10 h-10 rounded-full bg-[var(--brand-royal-red)] text-white flex items-center justify-center font-bold flex-shrink-0">
                                         {index + 1}
