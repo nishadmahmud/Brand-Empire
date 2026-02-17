@@ -1,17 +1,47 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getCouponList } from "@/lib/api";
 import { Copy, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 const FloatingIcons = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
-    const couponCode = "OFF500";
+    const [coupon, setCoupon] = useState(null);
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        const fetchCoupon = async () => {
+            try {
+                const response = await getCouponList();
+                if (response.success && response.data && response.data.length > 0) {
+                    // Filter for active coupons
+                    const now = new Date();
+                    const activeCoupons = response.data.filter(c => {
+                        const expireDate = new Date(c.expire_date);
+                        return expireDate > now;
+                    });
+
+                    if (activeCoupons.length > 0) {
+                        // Sort by amount (descending) to show the best coupon
+                        activeCoupons.sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
+                        setCoupon(activeCoupons[0]);
+                        setIsVisible(true);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch coupons:", error);
+            }
+        };
+
+        fetchCoupon();
+    }, []);
 
     const handleCopy = async () => {
+        if (!coupon) return;
         try {
-            await navigator.clipboard.writeText(couponCode);
+            await navigator.clipboard.writeText(coupon.coupon_code);
             setIsCopied(true);
             toast.success("Coupon code copied to clipboard!");
             // Reset after 3 seconds
@@ -30,6 +60,11 @@ const FloatingIcons = () => {
         setIsCopied(false);
     };
 
+    if (!isVisible || !coupon) return null;
+
+    const isFixed = coupon.coupon_amount_type === "fixed";
+    const amountDisplay = isFixed ? `৳${parseInt(coupon.amount)}` : `${parseInt(coupon.amount)}%`;
+
     const FloatingContent = () => (
         <>
             {/* Expanded Content (Slide out) */}
@@ -47,13 +82,17 @@ const FloatingIcons = () => {
 
                     <div className="mb-1 text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-wider">Limited Time Offer</div>
                     <div className="text-2xl md:text-3xl font-extrabold text-gray-800 mb-1">
-                        FLAT <span className="text-[var(--brand-royal-red)]">500 OFF</span>
+                        {isFixed ? "FLAT" : "GET"} <span className="text-[var(--brand-royal-red)]">{amountDisplay} OFF</span>
                     </div>
-                    <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">On your first order above ৳2000</p>
+                    <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
+                        {parseFloat(coupon.minimum_order_amount) > 0
+                            ? `On orders above ৳${parseInt(coupon.minimum_order_amount)}`
+                            : "On your order"}
+                    </p>
 
                     <div className="bg-white border-2 border-dashed border-gray-300 rounded p-2 md:p-3 flex flex-col items-center justify-center mb-3 md:mb-4">
                         <span className="text-[10px] md:text-xs text-gray-400 mb-1">Coupon Code</span>
-                        <div className="text-lg md:text-xl font-bold font-mono tracking-wider text-gray-800">{couponCode}</div>
+                        <div className="text-lg md:text-xl font-bold font-mono tracking-wider text-gray-800">{coupon.coupon_code}</div>
                     </div>
 
                     <button
@@ -92,7 +131,7 @@ const FloatingIcons = () => {
                 style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
             >
                 <div className="transform rotate-180 flex items-center gap-1.5 md:gap-2">
-                    <span className="font-bold text-xs md:text-sm tracking-wider whitespace-nowrap">FLAT ৳500 OFF</span>
+                    <span className="font-bold text-xs md:text-sm tracking-wider whitespace-nowrap">{isFixed ? "FLAT" : "GET"} {amountDisplay} OFF</span>
                     <span className="w-1.5 h-1.5 md:w-2 md:h-2 border-t-2 border-r-2 border-white transform rotate-[135deg] mt-0.5 md:mt-1"></span>
                 </div>
             </button>
