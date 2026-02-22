@@ -8,7 +8,8 @@ import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, tr
 import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Home, Package, Heart, Tag, User, LogOut, ChevronDown, Clock, CheckCircle, Truck, PackageCheck, XCircle, CheckCircle2, PauseCircle, ClipboardList, DollarSign, MapPin } from "lucide-react";
+import { Home, Package, Heart, Tag, User, LogOut, ChevronDown, Clock, CheckCircle, Truck, PackageCheck, XCircle, CheckCircle2, PauseCircle, ClipboardList, DollarSign, MapPin, RotateCcw, AlertTriangle } from "lucide-react";
+import ReturnCancelModal from "@/components/ReturnCancelModal";
 
 // Timeline stages configuration
 const timelineStages = [
@@ -247,6 +248,9 @@ export default function ProfileDashboard() {
             setImageUploading(false);
         }
     };
+
+    // Return / Cancel modal state
+    const [returnModal, setReturnModal] = useState({ open: false, order: null, mode: "return" });
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -772,13 +776,33 @@ export default function ProfileDashboard() {
                                                                 </p>
                                                             </div>
 
-                                                            {/* View Details Button */}
-                                                            <button
-                                                                onClick={() => setSelectedOrder(order)}
-                                                                className="mt-3 w-full py-2 px-4 bg-gray-100 hover:bg-[var(--brand-royal-red)] hover:text-white text-gray-700 text-xs font-semibold rounded-lg transition-all duration-200"
-                                                            >
-                                                                View Details
-                                                            </button>
+                                                            {/* Action Buttons */}
+                                                            <div className="mt-3 flex gap-2">
+                                                                <button
+                                                                    onClick={() => setSelectedOrder(order)}
+                                                                    className="flex-1 py-2 px-3 bg-gray-100 hover:bg-[var(--brand-royal-red)] hover:text-white text-gray-700 text-xs font-semibold rounded-lg transition-all duration-200"
+                                                                >
+                                                                    View Details
+                                                                </button>
+                                                                {[1, 2, 3].includes(Number(order.tran_status || order.status)) && (
+                                                                    <button
+                                                                        onClick={() => setReturnModal({ open: true, order, mode: "cancel" })}
+                                                                        className="flex-1 flex items-center justify-center gap-1 py-2 px-3 bg-orange-50 hover:bg-orange-500 hover:text-white text-orange-600 text-xs font-semibold rounded-lg border border-orange-200 hover:border-orange-500 transition-all duration-200"
+                                                                    >
+                                                                        <AlertTriangle size={12} />
+                                                                        Cancel and Refund
+                                                                    </button>
+                                                                )}
+                                                                {Number(order.tran_status || order.status) === 4 && (
+                                                                    <button
+                                                                        onClick={() => setReturnModal({ open: true, order, mode: "return" })}
+                                                                        className="flex-1 flex items-center justify-center gap-1 py-2 px-3 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 text-xs font-semibold rounded-lg border border-blue-200 hover:border-blue-600 transition-all duration-200"
+                                                                    >
+                                                                        <RotateCcw size={12} />
+                                                                        Refund
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -796,6 +820,14 @@ export default function ProfileDashboard() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Return / Cancel Modal */}
+                                <ReturnCancelModal
+                                    open={returnModal.open}
+                                    onClose={() => setReturnModal({ open: false, order: null, mode: "return" })}
+                                    order={returnModal.order}
+                                    mode={returnModal.mode}
+                                />
 
                                 {/* Order Details Modal */}
                                 {selectedOrder && (
