@@ -681,17 +681,55 @@ const ProductDetailsPage = ({ productId }) => {
                             </details>
                         )}
 
-                        <details open className="border-b border-gray-200 py-6 group">
-                            <summary className="text-sm font-bold uppercase cursor-pointer flex items-center justify-between list-none"><span>Specifications</span></summary>
-                            <div className="mt-4 space-y-4">
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-6">
-                                    {Object.entries(product.specifications).slice(0, activeTab === 'all_specs' ? undefined : 6).map(([key, value]) => (
-                                        <div key={key} className="border-b border-gray-100 pb-2"><p className="text-xs text-gray-500 mb-1">{key}</p><p className="text-base font-medium text-gray-900 leading-tight">{value}</p></div>
-                                    ))}
+                        {((product.specifications && Object.keys(product.specifications).length > 0) || product.manufacturerDetails || product.packerDetails || product.importerDetails || product.sellerDetails) && (
+                            <details open className="border-b border-gray-200 py-6 group">
+                                <summary className="text-sm font-bold uppercase cursor-pointer flex items-center justify-between list-none"><span>Specifications</span></summary>
+                                <div className="mt-4 space-y-4">
+                                    {product.specifications && Object.keys(product.specifications).length > 0 && (
+                                        <>
+                                            <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                                                {Object.entries(product.specifications).slice(0, activeTab === 'all_specs' ? undefined : 6).map(([key, value]) => (
+                                                    <div key={key} className="border-b border-gray-100 pb-2"><p className="text-xs text-gray-500 mb-1">{key}</p><p className="text-base font-medium text-gray-900 leading-tight">{value}</p></div>
+                                                ))}
+                                            </div>
+                                            {Object.keys(product.specifications).length > 6 && <button onClick={() => setActiveTab(activeTab === 'all_specs' ? 'details' : 'all_specs')} className="text-[var(--brand-royal-red)] text-sm font-bold uppercase hover:underline mt-2">{activeTab === 'all_specs' ? 'See Less' : 'See More'}</button>}
+                                        </>
+                                    )}
+                                    {/* Additional Information under Specifications */}
+                                    {(product.manufacturerDetails || product.packerDetails || product.importerDetails || product.sellerDetails) && (
+                                        <div className={product.specifications && Object.keys(product.specifications).length > 0 ? 'pt-6 border-t border-gray-100' : ''}>
+                                            <p className="text-xs text-gray-500 font-bold uppercase mb-3">Additional Information</p>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                                {product.manufacturerDetails && (
+                                                    <div className="border-b border-gray-100 pb-2">
+                                                        <p className="text-xs text-gray-500 mb-1">Manufacturer Details</p>
+                                                        <p className="text-sm font-medium text-gray-900 leading-tight">{product.manufacturerDetails}</p>
+                                                    </div>
+                                                )}
+                                                {product.packerDetails && (
+                                                    <div className="border-b border-gray-100 pb-2">
+                                                        <p className="text-xs text-gray-500 mb-1">Packer Details</p>
+                                                        <p className="text-sm font-medium text-gray-900 leading-tight">{product.packerDetails}</p>
+                                                    </div>
+                                                )}
+                                                {product.importerDetails && (
+                                                    <div className="border-b border-gray-100 pb-2">
+                                                        <p className="text-xs text-gray-500 mb-1">Importer Details</p>
+                                                        <p className="text-sm font-medium text-gray-900 leading-tight">{product.importerDetails}</p>
+                                                    </div>
+                                                )}
+                                                {product.sellerDetails && (
+                                                    <div className="md:col-span-2 border-b border-gray-100 pb-2">
+                                                        <p className="text-xs text-gray-500 mb-1">Seller Details</p>
+                                                        <p className="text-sm font-medium text-gray-900 leading-tight">{product.sellerDetails}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                {Object.keys(product.specifications).length > 6 && <button onClick={() => setActiveTab(activeTab === 'all_specs' ? 'details' : 'all_specs')} className="text-[var(--brand-royal-red)] text-sm font-bold uppercase hover:underline mt-2">{activeTab === 'all_specs' ? 'See Less' : 'See More'}</button>}
-                            </div>
-                        </details>
+                            </details>
+                        )}
 
                         <RatingsSection product={product} />
                     </div>
