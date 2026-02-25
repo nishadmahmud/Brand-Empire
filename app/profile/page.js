@@ -261,16 +261,31 @@ export default function ProfileDashboard() {
             setOrdersLoading(true);
             try {
                 const customerId = user.id || user.customer_id;
-                const data = await getCustomerOrders(token, customerId, activeOrderTab);
 
-                if (data.success) {
-                    const orderList = data.data?.data || data.data || [];
-                    setOrders(Array.isArray(orderList) ? orderList : []);
+                const [ordersData, refundsData] = await Promise.all([
+                    getCustomerOrders(token, customerId, activeOrderTab),
+                    getCustomerRefunds(token, customerId)
+                ]);
+
+                if (ordersData.success) {
+                    let orderList = ordersData.data?.data || ordersData.data || [];
+                    orderList = Array.isArray(orderList) ? orderList : [];
+
+                    // Filter out orders that have a refund/return request
+                    if (refundsData.success) {
+                        const refundList = refundsData.data?.data || refundsData.data || [];
+                        const refundedInvoiceIds = new Set(
+                            (Array.isArray(refundList) ? refundList : []).map(r => String(r.invoice_id))
+                        );
+                        orderList = orderList.filter(order => !refundedInvoiceIds.has(String(order.invoice_id)));
+                    }
+
+                    setOrders(orderList);
                 } else {
                     setOrders([]);
                 }
             } catch (err) {
-                console.error("Failed to fetch orders", err);
+                console.error("Failed to fetch orders or refunds", err);
                 setOrders([]);
             } finally {
                 setOrdersLoading(false);
@@ -1051,8 +1066,10 @@ export default function ProfileDashboard() {
                                     ) : refunds.length > 0 ? (
                                         <div className="space-y-6">
                                             {refunds.map(refund => {
-                                                const statusLabel = refund.status == "0" ? "Pending Review" : (refund.status == "1" ? "Approved" : "Rejected");
-                                                const statusColor = refund.status == "0" ? "bg-orange-50 text-orange-600 border-orange-200" : (refund.status == "1" ? "bg-green-50 text-green-600 border-green-200" : "bg-red-50 text-red-600 border-red-200");
+                                                const isPending = String(refund.status).toLowerCase() === "0" || String(refund.status).toLowerCase() === "pending";
+                                                const isApproved = String(refund.status).toLowerCase() === "1" || String(refund.status).toLowerCase() === "approved";
+                                                const statusLabel = isPending ? "Pending Review" : (isApproved ? "Approved" : "Rejected");
+                                                const statusColor = isPending ? "bg-orange-50 text-orange-600 border-orange-200" : (isApproved ? "bg-green-50 text-green-600 border-green-200" : "bg-red-50 text-red-600 border-red-200");
 
                                                 return (
                                                     <div key={refund.id} className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-xl transition-all duration-300 group overflow-hidden">
@@ -1124,7 +1141,7 @@ export default function ProfileDashboard() {
                                                                             </div>
                                                                             <div>
                                                                                 <span className="block text-xs font-semibold text-gray-500 mb-0.5">Courier Info</span>
-                                                                                <span className="text-gray-900 font-medium">{refund.courier_info}</span>
+                                                                                <span className="text-gray-900 font-medium capitalize">{refund.courier_info || "Not Specified"}</span>
                                                                             </div>
                                                                         </div>
                                                                     </div>

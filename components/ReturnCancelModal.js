@@ -35,9 +35,12 @@ const COURIERS = [
     { value: "other", label: "Other" },
 ];
 const REFUND_METHODS = [
-    { value: "store_wallet", label: "Store Wallet Credit" },
+    { value: "cash", label: "Cash" },
     { value: "bank_transfer", label: "Bank Transfer" },
-    { value: "original_payment", label: "Original Payment Method" },
+    { value: "bkash", label: "bKash" },
+    { value: "nagad", label: "Nagad" },
+    { value: "rocket", label: "Rocket" },
+    { value: "store_credit", label: "Store Credit" },
 ];
 
 // ─── Custom Dropdown Component ─────────────────────────────
@@ -154,7 +157,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
             setDescription("");
             setFiles([]);
             setCourier("");
-            setRefundMethod("store_wallet");
+            setRefundMethod("cash");
             setBankDetails({ accountName: "", accountNumber: "", bankName: "", branch: "" });
             setError("");
         }
@@ -204,15 +207,17 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                 }));
             }
 
-            // Both Return & Cancel use the exact same Refund API as instructed
+            const courierLabel = COURIERS.find(c => c.value === courier)?.label || courier;
+
             const payload = {
                 invoice_id: order?.invoice_id,
                 customer_id: user?.customer_id || user?.id,
                 reason: reason,
                 reason_note: description,
                 attachment: attachmentPath,
-                courier_info: !isCancel ? courier : "Not Applicable - Cancelled before shipping",
+                courier_info: courierLabel || "Not Specified",
                 refund_method: refundMethod,
+                bank_details: ["bkash", "nagad", "rocket", "bank_transfer"].includes(refundMethod) ? JSON.stringify(bankDetails) : null,
                 status: 0,
                 refund_details: refundDetails
             };
@@ -400,23 +405,18 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
 
                     {/* ── Refund Method ── */}
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Preferred Refund Method</label>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            {REFUND_METHODS.map((m) => (
-                                <button key={m.value} type="button" onClick={() => setRefundMethod(m.value)}
-                                    className={`p-3 border-2 rounded-xl text-sm font-medium text-left transition-all duration-200 ${refundMethod === m.value
-                                        ? "border-[var(--brand-royal-red)] bg-red-50 text-[var(--brand-royal-red)]"
-                                        : "border-gray-200 text-gray-600 hover:border-gray-300 bg-white"
-                                        }`}>
-                                    {m.label}
-                                </button>
-                            ))}
-                        </div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1.5">Preferred Refund Method</label>
+                        <CustomDropdown
+                            value={refundMethod}
+                            onChange={setRefundMethod}
+                            options={REFUND_METHODS}
+                            placeholder="Select refund method..."
+                        />
                     </div>
 
                     {/* ── Bank Details (conditional) ── */}
                     {refundMethod === "bank_transfer" && (
-                        <div className="border border-blue-100 bg-blue-50 rounded-xl p-4 space-y-2">
+                        <div className="border border-blue-100 bg-blue-50 rounded-xl p-4 space-y-2 mb-3">
                             <p className="text-xs font-bold text-blue-700 uppercase tracking-wide mb-2">Bank Details</p>
                             <input type="text" placeholder="Account Holder Name"
                                 value={bankDetails.accountName}
@@ -436,6 +436,23 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                                     onChange={(e) => setBankDetails((p) => ({ ...p, branch: e.target.value }))}
                                     className="w-full border border-blue-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all placeholder-gray-400" />
                             </div>
+                        </div>
+                    )}
+
+                    {/* ── Mobile Banking Details (conditional) ── */}
+                    {["bkash", "nagad", "rocket"].includes(refundMethod) && (
+                        <div className="border border-[var(--brand-royal-red)] bg-red-50 rounded-xl p-4 space-y-2 mt-3">
+                            <p className="text-xs font-bold text-[var(--brand-royal-red)] uppercase tracking-wide mb-2">{REFUND_METHODS.find(m => m.value === refundMethod)?.label} Account Details</p>
+                            <input type="tel" placeholder={"Enter " + REFUND_METHODS.find(m => m.value === refundMethod)?.label + " Number"}
+                                value={bankDetails.accountNumber}
+                                onChange={(e) => setBankDetails((p) => ({ ...p, accountNumber: e.target.value }))}
+                                className="w-full border border-red-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] transition-all placeholder-gray-400" />
+                            <CustomDropdown
+                                value={bankDetails.accountName || "personal"}
+                                onChange={(val) => setBankDetails((p) => ({ ...p, accountName: val }))}
+                                options={[{ label: "Personal", value: "personal" }, { label: "Agent", value: "agent" }]}
+                                placeholder="Account Type"
+                            />
                         </div>
                     )}
                 </div>
