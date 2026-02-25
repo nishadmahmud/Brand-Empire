@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { uploadReviewMedia } from "@/lib/api";
+import { uploadReviewMedia, submitRefundRequest } from "@/lib/api";
 import {
     X, Upload, Loader2, AlertTriangle, RotateCcw,
     ChevronDown, Check, Truck
@@ -175,42 +175,53 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
         setLoading(true);
 
         try {
-            let uploadedPaths = [];
+            let attachmentPath = null;
             if (files.length > 0) {
                 const formData = new FormData();
-                files.forEach((f) => formData.append("pictures[]", f));
+                // Send only the first file as requested by user
+                formData.append("pictures[]", files[0]);
                 formData.append("user_id", String(process.env.NEXT_PUBLIC_USER_ID));
+
                 const uploadRes = await uploadReviewMedia(formData, token);
-                if (uploadRes?.success && Array.isArray(uploadRes.path)) {
-                    uploadedPaths = uploadRes.path.map((p) => p.path);
+                if (uploadRes?.success && Array.isArray(uploadRes.path) && uploadRes.path.length > 0) {
+                    attachmentPath = uploadRes.path[0].path;
                 } else {
-                    throw new Error("Failed to upload media.");
+                    console.warn("Failed to upload media, proceeding without attachment.");
                 }
             }
 
+            // Transform order items into refund_details
+            let refundDetails = [];
+            if (order && order.sales_details && Array.isArray(order.sales_details)) {
+                refundDetails = order.sales_details.map(item => ({
+                    sale_details_id: item.id,
+                    product_id: item.product_id,
+                    product_item_id: item.product_item_id || null,
+                    product_variant_id: item.product_variant_id || null,
+                    child_product_variant_id: item.child_product_variant_id || null,
+                    qty: item.quantity || 1,
+                    price: parseFloat(item.price) || 0
+                }));
+            }
+
+            // Both Return & Cancel use the exact same Refund API as instructed
             const payload = {
-                type: mode,
                 invoice_id: order?.invoice_id,
                 customer_id: user?.customer_id || user?.id,
-                reason,
-                description,
-                images: uploadedPaths,
-                courier: !isCancel ? courier : null,
+                reason: reason,
+                reason_note: description,
+                attachment: attachmentPath,
+                courier_info: !isCancel ? courier : "Not Applicable - Cancelled before shipping",
                 refund_method: refundMethod,
-                bank_details: refundMethod === "bank_transfer" ? bankDetails : null,
-                return_address: !isCancel ? returnAddress : null,
+                status: 0,
+                refund_details: refundDetails
             };
 
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API}/customer/return-request`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                    body: JSON.stringify(payload),
-                });
-                const data = await res.json();
+                const data = await submitRefundRequest(token, payload);
                 if (!data?.success && data?.message) throw new Error(data.message);
             } catch (apiErr) {
-                console.warn("Return/Cancel API:", apiErr.message);
+                throw new Error("Failed to submit request: " + apiErr.message);
             }
 
             showToast({
