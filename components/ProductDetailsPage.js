@@ -187,9 +187,11 @@ const ProductDetailsPage = ({ productId }) => {
                         });
                     }
 
+                    const productCodeFromUrl = String(productId || "").replace(/\D/g, "");
+
                     const transformedProduct = {
                         id: apiProduct.id,
-                        code: apiProduct.sku || apiProduct.barcode || apiProduct.id,
+                        code: productCodeFromUrl || String(productId || apiProduct.id || ""),
                         name: apiProduct.name,
                         price: finalPrice,
                         mrp: mrp,
