@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 
 const FilterSidebar = ({
     filters,
@@ -11,6 +11,10 @@ const FilterSidebar = ({
     categories = [],
     selectedCategoryId,
     onCategoryChange,
+    // Brand subcategory props
+    brandSubcategories,
+    selectedSubcategoryId,
+    onSubcategoryChange,
     // Attribute filter props
     attributes = [],
     selectedAttributeValues = [],
@@ -20,6 +24,13 @@ const FilterSidebar = ({
     const [priceRange, setPriceRange] = useState(filters.priceRange || [0, 10000]);
     const [showAllCategories, setShowAllCategories] = useState(false);
     const [showAllBrands, setShowAllBrands] = useState(false);
+    const [expandedCategoryId, setExpandedCategoryId] = useState(null);
+
+    useEffect(() => {
+        if (!expandedCategoryId && brandSubcategories && brandSubcategories.length > 0) {
+            setExpandedCategoryId(brandSubcategories[0].id);
+        }
+    }, [brandSubcategories, expandedCategoryId]);
 
     // Extract unique brands from products
     const availableBrands = useMemo(() => {
@@ -89,8 +100,61 @@ const FilterSidebar = ({
                 </button>
             </div>
 
-            {/* Categories - Dynamic List */}
-            {categories && categories.length > 0 && (
+            {/* Categories - Dynamic List (flat or nested subcategory mode) */}
+            {/* Nested Subcategory Mode (for brand pages) */}
+            {brandSubcategories && brandSubcategories.length > 0 && (
+                <div className="mb-6 pb-6 border-b border-gray-200">
+                    <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Categories</h4>
+                    <div className="space-y-1">
+                        {brandSubcategories.map((category) => (
+                            <div key={category.id}>
+                                {/* Parent category header */}
+                                <button
+                                    onClick={() => setExpandedCategoryId(expandedCategoryId === category.id ? null : category.id)}
+                                    className="w-full flex items-center justify-between py-2 text-sm font-semibold text-gray-800 hover:text-black transition-colors"
+                                >
+                                    <span>{category.name}</span>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                                        className={`transition-transform duration-200 text-gray-400 ${expandedCategoryId === category.id ? 'rotate-180' : ''}`}
+                                    >
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
+                                </button>
+                                {/* Subcategories list */}
+                                {expandedCategoryId === category.id && category.sub_category?.length > 0 && (
+                                    <div className="pl-3 pb-2 space-y-2 animate-fade-in border-l-2 border-gray-100 ml-1">
+                                        {category.sub_category.map((sub) => {
+                                            const isSelected = selectedSubcategoryId == sub.id;
+                                            return (
+                                                <label key={sub.id} className="flex items-center cursor-pointer group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => {
+                                                            if (onSubcategoryChange) {
+                                                                onSubcategoryChange(isSelected ? null : sub.id);
+                                                            }
+                                                        }}
+                                                        className="w-4 h-4 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)]"
+                                                    />
+                                                    <span className={`ml-3 text-sm group-hover:text-black ${isSelected ? 'text-[var(--brand-royal-red)] font-medium' : 'text-gray-600'}`}>
+                                                        {sub.name}
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Flat Category Mode (for category pages) */}
+            {!brandSubcategories && categories && categories.length > 0 && (
                 <div className="mb-6 pb-6 border-b border-gray-200">
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Categories</h4>
                     <div className="space-y-3">
@@ -139,6 +203,7 @@ const FilterSidebar = ({
                     )}
                 </div>
             )}
+
 
             {/* Brand - Hidden on brand pages */}
             {!hideBrandFilter && availableBrands.length > 0 && (

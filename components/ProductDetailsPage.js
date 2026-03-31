@@ -229,6 +229,7 @@ const ProductDetailsPage = ({ productId }) => {
                         packerDetails: apiProduct.packer_details || null,
                         importerDetails: apiProduct.importer_details || null,
                         sellerDetails: apiProduct.seller_details || null,
+                        country: apiProduct.country_of_origin || apiProduct.country || null,
                         return_delivery_days: apiProduct.return_delivery_days || null,
                         offers: apiProduct.offers || [],
                         reviews: reviewsData.data || [],
@@ -487,6 +488,18 @@ const ProductDetailsPage = ({ productId }) => {
             }
         }
     }
+    
+    // Dynamic Size Label Logic
+    const isAllNumericSizes = product.sizes.length > 0 && product.sizes.every(size => !isNaN(parseFloat(size)));
+    const productContext = (product.name + " " + (categoryName || "") + " " + (subcategoryName || "")).toLowerCase();
+    const isBottoms = productContext.includes("pant") || productContext.includes("trouser") || productContext.includes("jeans") || productContext.includes("pajama") || productContext.includes("chinos") || productContext.includes("legging");
+    const isTops = productContext.includes("shirt") || productContext.includes("t-shirt") || productContext.includes("polo") || productContext.includes("jacket") || productContext.includes("top") || productContext.includes("kurta") || productContext.includes("sweatshirt") || productContext.includes("hoodie");
+
+    let sizeLabel = "Size";
+    if (isAllNumericSizes) {
+        if (isBottoms) sizeLabel = "Waist Size";
+        else if (isTops) sizeLabel = "Chest Size";
+    }
 
     if (loading) {
         return (
@@ -574,8 +587,11 @@ const ProductDetailsPage = ({ productId }) => {
                         {/* Size Selector */}
                         <div id="size-selector" className="mb-6">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-sm font-bold uppercase">Select {product.variants?.[product.sizes[0]]?.variant_group?.name || "Size"}</h3>
-                                <button onClick={() => setShowSizeChart(true)} className="text-sm text-[var(--brand-royal-red)] font-bold hover:underline">SIZE CHART →</button>
+                                <h3 className="text-sm font-bold uppercase">Select {sizeLabel}</h3>
+                                <button onClick={() => setShowSizeChart(true)} className="text-sm text-[var(--brand-royal-red)] font-bold hover:underline flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12V4h16v16h-8"></path><path d="M4 8h16"></path><path d="M4 16h8"></path><path d="M8 4v4"></path><path d="M12 4v4"></path><path d="M16 4v4"></path><path d="M8 12v4"></path></svg>
+                                    SIZE CHART
+                                </button>
                             </div>
                             <div className="flex flex-wrap gap-2 sm:gap-3 mb-4">
                                 {product.sizes.map((size, index) => {
@@ -589,18 +605,32 @@ const ProductDetailsPage = ({ productId }) => {
                                 })}
                             </div>
 
-                            {/* Child Variant Selector */}
+                            {/* Child Variant Selector (e.g. Length) */}
                             {selectedSize && product.variants?.[selectedSize]?.children?.length > 0 && (
-                                <div className="mt-4 animate-fade-in">
-                                    <h3 className="text-sm font-bold uppercase mb-3">
-                                        Select {product.variants[selectedSize].children[0]?.variant_group?.name || "Option"}
+                                <div className="mt-6 animate-fade-in">
+                                    <h3 className="text-sm font-bold uppercase mb-4">
+                                        {product.variants[selectedSize].children[0]?.variant_group?.name || "Select Length"}
                                     </h3>
                                     <div className="flex flex-wrap gap-2 sm:gap-3">
                                         {product.variants[selectedSize].children.map((child, idx) => {
                                             const isChildOutOfStock = child.quantity === 0;
+                                            const isLength = (child.variant_group?.name || "").toLowerCase().includes("length");
+                                            
                                             return (
-                                                <button key={`child-${idx}-${child.name}`} onClick={() => !isChildOutOfStock && setSelectedChildSize(child.name)} disabled={isChildOutOfStock} className={`min-w-11 h-11 px-3 rounded-lg border-2 font-bold text-xs sm:text-sm transition-all relative flex items-center justify-center ${selectedChildSize === child.name ? 'border-[var(--brand-royal-red)] bg-[var(--brand-royal-red)] text-white' : isChildOutOfStock ? 'border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50' : 'border-gray-300 text-gray-700 hover:border-gray-400'}`}>
+                                                <button 
+                                                    key={`child-${idx}-${child.name}`} 
+                                                    onClick={() => !isChildOutOfStock && setSelectedChildSize(child.name)} 
+                                                    disabled={isChildOutOfStock} 
+                                                    className={`min-w-14 px-4 h-12 flex items-center justify-center font-bold text-sm transition-all border-2 relative ${
+                                                        selectedChildSize === child.name 
+                                                            ? 'border-black bg-black text-white' 
+                                                            : isChildOutOfStock 
+                                                                ? 'border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50' 
+                                                                : 'border-gray-300 text-gray-700 hover:border-black'
+                                                    } ${isLength ? 'rounded-none' : 'rounded-lg'}`}
+                                                >
                                                     {child.name}
+                                                    {isChildOutOfStock && <span className="absolute inset-0 flex items-center justify-center"><span className="w-full h-[1px] bg-gray-300 rotate-45 absolute"></span></span>}
                                                 </button>
                                             );
                                         })}
@@ -728,6 +758,18 @@ const ProductDetailsPage = ({ productId }) => {
                                         <div className="border-b border-gray-100 pb-2">
                                             <p className="text-xs text-gray-500 mb-1">Importer Details</p>
                                             <p className="text-sm font-medium text-gray-900 leading-tight">{product.importerDetails}</p>
+                                        </div>
+                                    )}
+                                    {product.code && (
+                                        <div className="border-b border-gray-100 pb-2">
+                                            <p className="text-xs text-gray-500 mb-1">Product Code</p>
+                                            <p className="text-sm font-medium text-gray-900 leading-tight">{product.code}</p>
+                                        </div>
+                                    )}
+                                    {product.country && (
+                                        <div className="border-b border-gray-100 pb-2">
+                                            <p className="text-xs text-gray-500 mb-1">Country of Origin</p>
+                                            <p className="text-sm font-medium text-gray-900 leading-tight">{product.country}</p>
                                         </div>
                                     )}
                                     {product.sellerDetails && (

@@ -6,7 +6,7 @@ import Link from "next/link";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
-import { getBrandwiseProducts, getTopBrands, filterProductsByAttributes, getCategoriesFromServer } from "@/lib/api";
+import { getBrandwiseProducts, getTopBrands, filterProductsByAttributes, getCategoriesFromServer, getProductsBySubcategory } from "@/lib/api";
 
 export default function BrandPage() {
     const params = useParams();
@@ -36,9 +36,10 @@ export default function BrandPage() {
         attributeValues: [],
     });
 
-    // Categories for filtering
-    const [allCategories, setAllCategories] = useState([]);
-    const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+    // Subcategory filtering state
+    const [brandSubcategories, setBrandSubcategories] = useState([]); // categories with nested sub_category
+    const [selectedSubcategoryId, setSelectedSubcategoryId] = useState(null);
+    const [productCategoryIds, setProductCategoryIds] = useState(new Set()); // category IDs found in brand products
 
     // Extract unique sizes from products
     const availableSizes = useMemo(() => {
@@ -89,30 +90,132 @@ export default function BrandPage() {
         }
     }, [brandId]);
 
-    // Categories extraction state
-    const [extractedCategories, setExtractedCategories] = useState([]);
-
-    // Use extracted categories if available, otherwise empty
+    // Fetch full categories tree and cross-reference with brand products
     useEffect(() => {
-        if (extractedCategories.length > 0) {
-            setAllCategories(extractedCategories);
+        if (productCategoryIds.size === 0) return;
+
+        const fetchAndFilterCategories = async () => {
+            try {
+                const response = await getCategoriesFromServer();
+                if (response.success && response.data) {
+                    // Filter to only categories whose IDs appear in the brand's products
+                    const relevantCategories = response.data
+                        .filter(cat => productCategoryIds.has(cat.category_id) || productCategoryIds.has(String(cat.category_id)))
+                        .map(cat => ({
+                            id: cat.category_id,
+                            name: cat.name,
+                            sub_category: cat.sub_category || []
+                        }))
+                        .filter(cat => cat.sub_category.length > 0); // only show those that have subcategories
+
+                    setBrandSubcategories(relevantCategories);
+                }
+            } catch (error) {
+                console.error("Error fetching categories for brand filter:", error);
+            }
+        };
+
+        fetchAndFilterCategories();
+    }, [productCategoryIds]);
+
+    // Handle subcategory selection — fetch subcategory products and filter by brand
+    const handleSubcategoryChange = async (subcategoryId) => {
+        setSelectedSubcategoryId(subcategoryId);
+        setPage(1);
+
+        if (!subcategoryId) {
+            // Deselected — re-fetch normal brand products
+            return; // the main useEffect will re-trigger due to selectedSubcategoryId change
         }
-    }, [extractedCategories]);
 
-    // Fetch products
+        try {
+            setLoading(true);
+            const response = await getProductsBySubcategory(subcategoryId, 1);
+            let productsArray = [];
+
+            if (response.success && response.data) {
+                if (Array.isArray(response.data)) {
+                    productsArray = response.data;
+                } else if (response.data.data && Array.isArray(response.data.data)) {
+                    productsArray = response.data.data;
+                }
+            }
+
+            // Filter by current brand name (case-insensitive)
+            const brandLower = (brandName || "").toLowerCase();
+            const filteredByBrand = productsArray.filter(p => {
+                const pBrand = (p.brand_name || p.brands?.name || "").toLowerCase();
+                return pBrand === brandLower;
+            });
+
+            // Transform
+            const transformedProducts = filteredByBrand.map(product => {
+                const mrp = product.retails_price || 0;
+                let finalPrice = mrp;
+                let discountLabel = "";
+
+                if (product.discount > 0) {
+                    const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
+                    if (discountType === 'amount') {
+                        finalPrice = mrp - product.discount;
+                        discountLabel = `৳${product.discount} OFF`;
+                    } else {
+                        finalPrice = Math.round(mrp * (1 - product.discount / 100));
+                        discountLabel = `${product.discount}% OFF`;
+                    }
+                    if (finalPrice < 0) finalPrice = 0;
+                }
+
+                return {
+                    id: product.id,
+                    brand: product.brand_name || product.brands?.name || brandName || "BRAND",
+                    name: product.name,
+                    price: `৳ ${finalPrice.toLocaleString()}`,
+                    originalPrice: product.discount > 0 ? `৳ ${mrp.toLocaleString()}` : "",
+                    discount: discountLabel,
+                    images: product.image_paths && product.image_paths.length > 0
+                        ? product.image_paths
+                        : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
+                    sizes: product.product_variants && product.product_variants.length > 0
+                        ? product.product_variants.map(v => v.name)
+                        : ["S", "M", "L", "XL"],
+                    unavailableSizes: product.product_variants && product.product_variants.length > 0
+                        ? product.product_variants.filter(v => v.quantity === 0).map(v => v.name)
+                        : [],
+                    color: product.color || "gray",
+                    rating: product.review_summary?.average_rating || 0,
+                    reviews: product.review_summary?.total_reviews || 0,
+                    rawPrice: finalPrice,
+                    rawDiscount: product.discount || 0,
+                };
+            });
+
+            setProducts(transformedProducts);
+            setTotalPages(1); // subcategory filtered results are single-page for now
+        } catch (error) {
+            console.error("Error fetching subcategory products:", error);
+            setProducts([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch products (main brand products — skipped when subcategory is selected)
     useEffect(() => {
+        if (selectedSubcategoryId) return; // subcategory handler manages its own fetch
+
         const fetchProducts = async () => {
             try {
                 setLoading(true);
                 let productsArray = [];
                 let response;
 
-                // If attribute filters or category is selected, use the filter-products API
-                if (filters.attributeValues.length > 0 || selectedCategoryId) {
+                // If attribute filters are active, use the filter-products API
+                if (filters.attributeValues.length > 0) {
                     response = await filterProductsByAttributes(
                         filters.attributeValues,
                         page,
-                        { brandId, categoryId: selectedCategoryId }
+                        { brandId }
                     );
                     if (response.success && response.data?.data) {
                         productsArray = response.data.data;
@@ -130,38 +233,14 @@ export default function BrandPage() {
                             productsArray = response.data.data;
                         }
 
-                        // Extract categories from initial products fetch (when no filters active)
-                        // This ensures we get the list of available categories for this brand
-                        if (page === 1 && filters.attributeValues.length === 0 && !selectedCategoryId) {
-                            const uniqueCategories = [];
-                            const seenIds = new Set();
-
+                        // Extract category IDs from products for cross-referencing with categories API
+                        if (page === 1 && filters.attributeValues.length === 0) {
+                            const catIds = new Set();
                             productsArray.forEach(p => {
-                                if (p.category_id && p.category_name && !seenIds.has(p.category_id)) {
-                                    seenIds.add(p.category_id);
-                                    uniqueCategories.push({
-                                        id: p.category_id,
-                                        category_id: p.category_id,
-                                        name: p.category_name,
-                                        // Assuming we might want to count products, but paginated data makes it inaccurate
-                                        // so we'll just list them
-                                    });
-                                }
+                                if (p.category_id) catIds.add(String(p.category_id));
                             });
-
-                            if (uniqueCategories.length > 0) {
-                                setExtractedCategories(prev => {
-                                    // Merge with previous to avoid losing categories when paginating? 
-                                    // Or just set to unique from page 1? usually page 1 has mix.
-                                    // Better to append unique ones.
-                                    const combined = [...prev];
-                                    uniqueCategories.forEach(c => {
-                                        if (!combined.some(existing => existing.id === c.id)) {
-                                            combined.push(c);
-                                        }
-                                    });
-                                    return combined;
-                                });
+                            if (catIds.size > 0) {
+                                setProductCategoryIds(catIds);
                             }
                         }
 
@@ -247,7 +326,8 @@ export default function BrandPage() {
         if (brandId) {
             fetchProducts();
         }
-    }, [brandId, page, brandName, filters.attributeValues, selectedCategoryId]);
+    }, [brandId, page, brandName, filters.attributeValues, selectedSubcategoryId]);
+
 
     // Apply filters and sorting
     const filteredAndSortedProducts = useMemo(() => {
@@ -311,7 +391,7 @@ export default function BrandPage() {
             discount: 0,
             attributeValues: [],
         });
-        setSelectedCategoryId(null);
+        setSelectedSubcategoryId(null);
     };
 
     return (
@@ -435,9 +515,9 @@ export default function BrandPage() {
                             onClearAll={handleClearAll}
                             products={products}
                             hideBrandFilter={true}
-                            categories={allCategories}
-                            selectedCategoryId={selectedCategoryId}
-                            onCategoryChange={setSelectedCategoryId}
+                            brandSubcategories={brandSubcategories}
+                            selectedSubcategoryId={selectedSubcategoryId}
+                            onSubcategoryChange={handleSubcategoryChange}
                         />
                     </div>
 
@@ -551,9 +631,9 @@ export default function BrandPage() {
                             onClearAll={handleClearAll}
                             products={products}
                             hideBrandFilter={true}
-                            categories={allCategories}
-                            selectedCategoryId={selectedCategoryId}
-                            onCategoryChange={setSelectedCategoryId}
+                            brandSubcategories={brandSubcategories}
+                            selectedSubcategoryId={selectedSubcategoryId}
+                            onSubcategoryChange={handleSubcategoryChange}
                         />
                     </div>
                 </div>

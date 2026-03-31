@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Share2, Bookmark, ShoppingBag, ArrowLeft, Play, Pause } from "lucide-react";
+import { Share2, Bookmark, ShoppingBag, ArrowLeft, Play, Pause, Heart } from "lucide-react";
 import { getStudioList } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 export default function StudioPage() {
     const [posts, setPosts] = useState([]);
@@ -174,6 +175,14 @@ function StudioPost({ post }) {
     const [isPlaying, setIsPlaying] = useState(false);
     const videoRef = React.useRef(null);
     const { addToCart, setIsCartOpen } = useCart();
+    const { toggleStudioWishlist, isInStudioWishlist } = useWishlist();
+
+    const isWishlisted = isInStudioWishlist(post.id);
+
+    const handleToggleWishlist = (e) => {
+        e.stopPropagation();
+        toggleStudioWishlist(post);
+    };
 
     const togglePlayPause = (e) => {
         e.stopPropagation();
@@ -246,6 +255,13 @@ function StudioPost({ post }) {
 
                 {/* Overlay Action Buttons */}
                 <div className="absolute bottom-4 right-4 flex flex-col gap-3">
+                    {/* Wishlist Button - Toggles entire post */}
+                    <button
+                        onClick={handleToggleWishlist}
+                        className={`w-10 h-10 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all ${isWishlisted ? 'bg-[var(--brand-royal-red)] text-white' : 'bg-white/90 text-gray-800'}`}
+                    >
+                        <Heart size={20} fill={isWishlisted ? "currentColor" : "none"} />
+                    </button>
                     {/* Play/Pause Button - Only for videos */}
                     {post.type === "video" && (
                         <button
