@@ -253,8 +253,31 @@ const ProductDetailsPage = ({ productId }) => {
 
     // Fetch related products
     useEffect(() => {
+        let isCancelled = false;
+
+        const getVariantSizeData = (variants = []) => {
+            const safeVariants = Array.isArray(variants) ? variants : [];
+            const sizes = [...new Set(
+                safeVariants.map((variant) => variant?.name).filter(Boolean)
+            )];
+
+            const unavailableSizes = [...new Set(
+                safeVariants
+                    .filter((variant) => {
+                        if (Array.isArray(variant?.child_variants) && variant.child_variants.length > 0) {
+                            return variant.child_variants.every((child) => Number(child?.quantity || 0) <= 0);
+                        }
+                        return Number(variant?.quantity || 0) <= 0;
+                    })
+                    .map((variant) => variant?.name)
+                    .filter(Boolean)
+            )];
+
+            return { sizes, unavailableSizes };
+        };
+
         const fetchRelatedProducts = async () => {
-            if (!productId) return;
+            if (!productId || loading) return;
 
             try {
                 const response = await getRelatedProduct(productId);
@@ -294,26 +317,57 @@ const ProductDetailsPage = ({ productId }) => {
                                     ? item.image_paths
                                     : [item.image_path, item.image_path1, item.image_path2])
                                     .filter(img => typeof img === 'string' && img.trim() !== ''),
-                                sizes: item.product_variants && item.product_variants.length > 0
-                                    ? item.product_variants.map(v => v.name)
-                                    : ["S", "M", "L", "XL"],
-                                unavailableSizes: item.product_variants && item.product_variants.length > 0
-                                    ? item.product_variants.filter(v => v.quantity === 0).map(v => v.name)
-                                    : [],
+                                ...getVariantSizeData(item.product_variants),
                                 color: item.color || "gray",
                                 rating: item.review_summary?.average_rating || 0,
                                 reviews: item.review_summary?.total_reviews || 0,
                             };
                         });
+
+                    if (isCancelled) return;
                     setRelatedProducts(transformedRelated);
+
+                    // Hack: related-products API often misses variants, so fetch detail for each related product
+                    // and update size chips progressively as each response arrives.
+                    transformedRelated.forEach((relatedProduct) => {
+                        const hasSizes = Array.isArray(relatedProduct.sizes) && relatedProduct.sizes.length > 0;
+                        if (hasSizes) return;
+
+                        getProductById(relatedProduct.id)
+                            .then((detailResponse) => {
+                                const detailProduct = detailResponse?.success ? detailResponse?.data : null;
+                                const { sizes, unavailableSizes } = getVariantSizeData(detailProduct?.product_variants);
+                                if (isCancelled || sizes.length === 0) return;
+
+                                setRelatedProducts((prevProducts) =>
+                                    prevProducts.map((productItem) =>
+                                        productItem.id === relatedProduct.id
+                                            ? { ...productItem, sizes, unavailableSizes }
+                                            : productItem
+                                    )
+                                );
+                            })
+                            .catch((detailError) => {
+                                console.error(`Error fetching related product details for ${relatedProduct.id}:`, detailError);
+                            });
+                    });
+                } else {
+                    if (!isCancelled) setRelatedProducts([]);
                 }
             } catch (error) {
                 console.error("Error fetching related products:", error);
-                setRelatedProducts([]);
+                if (!isCancelled) setRelatedProducts([]);
             }
         };
-        fetchRelatedProducts();
-    }, [productId]);
+        const deferHandle = setTimeout(() => {
+            fetchRelatedProducts();
+        }, 0);
+
+        return () => {
+            isCancelled = true;
+            clearTimeout(deferHandle);
+        };
+    }, [productId, loading]);
 
     // Fetch coupons
     useEffect(() => {
@@ -690,9 +744,23 @@ const ProductDetailsPage = ({ productId }) => {
                             <button onClick={() => setShowOffers(!showOffers)} className="w-full flex items-center justify-between text-sm font-bold uppercase mb-4"><span>Best Offers</span></button>
                             {showOffers && (
                                 <div className="space-y-3">
-                                    {coupons.length > 0 ? coupons.map((coupon, index) => (
-                                        <div key={coupon.id || index} className="p-4 bg-gray-50 rounded-lg border border-gray-200"><p className="text-sm">{coupon.title}</p></div>
-                                    )) : <p className="text-sm text-gray-500">No offers</p>}
+                                    {(() => {
+                                        const validCoupons = coupons.filter((coupon) => {
+                                            const offerText = coupon?.title || coupon?.name || coupon?.code || coupon?.description;
+                                            return typeof offerText === "string" && offerText.trim().length > 0;
+                                        });
+
+                                        if (validCoupons.length === 0) {
+                                            return <p className="text-sm text-gray-500">No offers available at the moment.</p>;
+                                        }
+
+                                        return validCoupons.map((coupon, index) => {
+                                            const offerText = coupon.title || coupon.name || coupon.code || coupon.description;
+                                            return (
+                                                <div key={coupon.id || index} className="p-4 bg-gray-50 rounded-lg border border-gray-200"><p className="text-sm">{offerText}</p></div>
+                                            );
+                                        });
+                                    })()}
                                 </div>
                             )}
                         </div>
@@ -703,7 +771,7 @@ const ProductDetailsPage = ({ productId }) => {
                                 <span>Product Details</span>
                                 <svg className="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                             </summary>
-                            <div className="mt-4 text-sm text-gray-700 space-y-2">
+                            <div className="mt-4 text-sm text-gray-700 space-y-2 break-words [overflow-wrap:anywhere] [&_*]:break-words [&_*]:[overflow-wrap:anywhere] [&_img]:max-w-full [&_table]:w-full [&_table]:table-fixed">
                                 <div dangerouslySetInnerHTML={{ __html: product.description }} />
                                 {product.details?.fit && <div className="mt-4"><h4 className="font-bold mb-2">Size & Fit</h4><p>{product.details.fit}</p></div>}
                             </div>

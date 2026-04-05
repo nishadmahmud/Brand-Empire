@@ -15,6 +15,8 @@ const FilterSidebar = ({
     brandSubcategories,
     selectedSubcategoryId,
     onSubcategoryChange,
+    selectedChildCategoryId,
+    onChildCategoryChange,
     // Attribute filter props
     attributes = [],
     selectedAttributeValues = [],
@@ -25,6 +27,14 @@ const FilterSidebar = ({
     const [showAllCategories, setShowAllCategories] = useState(false);
     const [showAllBrands, setShowAllBrands] = useState(false);
     const [expandedCategoryId, setExpandedCategoryId] = useState(null);
+    const [expandedSubcategories, setExpandedSubcategories] = useState({});
+
+    useEffect(() => {
+        if (!brandSubcategories || brandSubcategories.length === 0) {
+            setExpandedCategoryId(null);
+            setExpandedSubcategories({});
+        }
+    }, [brandSubcategories]);
 
     useEffect(() => {
         if (!expandedCategoryId && brandSubcategories && brandSubcategories.length > 0) {
@@ -44,14 +54,22 @@ const FilterSidebar = ({
 
 
 
-    // Extract unique colors from products
+    // Extract unique colors from products, keeping their color codes when available.
     const availableColors = useMemo(() => {
-        const colors = products
-            .map(p => p.color)
-            .filter(Boolean)
-            .filter((color, index, self) => self.indexOf(color) === index)
-            .sort();
-        return colors;
+        const colorMap = new Map();
+
+        products.forEach((p) => {
+            const colorName = p.color;
+            if (!colorName) return;
+
+            if (!colorMap.has(colorName)) {
+                colorMap.set(colorName, p.colorCode || null);
+            }
+        });
+
+        return Array.from(colorMap.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([name, code]) => ({ name, code }));
     }, [products]);
 
     // Calculate price range from products
@@ -127,22 +145,76 @@ const FilterSidebar = ({
                                     <div className="pl-3 pb-2 space-y-2 animate-fade-in border-l-2 border-gray-100 ml-1">
                                         {category.sub_category.map((sub) => {
                                             const isSelected = selectedSubcategoryId == sub.id;
+                                            const hasChildren = Array.isArray(sub.child_categories) && sub.child_categories.length > 0;
+                                            const isSubExpanded = !!expandedSubcategories[sub.id];
                                             return (
-                                                <label key={sub.id} className="flex items-center cursor-pointer group">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={() => {
-                                                            if (onSubcategoryChange) {
-                                                                onSubcategoryChange(isSelected ? null : sub.id);
-                                                            }
-                                                        }}
-                                                        className="w-4 h-4 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)]"
-                                                    />
-                                                    <span className={`ml-3 text-sm group-hover:text-black ${isSelected ? 'text-[var(--brand-royal-red)] font-medium' : 'text-gray-600'}`}>
-                                                        {sub.name}
-                                                    </span>
-                                                </label>
+                                                <div key={sub.id}>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <label className="flex items-center cursor-pointer group flex-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                onChange={() => {
+                                                                    if (onSubcategoryChange) {
+                                                                        onSubcategoryChange(isSelected ? null : sub.id);
+                                                                    }
+                                                                }}
+                                                                className="w-4 h-4 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)]"
+                                                            />
+                                                            <span className={`ml-3 text-sm group-hover:text-black ${isSelected ? 'text-[var(--brand-royal-red)] font-medium' : 'text-gray-600'}`}>
+                                                                {sub.name}
+                                                            </span>
+                                                        </label>
+                                                        {hasChildren && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setExpandedSubcategories((prev) => ({ ...prev, [sub.id]: !prev[sub.id] }))}
+                                                                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                                                aria-label={isSubExpanded ? "Collapse subcategory" : "Expand subcategory"}
+                                                            >
+                                                                <svg
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    width="14"
+                                                                    height="14"
+                                                                    viewBox="0 0 24 24"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="2"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    className={`transition-transform duration-200 ${isSubExpanded ? 'rotate-180' : ''}`}
+                                                                >
+                                                                    <path d="m6 9 6 6 6-6" />
+                                                                </svg>
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {hasChildren && isSubExpanded && (
+                                                        <div className="pl-7 mt-2 space-y-2">
+                                                            {sub.child_categories.map((child) => {
+                                                                const isChildSelected = selectedChildCategoryId == child.id;
+                                                                return (
+                                                                    <label key={`${sub.id}-${child.id}`} className="flex items-center cursor-pointer group">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={isChildSelected}
+                                                                            onChange={() => {
+                                                                                if (onChildCategoryChange) {
+                                                                                    onChildCategoryChange(isChildSelected ? null : child.id, sub.id);
+                                                                                }
+                                                                            }}
+                                                                            className="w-3.5 h-3.5 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)]"
+                                                                        />
+                                                                        <span className={`ml-2.5 text-xs group-hover:text-black ${isChildSelected ? 'text-[var(--brand-royal-red)] font-medium' : 'text-gray-500'}`}>
+                                                                            {child.name}
+                                                                        </span>
+                                                                    </label>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             );
                                         })}
                                     </div>
@@ -291,15 +363,15 @@ const FilterSidebar = ({
                 <div className="mb-6 pb-6 border-b border-gray-200">
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Color</h4>
                     <div className="space-y-3">
-                        {availableColors.map((color) => (
-                            <label key={color} className="flex items-center cursor-pointer group">
+                        {availableColors.map(({ name, code }) => (
+                            <label key={name} className="flex items-center cursor-pointer group">
                                 <input
                                     type="checkbox"
-                                    checked={filters.colors.includes(color)}
+                                    checked={filters.colors.includes(name)}
                                     onChange={(e) => {
                                         const newColors = e.target.checked
-                                            ? [...filters.colors, color]
-                                            : filters.colors.filter(c => c !== color);
+                                            ? [...filters.colors, name]
+                                            : filters.colors.filter(c => c !== name);
                                         onFilterChange('colors', newColors);
                                     }}
                                     className="w-4 h-4 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)]"
@@ -307,9 +379,9 @@ const FilterSidebar = ({
                                 <div className="ml-3 flex items-center gap-2">
                                     <div
                                         className="w-4 h-4 rounded-full border border-gray-300"
-                                        style={{ backgroundColor: color }}
+                                        style={{ backgroundColor: code || name }}
                                     ></div>
-                                    <span className="text-sm text-gray-700 group-hover:text-black capitalize">{color}</span>
+                                    <span className="text-sm text-gray-700 group-hover:text-black capitalize">{name}</span>
                                 </div>
                             </label>
                         ))}

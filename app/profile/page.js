@@ -397,6 +397,39 @@ export default function ProfileDashboard() {
         return "bg-gray-100 text-gray-800";
     };
 
+    const getOrderStatus = (order) => Number(order?.tran_status ?? order?.status ?? 0);
+
+    const parseReturnDaysFromText = (text) => {
+        if (!text || typeof text !== "string") return 0;
+        const match = text.match(/(\d+)/);
+        return match ? Number(match[1]) : 0;
+    };
+
+    const getOrderReturnWindowDays = (order) => {
+        const daysList = (order?.sales_details || [])
+            .map((item) => parseReturnDaysFromText(item?.product_info?.return_delivery_days))
+            .filter((days) => Number.isFinite(days) && days > 0);
+
+        if (daysList.length === 0) return 0;
+        return Math.max(...daysList);
+    };
+
+    const isRefundEligibleForDeliveredOrder = (order) => {
+        const status = getOrderStatus(order);
+        if (status !== 4) return false;
+
+        const returnWindowDays = getOrderReturnWindowDays(order);
+        if (returnWindowDays <= 0) return false;
+
+        const deliveredAt = order?.updated_at || order?.created_at;
+        const deliveredTime = new Date(deliveredAt).getTime();
+        if (!Number.isFinite(deliveredTime)) return false;
+
+        const elapsedMs = Date.now() - deliveredTime;
+        const windowMs = returnWindowDays * 24 * 60 * 60 * 1000;
+        return elapsedMs >= 0 && elapsedMs <= windowMs;
+    };
+
     if (loading || !user) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -789,7 +822,12 @@ export default function ProfileDashboard() {
                                         </div>
                                     ) : orders.length > 0 ? (
                                         <div className="space-y-4">
-                                            {orders.map(order => (
+                                            {orders.map(order => {
+                                                const orderStatus = getOrderStatus(order);
+                                                const showCancelAndRefund = orderStatus === 1;
+                                                const showRefund = isRefundEligibleForDeliveredOrder(order);
+
+                                                return (
                                                 <div key={order.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-lg transition-all duration-300 group">
                                                     <div className="flex gap-4">
                                                         {/* Product Image */}
@@ -850,7 +888,7 @@ export default function ProfileDashboard() {
                                                                 >
                                                                     View Details
                                                                 </button>
-                                                                {[1, 2, 3].includes(Number(order.tran_status || order.status)) && (
+                                                                {showCancelAndRefund && (
                                                                     <button
                                                                         onClick={() => setReturnModal({ open: true, order, mode: "cancel" })}
                                                                         className="flex-1 flex items-center justify-center gap-1 py-2 px-3 bg-orange-50 hover:bg-orange-500 hover:text-white text-orange-600 text-xs font-semibold rounded-lg border border-orange-200 hover:border-orange-500 transition-all duration-200"
@@ -859,7 +897,7 @@ export default function ProfileDashboard() {
                                                                         Cancel and Refund
                                                                     </button>
                                                                 )}
-                                                                {Number(order.tran_status || order.status) === 4 && (
+                                                                {showRefund && (
                                                                     <button
                                                                         onClick={() => setReturnModal({ open: true, order, mode: "return" })}
                                                                         className="flex-1 flex items-center justify-center gap-1 py-2 px-3 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 text-xs font-semibold rounded-lg border border-blue-200 hover:border-blue-600 transition-all duration-200"
@@ -872,7 +910,7 @@ export default function ProfileDashboard() {
                                                         </div>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            )})}
                                         </div>
                                     ) : (
                                         <div className="text-center py-20">

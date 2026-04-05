@@ -73,6 +73,28 @@ const NewArrivals = () => {
     const [products, setProducts] = useState(dummyProducts); // Start with dummy data
     const [loading, setLoading] = useState(true);
 
+    const getSizeDataFromVariants = (product) => {
+        const variants = Array.isArray(product.product_variants) ? product.product_variants : [];
+        if (variants.length === 0) {
+            return { sizes: [], unavailableSizes: [] };
+        }
+
+        const sizes = [...new Set(variants.map((variant) => variant?.name).filter(Boolean))];
+        const unavailableSizes = [...new Set(
+            variants
+                .filter((variant) => {
+                    if (Array.isArray(variant.child_variants) && variant.child_variants.length > 0) {
+                        return variant.child_variants.every((child) => (child?.quantity ?? 0) <= 0);
+                    }
+                    return (variant?.quantity ?? 0) <= 0;
+                })
+                .map((variant) => variant?.name)
+                .filter(Boolean)
+        )];
+
+        return { sizes, unavailableSizes };
+    };
+
     useEffect(() => {
         const fetchNewArrivals = async () => {
             try {
@@ -84,6 +106,7 @@ const NewArrivals = () => {
                         const mrp = product.retails_price || 0;
                         let finalPrice = mrp;
                         let discountLabel = "";
+                        const { sizes, unavailableSizes } = getSizeDataFromVariants(product);
 
                         if (product.discount > 0) {
                             const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
@@ -107,12 +130,8 @@ const NewArrivals = () => {
                             images: product.image_paths && product.image_paths.length > 0
                                 ? product.image_paths
                                 : [product.image_path, product.image_path1, product.image_path2].filter(Boolean),
-                            sizes: product.items && product.items.length > 0
-                                ? product.items.map(item => item.size)
-                                : ["S", "M", "L", "XL"], // Default sizes if no variants
-                            unavailableSizes: product.items && product.items.length > 0
-                                ? product.items.filter(item => item.quantity === 0).map(item => item.size)
-                                : [],
+                            sizes,
+                            unavailableSizes,
                             color: product.color || "Default",
                             colorCode: product.color_code || null,
                             rating: product.review_summary?.average_rating || 0,
