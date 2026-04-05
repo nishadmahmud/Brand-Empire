@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter, usePathname } from "next/navigat
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
-import { getProducts, getProductsBySubcategory, getProductsByChildCategory, getCategoriesFromServer, getCategoryWiseProducts, filterProductsByAttributes, getAttributes, getCampaigns } from "@/lib/api";
+import { getProducts, getProductsBySubcategory, getProductsByChildCategory, getCategoriesFromServer, getCategoryWiseProducts, filterProductsByAttributes, getAttributes, getCampaigns, prefetchCategoryTreeProducts } from "@/lib/api";
 
 export default function CategoryPage() {
     const params = useParams();
@@ -233,6 +233,7 @@ export default function CategoryPage() {
                 (product.name.toLowerCase().includes("black") ? "black" :
                     product.name.toLowerCase().includes("blue") ? "blue" :
                         product.name.toLowerCase().includes("white") ? "white" : "gray"),
+            colorCode: product.color_code || product.colorCode || product.colour_code || null,
             rating: product.review_summary?.average_rating || 0,
             reviews: product.review_summary?.total_reviews || 0,
             rawPrice: finalPrice,
@@ -259,21 +260,33 @@ export default function CategoryPage() {
                     }
                 }
                 // Otherwise use category-based fetching
-                else if (subcategoryId) {
-                    // We're on a subcategory page
-                    if (filters.categories.length > 0) {
-                        // Fetch products for each selected child category
-                        const fetchPromises = filters.categories.map(childCatId =>
-                            getProductsByChildCategory(childCatId, page)
-                        );
+                else if (filters.categories.length > 0) {
+                    // Mixed multi-select mode: supports selecting subcategories and child categories together.
+                    const selectedIds = filters.categories.map((id) => Number(id));
+                    const subcategoryIds = (currentCategoryData?.sub_category || []).map((sub) => Number(sub.id));
+                    const childCategoryIds = (currentCategoryData?.sub_category || []).flatMap((sub) =>
+                        (sub.child_categories || []).map((child) => Number(child.id))
+                    );
+                    const subcategoryIdSet = new Set(subcategoryIds);
+                    const childCategoryIdSet = new Set(childCategoryIds);
+
+                    const selectedSubcategoryIds = selectedIds.filter((id) => subcategoryIdSet.has(id));
+                    const selectedChildCategoryIds = selectedIds.filter((id) => childCategoryIdSet.has(id));
+
+                    const fetchPromises = [
+                        ...selectedSubcategoryIds.map((id) => getProductsBySubcategory(id, page)),
+                        ...selectedChildCategoryIds.map((id) => getProductsByChildCategory(id, page)),
+                    ];
+
+                    if (fetchPromises.length > 0) {
                         const responses = await Promise.all(fetchPromises);
-                        responses.forEach(response => {
+                        responses.forEach((response) => {
                             if (response.success && response.data) {
                                 allProducts = [...allProducts, ...response.data];
                             }
                         });
-                    } else {
-                        // No child categories selected, fetch all for this subcategory
+                        setTotalPages(1);
+                    } else if (subcategoryId) {
                         const response = await getProductsBySubcategory(subcategoryId, page);
                         if (response.success && response.data) {
                             allProducts = response.data;
@@ -281,22 +294,7 @@ export default function CategoryPage() {
                         if (response.pagination) {
                             setTotalPages(response.pagination.last_page);
                         }
-                    }
-                } else {
-                    // We're on main category page
-                    if (filters.categories.length > 0) {
-                        // Fetch products for each selected subcategory
-                        const fetchPromises = filters.categories.map(subCatId =>
-                            getProductsBySubcategory(subCatId, page)
-                        );
-                        const responses = await Promise.all(fetchPromises);
-                        responses.forEach(response => {
-                            if (response.success && response.data) {
-                                allProducts = [...allProducts, ...response.data];
-                            }
-                        });
                     } else {
-                        // No subcategories selected, fetch all for main category
                         const response = await getCategoryWiseProducts(categoryId, page);
                         if (response.success && response.data) {
                             allProducts = response.data;
@@ -304,6 +302,24 @@ export default function CategoryPage() {
                         if (response.pagination) {
                             setTotalPages(response.pagination.last_page);
                         }
+                    }
+                } else if (subcategoryId) {
+                    // We're on a subcategory page
+                    const response = await getProductsBySubcategory(subcategoryId, page);
+                    if (response.success && response.data) {
+                        allProducts = response.data;
+                    }
+                    if (response.pagination) {
+                        setTotalPages(response.pagination.last_page);
+                    }
+                } else {
+                    // We're on main category page
+                    const response = await getCategoryWiseProducts(categoryId, page);
+                    if (response.success && response.data) {
+                        allProducts = response.data;
+                    }
+                    if (response.pagination) {
+                        setTotalPages(response.pagination.last_page);
                     }
                 }
 
@@ -338,7 +354,7 @@ export default function CategoryPage() {
         if (categoryId) {
             fetchProducts();
         }
-    }, [categoryId, subcategoryId, page, filters.categories, filters.attributeValues]);
+    }, [categoryId, subcategoryId, page, filters.categories, filters.attributeValues, currentCategoryData]);
 
     // Apply filters and sorting (categories already handled by API fetch)
     const filteredAndSortedProducts = React.useMemo(() => {
@@ -431,9 +447,34 @@ export default function CategoryPage() {
     };
 
     const subCategories = currentCategoryData?.sub_category || [];
+    const nestedCategoryTree = currentCategoryData
+        ? [{
+            id: currentCategoryData.category_id,
+            name: currentCategoryData.name,
+            sub_category: currentCategoryData.sub_category || [],
+        }]
+        : [];
     const childCategories = subcategoryId
         ? currentCategoryData?.sub_category?.find(s => s.id == subcategoryId)?.child_categories || []
         : [];
+
+    // Background prefetch for subcategory + child-category product lists to make filter clicks instant.
+    useEffect(() => {
+        if (!currentCategoryData?.sub_category?.length) return;
+
+        const subcategoryIds = currentCategoryData.sub_category.map((sub) => sub.id);
+        const childCategoryIds = currentCategoryData.sub_category.flatMap((sub) =>
+            (sub.child_categories || []).map((child) => child.id)
+        );
+
+        prefetchCategoryTreeProducts({
+            subcategoryIds,
+            childCategoryIds,
+            includeAllPages: true
+        }).catch((error) => {
+            console.error("Category prefetch failed:", error);
+        });
+    }, [currentCategoryData]);
 
     return (
         <div className="min-h-screen bg-gray-50 pt-0 md:pt-4">
@@ -631,6 +672,8 @@ export default function CategoryPage() {
                             onFilterChange={handleFilterChange}
                             onClearAll={handleClearAll}
                             products={products}
+                            brandSubcategories={nestedCategoryTree}
+                            hideCategoryRoot={true}
                             categories={subcategoryId ? childCategories : subCategories}
                         />
                     </div>
@@ -745,6 +788,8 @@ export default function CategoryPage() {
                             onFilterChange={handleFilterChange}
                             onClearAll={handleClearAll}
                             products={products}
+                            brandSubcategories={nestedCategoryTree}
+                            hideCategoryRoot={true}
                             categories={subcategoryId ? childCategories : subCategories}
                             attributes={attributes}
                             selectedAttributeValues={filters.attributeValues}

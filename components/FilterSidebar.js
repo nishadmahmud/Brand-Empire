@@ -13,6 +13,7 @@ const FilterSidebar = ({
     onCategoryChange,
     // Brand subcategory props
     brandSubcategories,
+    hideCategoryRoot = false,
     selectedSubcategoryId,
     onSubcategoryChange,
     selectedChildCategoryId,
@@ -124,27 +125,32 @@ const FilterSidebar = ({
                 <div className="mb-6 pb-6 border-b border-gray-200">
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Categories</h4>
                     <div className="space-y-1">
-                        {brandSubcategories.map((category) => (
+                        {(hideCategoryRoot && brandSubcategories.length === 1
+                            ? brandSubcategories[0].sub_category || []
+                            : brandSubcategories
+                        ).map((category) => (
                             <div key={category.id}>
-                                {/* Parent category header */}
-                                <button
-                                    onClick={() => setExpandedCategoryId(expandedCategoryId === category.id ? null : category.id)}
-                                    className="w-full flex items-center justify-between py-2 text-sm font-semibold text-gray-800 hover:text-black transition-colors"
-                                >
-                                    <span>{category.name}</span>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                                        className={`transition-transform duration-200 text-gray-400 ${expandedCategoryId === category.id ? 'rotate-180' : ''}`}
+                                {!hideCategoryRoot && (
+                                    <button
+                                        onClick={() => setExpandedCategoryId(expandedCategoryId === category.id ? null : category.id)}
+                                        className="w-full flex items-center justify-between py-2 text-sm font-semibold text-gray-800 hover:text-black transition-colors"
                                     >
-                                        <path d="m6 9 6 6 6-6" />
-                                    </svg>
-                                </button>
-                                {/* Subcategories list */}
-                                {expandedCategoryId === category.id && category.sub_category?.length > 0 && (
+                                        <span>{category.name}</span>
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                                            className={`transition-transform duration-200 text-gray-400 ${expandedCategoryId === category.id ? 'rotate-180' : ''}`}
+                                        >
+                                            <path d="m6 9 6 6 6-6" />
+                                        </svg>
+                                    </button>
+                                )}
+                                {(hideCategoryRoot || expandedCategoryId === category.id) && ((hideCategoryRoot ? [category] : category.sub_category || []).length > 0) && (
                                     <div className="pl-3 pb-2 space-y-2 animate-fade-in border-l-2 border-gray-100 ml-1">
-                                        {category.sub_category.map((sub) => {
-                                            const isSelected = selectedSubcategoryId == sub.id;
+                                        {(hideCategoryRoot ? [category] : category.sub_category || []).map((sub) => {
+                                            const isSelected = selectedSubcategoryId != null
+                                                ? selectedSubcategoryId == sub.id
+                                                : (filters?.categories || []).includes(sub.id);
                                             const hasChildren = Array.isArray(sub.child_categories) && sub.child_categories.length > 0;
                                             const isSubExpanded = !!expandedSubcategories[sub.id];
                                             return (
@@ -157,6 +163,12 @@ const FilterSidebar = ({
                                                                 onChange={() => {
                                                                     if (onSubcategoryChange) {
                                                                         onSubcategoryChange(isSelected ? null : sub.id);
+                                                                    } else if (onFilterChange) {
+                                                                        const currentCategories = filters?.categories || [];
+                                                                        const newCategories = currentCategories.includes(sub.id)
+                                                                            ? currentCategories.filter((id) => id !== sub.id)
+                                                                            : [...currentCategories, sub.id];
+                                                                        onFilterChange('categories', newCategories);
                                                                     }
                                                                 }}
                                                                 className="w-4 h-4 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)]"
@@ -193,7 +205,9 @@ const FilterSidebar = ({
                                                     {hasChildren && isSubExpanded && (
                                                         <div className="pl-7 mt-2 space-y-2">
                                                             {sub.child_categories.map((child) => {
-                                                                const isChildSelected = selectedChildCategoryId == child.id;
+                                                                const isChildSelected = selectedChildCategoryId != null
+                                                                    ? selectedChildCategoryId == child.id
+                                                                    : (filters?.categories || []).includes(child.id);
                                                                 return (
                                                                     <label key={`${sub.id}-${child.id}`} className="flex items-center cursor-pointer group">
                                                                         <input
@@ -202,6 +216,12 @@ const FilterSidebar = ({
                                                                             onChange={() => {
                                                                                 if (onChildCategoryChange) {
                                                                                     onChildCategoryChange(isChildSelected ? null : child.id, sub.id);
+                                                                                } else if (onFilterChange) {
+                                                                                    const currentCategories = filters?.categories || [];
+                                                                                    const newCategories = currentCategories.includes(child.id)
+                                                                                        ? currentCategories.filter((id) => id !== child.id)
+                                                                                        : [...currentCategories, child.id];
+                                                                                    onFilterChange('categories', newCategories);
                                                                                 }
                                                                             }}
                                                                             className="w-3.5 h-3.5 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)]"

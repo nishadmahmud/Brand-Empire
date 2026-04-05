@@ -6,7 +6,7 @@ import Link from "next/link";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
-import { getBrandwiseProducts, getTopBrands, filterProductsByAttributes, getCategoriesFromServer, getProductsBySubcategory, getProductsByChildCategory } from "@/lib/api";
+import { getBrandwiseProducts, getTopBrands, filterProductsByAttributes, getCategoriesFromServer, getProductsBySubcategory, getProductsByChildCategory, prefetchCategoryTreeProducts } from "@/lib/api";
 
 export default function BrandPage() {
     const params = useParams();
@@ -118,6 +118,28 @@ export default function BrandPage() {
 
         fetchAndFilterCategories();
     }, [productCategoryIds]);
+
+    // Background prefetch for brand-relevant subcategory and child-category lists.
+    useEffect(() => {
+        if (!brandSubcategories.length) return;
+
+        const subcategoryIds = brandSubcategories.flatMap((category) =>
+            (category.sub_category || []).map((sub) => sub.id)
+        );
+        const childCategoryIds = brandSubcategories.flatMap((category) =>
+            (category.sub_category || []).flatMap((sub) =>
+                (sub.child_categories || []).map((child) => child.id)
+            )
+        );
+
+        prefetchCategoryTreeProducts({
+            subcategoryIds,
+            childCategoryIds,
+            includeAllPages: true
+        }).catch((error) => {
+            console.error("Brand prefetch failed:", error);
+        });
+    }, [brandSubcategories]);
 
     // Handle subcategory selection — fetch subcategory products and filter by brand
     const handleSubcategoryChange = async (subcategoryId) => {
