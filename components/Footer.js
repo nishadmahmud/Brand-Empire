@@ -116,6 +116,7 @@ const Footer = () => {
                                 { name: 'Blogs', href: '/blogs' },
                                 { name: 'About Us', href: '/about' },
                                 { name: 'Contact Us', href: '/contact' },
+                                { name: 'Careers', href: '/careers' },
                                 { name: 'Shipping Policy', href: '/shipping' },
                                 { name: 'Returns & Exchange', href: '/returns' },
                                 { name: 'Terms & Conditions', href: '/terms' },

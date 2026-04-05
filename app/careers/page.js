@@ -6,25 +6,39 @@ import { Briefcase, MapPin, ArrowRight } from "lucide-react";
 export default function Careers() {
     const jobs = [
         {
-            title: "Senior Fashion Designer",
-            department: "Design",
+            title: "Digital Marketing Specialist",
+            department: "Marketing",
             location: "Dhaka, Bangladesh",
             type: "Full-time",
-            description: "Lead our creative team in designing the upcoming Fall/Winter collection."
+            description: "Plan and execute digital campaigns across social, ads, and content channels."
         },
         {
-            title: "E-commerce Manager",
-            department: "Digital Marketing",
+            title: "SEO Specialist",
+            department: "Marketing",
             location: "Dhaka, Bangladesh",
             type: "Full-time",
-            description: "Oversee online sales strategies and website performance optimization."
+            description: "Improve search rankings, traffic quality, and on-page/off-page SEO performance."
         },
         {
-            title: "Customer Support Executive",
+            title: "Graphics Designer",
+            department: "Creative",
+            location: "Dhaka, Bangladesh",
+            type: "Full-time",
+            description: "Create campaign visuals, product creatives, and brand assets for digital platforms."
+        },
+        {
+            title: "Video Editor",
+            department: "Creative",
+            location: "Dhaka, Bangladesh",
+            type: "Full-time",
+            description: "Edit short-form and long-form videos for ads, social content, and product storytelling."
+        },
+        {
+            title: "Customer Support & Data Entry Operator",
             department: "Operations",
-            location: "Remote / Hybrid",
+            location: "Dhaka, Bangladesh",
             type: "Full-time",
-            description: "Provide world-class support to our growing customer base."
+            description: "Handle customer support queries and maintain accurate operational data records."
         }
     ];
 
