@@ -27,7 +27,7 @@ export default function NewArrivalsPage() {
     const [filters, setFilters] = useState({
         categories: [],
         brands: [],
-        priceRange: [0, 10000],
+        priceRange: [0, 1000000],
         colors: [],
         sizes: [],
         discount: 0,
@@ -266,7 +266,7 @@ export default function NewArrivalsPage() {
         setFilters({
             categories: [], // Intentionally empty as we are on "New Arrivals" not a specific category
             brands: [],
-            priceRange: [0, 10000],
+            priceRange: [0, 1000000],
             colors: [],
             sizes: [],
             discount: 0,

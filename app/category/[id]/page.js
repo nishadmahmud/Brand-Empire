@@ -417,7 +417,7 @@ export default function CategoryPage() {
         setFilters({
             categories: [],
             brands: [],
-            priceRange: [0, 10000],
+            priceRange: [0, 1000000],
             colors: [],
             sizes: [],
             discount: 0,
