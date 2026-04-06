@@ -140,6 +140,9 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
     const [error, setError] = useState("");
 
     const isCancel = mode === "cancel";
+    const orderStatus = Number(order?.tran_status ?? order?.status ?? 0);
+    const isCashOnDelivery = /(cod|cash)/i.test(String(order?.pay_mode || ""));
+    const shouldCollectRefundMethod = !(isCancel && orderStatus === 1 && isCashOnDelivery);
     const reasons = isCancel ? CANCEL_REASONS : RETURN_REASONS;
 
     // Auto-fill return address from user profile / order data
@@ -216,8 +219,10 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                 reason_note: description,
                 attachment: attachmentPath,
                 courier_info: courierLabel || "Not Specified",
-                refund_method: refundMethod,
-                bank_details: ["bkash", "nagad", "rocket", "bank_transfer"].includes(refundMethod) ? JSON.stringify(bankDetails) : null,
+                refund_method: shouldCollectRefundMethod ? refundMethod : null,
+                bank_details: shouldCollectRefundMethod && ["bkash", "nagad", "rocket", "bank_transfer"].includes(refundMethod)
+                    ? JSON.stringify(bankDetails)
+                    : null,
                 status: 0,
                 refund_details: refundDetails
             };
@@ -404,18 +409,20 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                     </div>
 
                     {/* ── Refund Method ── */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1.5">Preferred Refund Method</label>
-                        <CustomDropdown
-                            value={refundMethod}
-                            onChange={setRefundMethod}
-                            options={REFUND_METHODS}
-                            placeholder="Select refund method..."
-                        />
-                    </div>
+                    {shouldCollectRefundMethod && (
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1.5">Preferred Refund Method</label>
+                            <CustomDropdown
+                                value={refundMethod}
+                                onChange={setRefundMethod}
+                                options={REFUND_METHODS}
+                                placeholder="Select refund method..."
+                            />
+                        </div>
+                    )}
 
                     {/* ── Bank Details (conditional) ── */}
-                    {refundMethod === "bank_transfer" && (
+                    {shouldCollectRefundMethod && refundMethod === "bank_transfer" && (
                         <div className="border border-blue-100 bg-blue-50 rounded-xl p-4 space-y-2 mb-3">
                             <p className="text-xs font-bold text-blue-700 uppercase tracking-wide mb-2">Bank Details</p>
                             <input type="text" placeholder="Account Holder Name"
@@ -440,7 +447,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                     )}
 
                     {/* ── Mobile Banking Details (conditional) ── */}
-                    {["bkash", "nagad", "rocket"].includes(refundMethod) && (
+                    {shouldCollectRefundMethod && ["bkash", "nagad", "rocket"].includes(refundMethod) && (
                         <div className="border border-[var(--brand-royal-red)] bg-red-50 rounded-xl p-4 space-y-2 mt-3">
                             <p className="text-xs font-bold text-[var(--brand-royal-red)] uppercase tracking-wide mb-2">{REFUND_METHODS.find(m => m.value === refundMethod)?.label} Account Details</p>
                             <input type="tel" placeholder={"Enter " + REFUND_METHODS.find(m => m.value === refundMethod)?.label + " Number"}

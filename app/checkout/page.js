@@ -55,6 +55,7 @@ export default function CheckoutPage() {
 
     const [couponError, setCouponError] = useState("");
     const [donationAmount, setDonationAmount] = useState(0);
+    const [acceptedCheckoutPolicies, setAcceptedCheckoutPolicies] = useState(false);
 
     const formRef = useRef(null);
 
@@ -222,6 +223,11 @@ export default function CheckoutPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!acceptedCheckoutPolicies) {
+            toast.error("Please accept Terms, Privacy, Return and Shipping policies");
+            return;
+        }
 
         if (!selectedDistrict || !selectedCity) {
             toast.error("Please select both District and Area");
@@ -732,10 +738,34 @@ export default function CheckoutPage() {
                                     </span>
                                 </div>
 
+                                <label className="mt-4 flex items-start gap-2 text-xs text-gray-600 leading-relaxed cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={acceptedCheckoutPolicies}
+                                        onChange={(e) => setAcceptedCheckoutPolicies(e.target.checked)}
+                                        className="peer sr-only"
+                                    />
+                                    <span className="mt-0.5 h-4 w-4 rounded border border-gray-300 bg-white flex items-center justify-center transition-colors peer-checked:bg-[var(--brand-royal-red)] peer-checked:border-[var(--brand-royal-red)] peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--brand-royal-red)]/30">
+                                        {acceptedCheckoutPolicies && (
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                className="h-3 w-3 text-white"
+                                                fill="none"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                        )}
+                                    </span>
+                                    <span>
+                                        I accept <Link href="/terms" className="text-[var(--brand-royal-red)] hover:underline">Terms & Conditions</Link>, <Link href="/privacy" className="text-[var(--brand-royal-red)] hover:underline">Privacy Policy</Link>, <Link href="/returns" className="text-[var(--brand-royal-red)] hover:underline">Return Policy</Link> and <Link href="/shipping" className="text-[var(--brand-royal-red)] hover:underline">Shipping Policy</Link>.
+                                    </span>
+                                </label>
+
                                 <button
                                     type="submit"
                                     form="checkout-form"
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || !acceptedCheckoutPolicies}
                                     className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-royal-red)] px-6 py-4 text-sm font-bold text-white shadow-lg transition hover:opacity-90 hover:translate-y-[-1px] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
                                 >
                                     {isSubmitting ? (

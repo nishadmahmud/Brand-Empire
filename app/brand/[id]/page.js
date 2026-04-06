@@ -29,7 +29,7 @@ export default function BrandPage() {
     const [filters, setFilters] = useState({
         categories: [],
         brands: [],
-        priceRange: [0, 10000],
+        priceRange: [0, 100000],
         colors: [],
         sizes: [],
         discount: 0,
@@ -182,7 +182,7 @@ export default function BrandPage() {
                     const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
                     if (discountType === 'amount') {
                         finalPrice = mrp - product.discount;
-                        discountLabel = `৳${product.discount} OFF`;
+                        discountLabel = `\u09F3${product.discount} OFF`;
                     } else {
                         finalPrice = Math.round(mrp * (1 - product.discount / 100));
                         discountLabel = `${product.discount}% OFF`;
@@ -194,8 +194,8 @@ export default function BrandPage() {
                     id: product.id,
                     brand: product.brand_name || product.brands?.name || brandName || "BRAND",
                     name: product.name,
-                    price: `৳ ${finalPrice.toLocaleString()}`,
-                    originalPrice: product.discount > 0 ? `৳ ${mrp.toLocaleString()}` : "",
+                    price: `\u09F3 ${finalPrice.toLocaleString()}`,
+                    originalPrice: product.discount > 0 ? `\u09F3 ${mrp.toLocaleString()}` : "",
                     discount: discountLabel,
                     images: product.image_paths && product.image_paths.length > 0
                         ? product.image_paths
@@ -265,7 +265,7 @@ export default function BrandPage() {
                     const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
                     if (discountType === 'amount') {
                         finalPrice = mrp - product.discount;
-                        discountLabel = `à§³${product.discount} OFF`;
+                        discountLabel = `\u09F3${product.discount} OFF`;
                     } else {
                         finalPrice = Math.round(mrp * (1 - product.discount / 100));
                         discountLabel = `${product.discount}% OFF`;
@@ -277,8 +277,8 @@ export default function BrandPage() {
                     id: product.id,
                     brand: product.brand_name || product.brands?.name || brandName || "BRAND",
                     name: product.name,
-                    price: `à§³ ${finalPrice.toLocaleString()}`,
-                    originalPrice: product.discount > 0 ? `à§³ ${mrp.toLocaleString()}` : "",
+                    price: `\u09F3 ${finalPrice.toLocaleString()}`,
+                    originalPrice: product.discount > 0 ? `\u09F3 ${mrp.toLocaleString()}` : "",
                     discount: discountLabel,
                     images: product.image_paths && product.image_paths.length > 0
                         ? product.image_paths
@@ -381,7 +381,7 @@ export default function BrandPage() {
                             const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
                             if (discountType === 'amount') {
                                 finalPrice = mrp - product.discount;
-                                discountLabel = `৳${product.discount} OFF`;
+                                discountLabel = `\u09F3${product.discount} OFF`;
                             } else {
                                 finalPrice = Math.round(mrp * (1 - product.discount / 100));
                                 discountLabel = `${product.discount}% OFF`;
@@ -393,8 +393,8 @@ export default function BrandPage() {
                             id: product.id,
                             brand: product.brand_name || product.brands?.name || brandName || "BRAND",
                             name: product.name,
-                            price: `৳ ${finalPrice.toLocaleString()}`,
-                            originalPrice: product.discount > 0 ? `৳ ${mrp.toLocaleString()}` : "",
+                            price: `\u09F3 ${finalPrice.toLocaleString()}`,
+                            originalPrice: product.discount > 0 ? `\u09F3 ${mrp.toLocaleString()}` : "",
                             discount: discountLabel,
                             images: product.image_paths && product.image_paths.length > 0
                                 ? product.image_paths
@@ -494,7 +494,7 @@ export default function BrandPage() {
         setFilters({
             categories: [],
             brands: [],
-            priceRange: [0, 10000],
+            priceRange: [0, 100000],
             colors: [],
             sizes: [],
             discount: 0,

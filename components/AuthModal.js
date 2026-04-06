@@ -8,6 +8,7 @@ const AuthModal = () => {
     const { authModalOpen, authModalMode, closeAuthModal, setAuthModalMode, login, register } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [registerAcceptedPolicies, setRegisterAcceptedPolicies] = useState(false);
 
     // Form states
     const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -33,6 +34,7 @@ const AuthModal = () => {
                 password: "",
                 confirm_password: "",
             });
+            setRegisterAcceptedPolicies(false);
             setError("");
         }
     }, [authModalOpen]);
@@ -64,6 +66,11 @@ const AuthModal = () => {
 
         if (registerData.password !== registerData.confirm_password) {
             setError("Passwords do not match");
+            setLoading(false);
+            return;
+        }
+        if (!registerAcceptedPolicies) {
+            setError("Please accept Terms & Conditions and Privacy Policy");
             setLoading(false);
             return;
         }
@@ -293,6 +300,31 @@ const AuthModal = () => {
                                     style={{ fontSize: '16px' }}
                                 />
                             </div>
+
+                            <label className="flex items-start gap-2 text-xs text-gray-600 leading-relaxed cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={registerAcceptedPolicies}
+                                    onChange={(e) => setRegisterAcceptedPolicies(e.target.checked)}
+                                    className="peer sr-only"
+                                    required
+                                />
+                                <span className="mt-0.5 h-4 w-4 rounded border border-gray-300 bg-white flex items-center justify-center transition-colors peer-checked:bg-[var(--brand-royal-red)] peer-checked:border-[var(--brand-royal-red)] peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--brand-royal-red)]/30">
+                                    {registerAcceptedPolicies && (
+                                        <svg
+                                            viewBox="0 0 16 16"
+                                            className="h-3 w-3 text-white"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    )}
+                                </span>
+                                <span>
+                                    I accept the <Link href="/terms" className="text-[var(--brand-royal-red)] hover:underline">Terms & Conditions</Link> and <Link href="/privacy" className="text-[var(--brand-royal-red)] hover:underline">Privacy Policy</Link>.
+                                </span>
+                            </label>
 
                             <button
                                 type="submit"

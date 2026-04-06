@@ -156,9 +156,14 @@ export default function ProfileDashboard() {
         last_name: "",
         email: "",
         mobile_number: "",
-        address: ""
+        birthday_date: "",
+        address: "",
+        address_one: "",
+        address_two: "",
+        primary_address_field: "address"
     });
     const [isUpdating, setIsUpdating] = useState(false);
+    const [settingPrimaryAddressField, setSettingPrimaryAddressField] = useState(null);
     const [profileImage, setProfileImage] = useState(null);
     const [profileImagePreview, setProfileImagePreview] = useState(null);
     const [imageUploading, setImageUploading] = useState(false);
@@ -189,7 +194,11 @@ export default function ProfileDashboard() {
                 last_name: last,
                 email: user.email || "",
                 mobile_number: user.mobile_number || user.phone || "",
-                address: user.address || ""
+                birthday_date: (user.birthday_date || "").split("T")[0],
+                address: user.address || "",
+                address_one: user.address_one || "",
+                address_two: user.address_two || "",
+                primary_address_field: "address"
             });
         }
     }, [user, loading, router]);
@@ -223,13 +232,20 @@ export default function ProfileDashboard() {
             }
 
             // Step 2: Update profile with image URL
+            const trimmedAddress = formData.address?.trim() || "";
+            const trimmedAddressOne = formData.address_one?.trim() || "";
+            const trimmedAddressTwo = formData.address_two?.trim() || "";
+
             const profileData = {
                 id: formData.id,
                 first_name: formData.first_name,
                 last_name: formData.last_name,
                 email: formData.email,
                 phone: formData.mobile_number, // Backend requires 'phone' key
-                address: formData.address,
+                birthday_date: formData.birthday_date || null,
+                address: trimmedAddress || null,
+                address_one: trimmedAddressOne || null,
+                address_two: trimmedAddressTwo || null,
                 image: imageUrl
             };
 
@@ -248,6 +264,77 @@ export default function ProfileDashboard() {
         } finally {
             setIsUpdating(false);
             setImageUploading(false);
+        }
+    };
+
+    const swapPrimaryAddressInForm = (field) => {
+        setFormData((prev) => {
+            if (field !== "address_one" && field !== "address_two") return prev;
+
+            const nextAddress = prev[field] || "";
+            if (!nextAddress.trim()) return prev;
+
+            return {
+                ...prev,
+                address: nextAddress,
+                [field]: prev.address || "",
+                primary_address_field: "address",
+            };
+        });
+    };
+
+    const handleSetPrimaryFromView = async (field) => {
+        const chosenAddressRaw = field === "address_one" ? (user?.address_one || "") : (user?.address_two || "");
+        const chosenAddress = chosenAddressRaw.trim();
+        if (!chosenAddress) {
+            toast.error("Address is empty");
+            return;
+        }
+
+        const currentPrimaryRaw = user?.address || "";
+        if (currentPrimaryRaw.trim() === chosenAddress) {
+            toast.success("Already set as primary address");
+            return;
+        }
+
+        let first = user?.first_name || "";
+        let last = user?.last_name || "";
+        if (!first && user?.name) {
+            const parts = user.name.split(" ");
+            first = parts[0];
+            last = parts.slice(1).join(" ");
+        }
+
+        setSettingPrimaryAddressField(field);
+        try {
+            const profileData = {
+                id: user?.id || user?.customer_id,
+                first_name: first,
+                last_name: last,
+                email: user?.email || "",
+                phone: user?.mobile_number || user?.phone || "",
+                birthday_date: (user?.birthday_date || "").split("T")[0] || null,
+                address: chosenAddressRaw.trim() || null,
+                address_one: field === "address_one"
+                    ? (currentPrimaryRaw.trim() || null)
+                    : (user?.address_one?.trim() || null),
+                address_two: field === "address_two"
+                    ? (currentPrimaryRaw.trim() || null)
+                    : (user?.address_two?.trim() || null),
+                image: user?.image || null
+            };
+
+            const result = await updateProfile(profileData);
+            if (result.success) {
+                toast.success("Primary address switched");
+            } else {
+                toast.error(result.message || "Failed to update primary address");
+            }
+        } catch (error) {
+            console.error("Error setting primary address:", error);
+            toast.error("Something went wrong");
+        } finally {
+            setSettingPrimaryAddressField(null);
         }
     };
 
@@ -297,7 +384,7 @@ export default function ProfileDashboard() {
 
     useEffect(() => {
         const fetchRefunds = async () => {
-            if (!user || !token || activeSection !== "refunds") return;
+            if (!user || !token || !["refunds", "returns"].includes(activeSection)) return;
 
             setRefundsLoading(true);
             try {
@@ -534,6 +621,15 @@ export default function ProfileDashboard() {
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                         </svg>
                                         My Refunds
+                                    </button>
+                                    <button onClick={() => { setActiveSection("returns"); setSidebarOpen(false); }}
+                                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 ${activeSection === "returns"
+                                            ? "bg-white text-[var(--brand-royal-red)] font-semibold shadow-sm"
+                                            : "text-gray-600 hover:bg-white hover:text-gray-900"}`}>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h16M4 17h10" />
+                                        </svg>
+                                        My Returns
                                     </button>
                                     <button onClick={() => { setActiveSection("tracking"); setSidebarOpen(false); }}
                                         className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 ${activeSection === "tracking"
@@ -824,8 +920,8 @@ export default function ProfileDashboard() {
                                         <div className="space-y-4">
                                             {orders.map(order => {
                                                 const orderStatus = getOrderStatus(order);
-                                                const showCancelAndRefund = orderStatus === 1;
-                                                const showRefund = isRefundEligibleForDeliveredOrder(order);
+                                                const showCancelAndRefund = orderStatus === 1 || orderStatus === 2;
+                                                const showRefund = orderStatus === 2 || isRefundEligibleForDeliveredOrder(order);
 
                                                 return (
                                                 <div key={order.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-lg transition-all duration-300 group">
@@ -1249,6 +1345,70 @@ export default function ProfileDashboard() {
                                             </div>
                                             <h3 className="font-bold text-gray-900 text-lg mb-2">No refunds found</h3>
                                             <p className="text-gray-500 text-sm">You haven't submitted any refund requests yet.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* My Returns */}
+                        {activeSection === "returns" && (
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                                    <h2 className="text-2xl font-bold text-white">My Returns</h2>
+                                    <p className="text-white/60 text-sm mt-1">Returned items overview</p>
+                                </div>
+
+                                <div className="p-6">
+                                    {refundsLoading ? (
+                                        <div className="flex justify-center py-20">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
+                                        </div>
+                                    ) : refunds.length > 0 ? (
+                                        <div className="space-y-4">
+                                            {refunds.map((refund) => {
+                                                const firstSaleItem = refund?.sale?.sales_details?.[0];
+                                                const firstProduct = firstSaleItem?.product_info;
+                                                const imageUrl = firstProduct?.image_path || firstProduct?.image_paths?.[0] || null;
+                                                const productName = firstProduct?.name || `Product #${firstSaleItem?.product_id || "N/A"}`;
+                                                const displayPrice = Number(refund?.sale?.sub_total || 0) + Number(refund?.sale?.delivery_fee || 0);
+
+                                                return (
+                                                    <div key={refund.id} className="border border-gray-100 rounded-xl p-4 hover:shadow-md transition-all">
+                                                        <div className="flex gap-4 items-center">
+                                                            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 border border-gray-100 flex-shrink-0">
+                                                                {imageUrl ? (
+                                                                    <img src={imageUrl} alt={productName} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                                        <Package className="w-7 h-7" />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex-1 min-w-0">
+                                                                <h3 className="font-semibold text-gray-900 text-sm md:text-base line-clamp-1">{productName}</h3>
+                                                                <p className="text-xs text-gray-500 mt-1 font-mono">#{refund.invoice_id}</p>
+                                                                <p className="text-xs text-gray-500 mt-1">
+                                                                    {new Date(refund.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="text-right flex-shrink-0">
+                                                                <p className="text-lg font-bold text-[var(--brand-royal-red)]">৳{displayPrice}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-20">
+                                            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
+                                                <RotateCcw className="w-10 h-10 text-white" />
+                                            </div>
+                                            <h3 className="font-bold text-gray-900 text-lg mb-2">No returns found</h3>
+                                            <p className="text-gray-500 text-sm">You don't have any returned items yet.</p>
                                         </div>
                                     )}
                                 </div>
@@ -1820,8 +1980,34 @@ export default function ProfileDashboard() {
                                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
                                                     />
                                                 </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                                                    <input
+                                                        type="date"
+                                                        name="birthday_date"
+                                                        value={formData.birthday_date}
+                                                        onChange={(e) => setFormData({ ...formData, birthday_date: e.target.value })}
+                                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                    />
+                                                </div>
                                                 <div className="md:col-span-2">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <label className="block text-sm font-medium text-gray-700">Primary Address</label>
+                                                        {formData.primary_address_field === "address" ? (
+                                                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                                                                Primary
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setFormData({ ...formData, primary_address_field: "address" })}
+                                                                disabled={!formData.address.trim()}
+                                                                className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                Set as Primary
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                     <textarea
                                                         name="address"
                                                         rows={3}
@@ -1829,6 +2015,52 @@ export default function ProfileDashboard() {
                                                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
                                                     />
+                                                </div>
+                                                <div className="md:col-span-2 border rounded-xl p-4 bg-gray-50 space-y-4">
+                                                    <div>
+                                                        <h4 className="text-sm font-semibold text-gray-900">Additional Addresses</h4>
+                                                        <p className="text-xs text-gray-500 mt-1">You can add up to two additional addresses.</p>
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <label className="block text-sm font-medium text-gray-700">Additional Address 1</label>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => swapPrimaryAddressInForm("address_one")}
+                                                                disabled={!formData.address_one.trim()}
+                                                                className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                Set as Primary
+                                                            </button>
+                                                        </div>
+                                                        <textarea
+                                                            name="address_one"
+                                                            rows={3}
+                                                            value={formData.address_one}
+                                                            onChange={(e) => setFormData({ ...formData, address_one: e.target.value })}
+                                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <label className="block text-sm font-medium text-gray-700">Additional Address 2</label>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => swapPrimaryAddressInForm("address_two")}
+                                                                disabled={!formData.address_two.trim()}
+                                                                className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                Set as Primary
+                                                            </button>
+                                                        </div>
+                                                        <textarea
+                                                            name="address_two"
+                                                            rows={3}
+                                                            value={formData.address_two}
+                                                            onChange={(e) => setFormData({ ...formData, address_two: e.target.value })}
+                                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -1889,8 +2121,62 @@ export default function ProfileDashboard() {
                                                     <p className="text-gray-900">{user.mobile_number || user.phone || "N/A"}</p>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
+                                                    <label className="block text-sm font-medium text-gray-500 mb-1">Primary Address</label>
                                                     <p className="text-gray-900">{user.address || "No address provided"}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-500 mb-1">Date of Birth</label>
+                                                    <p className="text-gray-900">
+                                                        {user.birthday_date
+                                                            ? new Date(user.birthday_date).toLocaleDateString()
+                                                            : "N/A"}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t pt-6">
+                                                <h4 className="text-sm font-semibold text-gray-900 mb-4">Additional Addresses</h4>
+                                                <div className="grid md:grid-cols-2 gap-6">
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <label className="block text-sm font-medium text-gray-500">Address 1</label>
+                                                            {(user?.address || "").trim() === (user?.address_one || "").trim() && (user?.address_one || "").trim() ? (
+                                                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                                                                    Primary Address
+                                                                </span>
+                                                            ) : (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleSetPrimaryFromView("address_one")}
+                                                                    disabled={!user?.address_one?.trim() || settingPrimaryAddressField === "address_two" || settingPrimaryAddressField === "address_one"}
+                                                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    {settingPrimaryAddressField === "address_one" ? "Setting..." : "Set as Primary"}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-gray-900">{user.address_one || "N/A"}</p>
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <label className="block text-sm font-medium text-gray-500">Address 2</label>
+                                                            {(user?.address || "").trim() === (user?.address_two || "").trim() && (user?.address_two || "").trim() ? (
+                                                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                                                                    Primary Address
+                                                                </span>
+                                                            ) : (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleSetPrimaryFromView("address_two")}
+                                                                    disabled={!user?.address_two?.trim() || settingPrimaryAddressField === "address_one" || settingPrimaryAddressField === "address_two"}
+                                                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    {settingPrimaryAddressField === "address_two" ? "Setting..." : "Set as Primary"}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-gray-900">{user.address_two || "N/A"}</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

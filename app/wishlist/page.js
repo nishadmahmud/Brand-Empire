@@ -1,18 +1,38 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useWishlist } from "@/context/WishlistContext";
+import { getCategoriesFromServer } from "@/lib/api";
 import { Play, Heart, X } from "lucide-react";
 
 const WishlistPage = () => {
     const { wishlist, removeFromWishlist, studioWishlist, removeFromStudioWishlist } = useWishlist();
     const [activeTab, setActiveTab] = useState("products");
+    const [continueShoppingHref, setContinueShoppingHref] = useState("/category/all");
 
     const totalItems = wishlist.length + studioWishlist.length;
     const hasProducts = wishlist.length > 0;
     const hasStudio = studioWishlist.length > 0;
+
+    useEffect(() => {
+        const loadFirstCategory = async () => {
+            try {
+                const response = await getCategoriesFromServer();
+                const categories = Array.isArray(response?.data) ? response.data : [];
+                const firstCategoryId = categories[0]?.category_id || categories[0]?.id;
+
+                if (firstCategoryId) {
+                    setContinueShoppingHref(`/category/${firstCategoryId}`);
+                }
+            } catch (error) {
+                console.error("Failed to load categories for wishlist continue shopping route", error);
+            }
+        };
+
+        loadFirstCategory();
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
@@ -105,7 +125,7 @@ const WishlistPage = () => {
                                 ))}
                             </div>
                         ) : (
-                            <EmptyState message="No products in your wishlist" />
+                            <EmptyState message="No products in your wishlist" continueShoppingHref={continueShoppingHref} />
                         )}
                     </>
                 )}
@@ -212,7 +232,7 @@ const WishlistPage = () => {
                                 ))}
                             </div>
                         ) : (
-                            <EmptyState message="No studio posts saved yet" />
+                            <EmptyState message="No studio posts saved yet" continueShoppingHref={continueShoppingHref} />
                         )}
                     </>
                 )}
@@ -221,7 +241,7 @@ const WishlistPage = () => {
     );
 };
 
-function EmptyState({ message }) {
+function EmptyState({ message, continueShoppingHref }) {
     return (
         <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-40 h-40 bg-gray-100 rounded-full flex items-center justify-center mb-6">
@@ -231,7 +251,7 @@ function EmptyState({ message }) {
             </div>
             <h2 className="text-xl font-bold text-gray-800 mb-2">{message}</h2>
             <p className="text-gray-500 mb-8 max-w-md">Save items that you like in your wishlist. Review them anytime and easily move them to the bag.</p>
-            <Link href="/category/0" className="px-8 py-3 bg-[var(--brand-royal-red)] text-white font-bold uppercase tracking-wider rounded hover:bg-[#a01830] transition-colors">
+            <Link href={continueShoppingHref} className="px-8 py-3 bg-[var(--brand-royal-red)] text-white font-bold uppercase tracking-wider rounded hover:bg-[#a01830] transition-colors">
                 Continue Shopping
             </Link>
         </div>

@@ -129,12 +129,16 @@ const ProductDetailsPage = ({ productId }) => {
 
                     let finalPrice = mrp;
                     let discountLabel = "";
+                    let appliedDiscountType = null;
+                    let appliedDiscountValue = 0;
 
                     // Check for Campaign first
                     if (apiProduct.campaigns && apiProduct.campaigns.length > 0) {
                         const campaign = apiProduct.campaigns[0];
                         let discountAmount = 0;
                         const discountType = campaign.discount_type ? String(campaign.discount_type).toLowerCase() : 'amount';
+                        appliedDiscountType = discountType;
+                        appliedDiscountValue = Number(campaign.discount || 0);
 
                         if (discountType === 'amount') {
                             discountAmount = campaign.discount;
@@ -148,6 +152,8 @@ const ProductDetailsPage = ({ productId }) => {
                         if (finalPrice < 0) finalPrice = 0;
                     } else if (apiProduct.discount > 0) {
                         const discountType = apiProduct.discount_type ? String(apiProduct.discount_type).toLowerCase() : 'percentage';
+                        appliedDiscountType = discountType;
+                        appliedDiscountValue = Number(apiProduct.discount || 0);
 
                         if (discountType === 'amount') {
                             finalPrice = mrp - apiProduct.discount;
@@ -196,6 +202,8 @@ const ProductDetailsPage = ({ productId }) => {
                         price: finalPrice,
                         mrp: mrp,
                         discount: discountLabel,
+                        discountType: appliedDiscountType,
+                        discountValue: appliedDiscountValue,
                         rating: reviewsData.summary?.average_rating || apiProduct.rating || 0,
                         reviewCount: reviewsData.summary?.total_reviews || 0,
                         brand: apiProduct.brand?.name || apiProduct.brand_name || "Unknown Brand",
@@ -530,16 +538,24 @@ const ProductDetailsPage = ({ productId }) => {
             // Check for variant specific price
             const vPrice = targetVariant.price ? parseFloat(targetVariant.price) : 0;
             if (vPrice > 0) {
-                currentPrice = vPrice;
-                // If variant has MRP, use it
                 const vMrp = targetVariant.retails_price ? parseFloat(targetVariant.retails_price) : 0;
-                if (vMrp > 0) currentMrp = vMrp;
+                currentMrp = vMrp > 0 ? vMrp : vPrice;
 
-                // Recalculate discount label if needed
-                if (currentMrp > currentPrice) {
-                    const diff = currentMrp - currentPrice;
-                    const percent = Math.round((diff / currentMrp) * 100);
-                    currentDiscount = `${percent}% OFF`;
+                // Product-level discount applies to all variants.
+                if (product.discountType && Number(product.discountValue) > 0) {
+                    if (product.discountType === "amount") {
+                        currentPrice = Math.max(0, currentMrp - Number(product.discountValue));
+                    } else {
+                        currentPrice = Math.max(0, Math.round(currentMrp * (1 - Number(product.discountValue) / 100)));
+                    }
+                    currentDiscount = product.discount;
+                } else {
+                    currentPrice = vPrice;
+                    if (currentMrp > currentPrice) {
+                        const diff = currentMrp - currentPrice;
+                        const percent = Math.round((diff / currentMrp) * 100);
+                        currentDiscount = `${percent}% OFF`;
+                    }
                 }
             }
         }
