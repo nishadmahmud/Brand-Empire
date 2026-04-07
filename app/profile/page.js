@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -1339,7 +1339,18 @@ export default function ProfileDashboard() {
                                                                 )}
                                                             </div>
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="text-sm font-semibold text-gray-900 line-clamp-1">{name}</p>
+                                                                {productId ? (
+                                                                    <Link
+                                                                        href={`/product/${productId}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="block text-sm font-semibold text-gray-900 line-clamp-1 hover:text-[var(--brand-royal-red)] transition-colors"
+                                                                    >
+                                                                        {name}
+                                                                    </Link>
+                                                                ) : (
+                                                                    <p className="text-sm font-semibold text-gray-900 line-clamp-1">{name}</p>
+                                                                )}
                                                                 <p className="text-xs text-gray-500">Order #{order?.invoice_id} - Qty: {quantity}</p>
                                                             </div>
                                                             {alreadyReviewed ? (
@@ -1403,50 +1414,19 @@ export default function ProfileDashboard() {
                                                 const showCancelAndRefund = orderStatus === 1 || orderStatus === 2;
                                                 const showRefund = orderStatus === 2 || isRefundEligibleForDeliveredOrder(order);
                                                 const showOrderConfirmedSupport = orderStatus === 2;
-                                                const reviewableOrderItem = orderStatus === 4
-                                                    ? (order?.sales_details || []).find((item) => {
-                                                        const productId = getProductIdFromSaleItem(item);
-                                                        return !!productId && !reviewedProductMap[productId];
-                                                    }) || null
-                                                    : null;
-                                                const canLeaveReview = !!reviewableOrderItem;
+                                                const orderItems = order?.sales_details || [];
                                                 const whatsappSupportUrl = `${SUPPORT_WHATSAPP_BASE}?text=${encodeURIComponent(`Hi, I have a query regarding my order #${order?.invoice_id || ""}.`)}`;
 
                                                 return (
                                                 <div key={order.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-lg transition-all duration-300 group">
-                                                    <div className="flex gap-4">
-                                                        {/* Product Image */}
-                                                        <div className="h-24 w-24 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden relative border border-gray-100">
-                                                            {order.sales_details?.[0]?.product_info?.image_path ? (
-                                                                <Image
-                                                                    src={order.sales_details[0].product_info.image_path}
-                                                                    alt="Product"
-                                                                    fill
-                                                                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                                                                    unoptimized
-                                                                />
-                                                            ) : (
-                                                                <div className="flex h-full w-full items-center justify-center text-gray-300">
-                                                                    <Package className="h-8 w-8" />
-                                                                </div>
-                                                            )}
-                                                            {/* Count Badge if more than 1 item */}
-                                                            {order.sales_details?.length > 1 && (
-                                                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm text-white text-[10px] py-1 text-center font-medium">
-                                                                    + {order.sales_details.length - 1} more
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Details */}
-                                                        <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                                                    <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                                                             <div>
                                                                 <div className="flex justify-between items-start gap-4">
                                                                     <div>
                                                                         <h3 className="font-semibold text-gray-900 text-sm md:text-base line-clamp-1 mb-1">
-                                                                            {order.sales_details?.[0]?.product_info?.name || `Order #${order.invoice_id}`}
+                                                                            {`Order #${order.invoice_id}`}
                                                                         </h3>
-                                                                        <p className="text-xs text-gray-500 font-mono">#{order.invoice_id}</p>
+                                                                        <p className="text-[11px] text-gray-500 mt-1">{orderItems.length} item{orderItems.length > 1 ? "s" : ""}</p>
                                                                     </div>
                                                                     <div className="text-right flex-shrink-0">
                                                                         <p className="text-2xl font-bold text-[var(--brand-royal-red)]">
@@ -1464,6 +1444,72 @@ export default function ProfileDashboard() {
                                                                     {order.delivery_customer_address || "No address provided"}
                                                                 </p>
                                                             </div>
+
+                                                            {orderItems.length > 0 && (
+                                                                <div className="mt-3 space-y-2">
+                                                                    {orderItems.map((item, idx) => {
+                                                                        const productId = getProductIdFromSaleItem(item);
+                                                                        const canReviewItem = orderStatus === 4 && !!productId && !reviewedProductMap[productId];
+                                                                        const itemImage = item?.product_info?.image_path
+                                                                            || (Array.isArray(item?.product_info?.image_paths) ? item.product_info.image_paths[0] : null)
+                                                                            || null;
+                                                                        const itemName = item?.product_info?.name || `Product #${item?.product_id || "N/A"}`;
+
+                                                                        return (
+                                                                            <div key={item?.id || idx} className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-gray-50 border border-gray-100">
+                                                                                <div className="min-w-0 flex items-center gap-3">
+                                                                                    <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200 flex-shrink-0 relative">
+                                                                                        {itemImage ? (
+                                                                                            <Image
+                                                                                                src={itemImage}
+                                                                                                alt={itemName}
+                                                                                                fill
+                                                                                                className="object-cover"
+                                                                                                unoptimized
+                                                                                            />
+                                                                                        ) : (
+                                                                                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                                                                <Package className="w-4 h-4" />
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div className="min-w-0">
+                                                                                        {productId ? (
+                                                                                            <Link
+                                                                                                href={`/product/${productId}`}
+                                                                                                target="_blank"
+                                                                                                rel="noopener noreferrer"
+                                                                                                className="block text-xs font-semibold text-gray-900 line-clamp-1 hover:text-[var(--brand-royal-red)] transition-colors"
+                                                                                            >
+                                                                                                {itemName}
+                                                                                            </Link>
+                                                                                        ) : (
+                                                                                            <p className="text-xs font-semibold text-gray-900 line-clamp-1">
+                                                                                                {itemName}
+                                                                                            </p>
+                                                                                        )}
+                                                                                        <p className="text-[11px] text-gray-500 mt-0.5">
+                                                                                            Qty: {item?.qty || item?.quantity || 1}{item?.size ? ` - Size: ${item.size}` : ""}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                {canReviewItem ? (
+                                                                                    <button
+                                                                                        onClick={() => openReviewForItem(item)}
+                                                                                        className="px-3 py-1.5 bg-[var(--brand-royal-red)] hover:bg-[#a01830] text-white text-[11px] font-semibold rounded-md transition-colors whitespace-nowrap"
+                                                                                    >
+                                                                                        Leave a Review
+                                                                                    </button>
+                                                                                ) : (orderStatus === 4 && productId && reviewedProductMap[productId]) ? (
+                                                                                    <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full bg-green-50 text-green-700 border border-green-200 whitespace-nowrap">
+                                                                                        Reviewed
+                                                                                    </span>
+                                                                                ) : null}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
 
                                                             {/* Action Buttons */}
                                                             <div className="mt-3 flex gap-2">
@@ -1489,15 +1535,6 @@ export default function ProfileDashboard() {
                                                                     >
                                                                         <RotateCcw size={12} />
                                                                         Refund
-                                                                    </button>
-                                                                )}
-                                                                {canLeaveReview && (
-                                                                    <button
-                                                                        onClick={() => openReviewForItem(reviewableOrderItem)}
-                                                                        className="flex-1 flex items-center justify-center gap-1 py-2 px-3 bg-[var(--brand-royal-red)] hover:bg-[#a01830] text-white text-xs font-semibold rounded-lg border border-[var(--brand-royal-red)] transition-all duration-200"
-                                                                    >
-                                                                        <CheckCircle size={12} />
-                                                                        Leave a Review
                                                                     </button>
                                                                 )}
                                                             </div>
@@ -1528,7 +1565,6 @@ export default function ProfileDashboard() {
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    </div>
                                                 </div>
                                             )})}
                                         </div>
@@ -1620,7 +1656,7 @@ export default function ProfileDashboard() {
                                                                     <p className="font-medium text-gray-900 text-sm line-clamp-1 group-hover:text-[var(--brand-royal-red)] transition-colors">{item.product_info?.name || "Product"}</p>
                                                                     <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-500">
                                                                         <span>Qty: {item.qty}</span>
-                                                                        {item.size && <span>• Size: {item.size}</span>}
+                                                                        {item.size && <span>- Size: {item.size}</span>}
                                                                     </div>
                                                                 </div>
                                                                 <div className="text-right">
@@ -1892,7 +1928,7 @@ export default function ProfileDashboard() {
                                                                         {item.product_info?.name}
                                                                     </p>
                                                                     <p className="text-xs text-gray-500 mt-1">
-                                                                        Qty: {item.qty} {item.size ? `· Size: ${item.size}` : ""}
+                                                                        Qty: {item.qty} {item.size ? `Â· Size: ${item.size}` : ""}
                                                                     </p>
                                                                 </div>
                                                                 <div className="text-sm font-bold text-gray-900">
@@ -1930,7 +1966,7 @@ export default function ProfileDashboard() {
                                                 <div className="min-w-0">
                                                     <p className="text-[10px] md:text-xs text-gray-500">Your Points</p>
                                                     <p className="text-lg md:text-3xl font-bold text-gray-900">283K</p>
-                                                    <p className="text-[10px] md:text-xs text-gray-500">≈ ৳1,504</p>
+                                                    <p className="text-[10px] md:text-xs text-gray-500">â‰ˆ ৳1,504</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -1959,7 +1995,7 @@ export default function ProfileDashboard() {
                                                 <div className="min-w-0">
                                                     <p className="text-[10px] md:text-xs text-gray-500">Your Credit</p>
                                                     <p className="text-lg md:text-3xl font-bold text-gray-900">৳500</p>
-                                                    <p className="text-[10px] md:text-xs text-gray-500">📅 Dec 2026</p>
+                                                    <p className="text-[10px] md:text-xs text-gray-500">ðŸ“… Dec 2026</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -2811,7 +2847,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                             </div>
                         ) : (
                             <div className="text-center py-20 text-gray-400">
-                                <p className="text-4xl mb-4">🏷️</p>
+                                <p className="text-4xl mb-4">ðŸ·ï¸</p>
                                 <p>No coupons available right now</p>
                             </div>
                         )}
@@ -2840,7 +2876,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                                         >
                                             {/* Urgency Badge */}
                                             <div className="absolute top-0 right-0 bg-orange-500 text-white text-xs px-2 py-1 rounded-bl font-medium">
-                                                ⏰ {diffDays} day{diffDays !== 1 ? 's' : ''} left
+                                                â° {diffDays} day{diffDays !== 1 ? 's' : ''} left
                                             </div>
 
                                             {/* Discount Badge */}
@@ -2931,7 +2967,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                             </div>
                         ) : (
                             <div className="text-center py-20 text-gray-400">
-                                <p className="text-4xl mb-4">🏷️</p>
+                                <p className="text-4xl mb-4">ðŸ·ï¸</p>
                                 <p className="mb-2">You haven't collected any coupons yet</p>
                                 <button
                                     onClick={() => setActiveTab("all")}
@@ -2947,6 +2983,9 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
         </div>
     );
 }
+
+
+
 
 
 
