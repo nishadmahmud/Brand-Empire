@@ -4,13 +4,14 @@ import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, trackOrder, uploadSingleFile, getCustomerRefunds, getProductReviews, getProductById } from "@/lib/api";
+import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, trackOrder, uploadSingleFile, getCustomerRefunds, getProductReviews, getProductById, getInvoiceSettings } from "@/lib/api";
 import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { Home, Package, Heart, Tag, User, LogOut, ChevronDown, Clock, CheckCircle, Truck, PackageCheck, XCircle, CheckCircle2, PauseCircle, ClipboardList, DollarSign, MapPin, RotateCcw, AlertTriangle } from "lucide-react";
 import ReturnCancelModal from "@/components/ReturnCancelModal";
 import WriteReviewModal from "@/components/WriteReviewModal";
+import DOMPurify from "isomorphic-dompurify";
 
 // Timeline stages configuration
 const timelineStages = [
@@ -152,6 +153,8 @@ export default function ProfileDashboard() {
     const [refundProductMap, setRefundProductMap] = useState({});
     const [coupons, setCoupons] = useState([]);
     const [couponsLoading, setCouponsLoading] = useState(false);
+    const [invoiceSettings, setInvoiceSettings] = useState(null);
+    const [invoiceSettingsLoading, setInvoiceSettingsLoading] = useState(false);
 
     // Profile editing states
     const [isEditing, setIsEditing] = useState(false);
@@ -441,6 +444,26 @@ export default function ProfileDashboard() {
 
         fetchCoupons();
     }, [user, activeSection]);
+
+    useEffect(() => {
+        const fetchInvoiceSettings = async () => {
+            if (!["terms", "privacy"].includes(activeSection)) return;
+            if (invoiceSettings) return;
+
+            setInvoiceSettingsLoading(true);
+            try {
+                const response = await getInvoiceSettings();
+                setInvoiceSettings(response?.data || {});
+            } catch (error) {
+                console.error("Failed to fetch invoice settings", error);
+                setInvoiceSettings({});
+            } finally {
+                setInvoiceSettingsLoading(false);
+            }
+        };
+
+        fetchInvoiceSettings();
+    }, [activeSection, invoiceSettings]);
 
     useEffect(() => {
         if (!refunds || refunds.length === 0) return;
@@ -2541,41 +2564,26 @@ export default function ProfileDashboard() {
                                 </div>
                             </div>
                         )}
-
                         {/* Terms of Use Section */}
                         {activeSection === "terms" && (
                             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                                 <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
                                     <h2 className="text-2xl font-bold text-white">Terms & Conditions</h2>
-                                    <p className="text-white/60 text-sm mt-1">Last updated: January 1, 2026</p>
+                                    <p className="text-white/60 text-sm mt-1">Updated from company policy settings</p>
                                 </div>
-                                <div className="p-6 prose prose-sm max-w-none text-gray-700 space-y-6">
-                                    <section>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">1. Agreement to Terms</h3>
-                                        <p className="text-sm">These Terms of Use constitute a legally binding agreement made between you, whether personally or on behalf of an entity ("you") and Brand Empire ("we," "us" or "our"), concerning your access to and use of the Brand Empire website as well as any other media form, media channel, mobile website or mobile application related, linked, or otherwise connected thereto.</p>
-                                    </section>
-                                    <section>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">2. User Representations</h3>
-                                        <p className="text-sm">By using the Site, you represent and warrant that:</p>
-                                        <ul className="list-disc pl-5 space-y-1 mt-2 text-sm">
-                                            <li>All registration information you submit will be true, accurate, current, and complete.</li>
-                                            <li>You will maintain the accuracy of such information and promptly update such registration information as necessary.</li>
-                                            <li>You have the legal capacity and you agree to comply with these Terms of Use.</li>
-                                            <li>You are not a minor in the jurisdiction in which you reside.</li>
-                                        </ul>
-                                    </section>
-                                    <section>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">3. Products</h3>
-                                        <p className="text-sm">We make every effort to display as accurately as possible the colors, features, specifications, and details of the products available on the Site. However, we do not guarantee that the colors, features, specifications, and details of the products will be accurate, complete, reliable, current, or free of other errors.</p>
-                                    </section>
-                                    <section>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">4. Purchases and Payment</h3>
-                                        <p className="text-sm">We accept varying forms of payment as indicated on the website. You agree to provide current, complete, and accurate purchase and account information for all purchases made via the Site. Sales tax will be added to the price of purchases as deemed required by us.</p>
-                                    </section>
-                                    <section>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">5. Contact Us</h3>
-                                        <p className="text-sm">In order to resolve a complaint regarding the Site or to receive further information regarding use of the Site, please contact us at: <a href="mailto:support@brandempire.com" className="text-red-600 hover:underline">support@brandempire.com</a>.</p>
-                                    </section>
+                                <div className="p-6">
+                                    {invoiceSettingsLoading ? (
+                                        <div className="flex justify-center py-16">
+                                            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
+                                        </div>
+                                    ) : invoiceSettings?.terms_condition ? (
+                                        <div
+                                            className="policy-html prose prose-sm max-w-none text-gray-700"
+                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(invoiceSettings.terms_condition) }}
+                                        />
+                                    ) : (
+                                        <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">Terms content is not available right now.</div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -2585,45 +2593,26 @@ export default function ProfileDashboard() {
                             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                                 <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800">
                                     <h2 className="text-2xl font-bold text-white">Privacy Policy</h2>
-                                    <p className="text-white/60 text-sm mt-1">Last updated: January 1, 2026</p>
+                                    <p className="text-white/60 text-sm mt-1">Updated from company policy settings</p>
                                 </div>
-                                <div className="p-6 prose prose-sm max-w-none text-gray-700 space-y-6">
-                                    <section>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">1. Introduction</h3>
-                                        <p className="text-sm">Welcome to Brand Empire. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website and tell you about your privacy rights and how the law protects you.</p>
-                                    </section>
-                                    <section>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">2. Data We Collect</h3>
-                                        <p className="text-sm">We may collect, use, store and transfer different kinds of personal data about you:</p>
-                                        <ul className="list-disc pl-5 space-y-1 mt-2 text-sm">
-                                            <li><strong>Identity Data:</strong> includes first name, last name, username or similar identifier.</li>
-                                            <li><strong>Contact Data:</strong> includes billing address, delivery address, email address and telephone numbers.</li>
-                                            <li><strong>Financial Data:</strong> includes payment card details (processed securely by our third-party payment processors).</li>
-                                            <li><strong>Transaction Data:</strong> includes details about payments to and from you and other details of products you have purchased from us.</li>
-                                        </ul>
-                                    </section>
-                                    <section>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">3. How We Use Your Data</h3>
-                                        <p className="text-sm">We will only use your personal data when the law allows us to:</p>
-                                        <ul className="list-disc pl-5 space-y-1 mt-2 text-sm">
-                                            <li>Where we need to perform the contract we are about to enter into or have entered into with you.</li>
-                                            <li>Where it is necessary for our legitimate interests and your interests do not override those interests.</li>
-                                            <li>Where we need to comply with a legal or regulatory obligation.</li>
-                                        </ul>
-                                    </section>
-                                    <section>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">4. Data Security</h3>
-                                        <p className="text-sm">We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorized way, altered or disclosed. In addition, we limit access to your personal data to those employees, agents, contractors and other third parties who have a business need to know.</p>
-                                    </section>
-                                    <section>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">5. Contact Details</h3>
-                                        <p className="text-sm">If you have any questions about this privacy policy or our privacy practices, please contact us at: <a href="mailto:privacy@brandempire.com" className="text-red-600 hover:underline">privacy@brandempire.com</a>.</p>
-                                    </section>
+                                <div className="p-6">
+                                    {invoiceSettingsLoading ? (
+                                        <div className="flex justify-center py-16">
+                                            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
+                                        </div>
+                                    ) : invoiceSettings?.privacy_policy ? (
+                                        <div
+                                            className="policy-html prose prose-sm max-w-none text-gray-700"
+                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(invoiceSettings.privacy_policy) }}
+                                        />
+                                    ) : (
+                                        <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">Privacy content is not available right now.</div>
+                                    )}
                                 </div>
                             </div>
                         )}
 
-                        <WriteReviewModal
+<WriteReviewModal
                             product={reviewModal.product}
                             productId={reviewModal.productId}
                             open={reviewModal.open}
@@ -2958,5 +2947,6 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
         </div>
     );
 }
+
 
 

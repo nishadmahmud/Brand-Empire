@@ -117,3 +117,18 @@ body {
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
+
+/* Policy HTML rendering safety for long unbroken content */
+.policy-html,
+.policy-html * {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.policy-html img,
+.policy-html video,
+.policy-html iframe,
+.policy-html table {
+  max-width: 100%;
+}
