@@ -4,12 +4,13 @@ import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, trackOrder, uploadSingleFile, getCustomerRefunds } from "@/lib/api";
+import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, trackOrder, uploadSingleFile, getCustomerRefunds, getProductReviews } from "@/lib/api";
 import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { Home, Package, Heart, Tag, User, LogOut, ChevronDown, Clock, CheckCircle, Truck, PackageCheck, XCircle, CheckCircle2, PauseCircle, ClipboardList, DollarSign, MapPin, RotateCcw, AlertTriangle } from "lucide-react";
 import ReturnCancelModal from "@/components/ReturnCancelModal";
+import WriteReviewModal from "@/components/WriteReviewModal";
 
 // Timeline stages configuration
 const timelineStages = [
@@ -132,6 +133,9 @@ const ORDER_TABS = [
     { id: "5", label: "Delivery Canceled", Icon: XCircle },
 ];
 
+const SUPPORT_WHATSAPP_BASE = "https://wa.me/8801814111716";
+const SUPPORT_FACEBOOK_INBOX = "https://www.facebook.com/brandempirebd";
+
 export default function ProfileDashboard() {
     const { user, logout, loading, token, updateProfile } = useAuth();
     const { wishlist, removeFromWishlist } = useWishlist();
@@ -175,6 +179,10 @@ export default function ProfileDashboard() {
 
     // Order details modal state
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [reviewModal, setReviewModal] = useState({ open: false, productId: null, product: null });
+    const [reviewedProductMap, setReviewedProductMap] = useState({});
+    const [overviewDeliveredOrders, setOverviewDeliveredOrders] = useState([]);
+    const [overviewDeliveredLoading, setOverviewDeliveredLoading] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -433,6 +441,45 @@ export default function ProfileDashboard() {
         fetchCoupons();
     }, [user, activeSection]);
 
+    useEffect(() => {
+        const fetchOverviewDeliveredOrders = async () => {
+            if (!user || !token || activeSection !== "dashboard") return;
+
+            setOverviewDeliveredLoading(true);
+            try {
+                const customerId = user.id || user.customer_id;
+                const [ordersData, refundsData] = await Promise.all([
+                    getCustomerOrders(token, customerId, "4"),
+                    getCustomerRefunds(token, customerId)
+                ]);
+
+                if (ordersData.success) {
+                    let deliveredList = ordersData.data?.data || ordersData.data || [];
+                    deliveredList = Array.isArray(deliveredList) ? deliveredList : [];
+
+                    if (refundsData.success) {
+                        const refundList = refundsData.data?.data || refundsData.data || [];
+                        const refundedInvoiceIds = new Set(
+                            (Array.isArray(refundList) ? refundList : []).map((r) => String(r.invoice_id))
+                        );
+                        deliveredList = deliveredList.filter((order) => !refundedInvoiceIds.has(String(order.invoice_id)));
+                    }
+
+                    setOverviewDeliveredOrders(deliveredList);
+                } else {
+                    setOverviewDeliveredOrders([]);
+                }
+            } catch (err) {
+                console.error("Failed to fetch delivered overview orders", err);
+                setOverviewDeliveredOrders([]);
+            } finally {
+                setOverviewDeliveredLoading(false);
+            }
+        };
+
+        fetchOverviewDeliveredOrders();
+    }, [user, token, activeSection]);
+
     const handleTrackOrder = async (e) => {
         e.preventDefault();
         if (!trackInvoiceId.trim()) {
@@ -515,6 +562,117 @@ export default function ProfileDashboard() {
         const elapsedMs = Date.now() - deliveredTime;
         const windowMs = returnWindowDays * 24 * 60 * 60 * 1000;
         return elapsedMs >= 0 && elapsedMs <= windowMs;
+    };
+
+    const getProductIdFromSaleItem = (saleItem) => {
+        const rawId = saleItem?.product_id ?? saleItem?.product_info?.id;
+        const numeric = Number(rawId);
+        return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+    };
+
+    const overviewDeliveredItems = (overviewDeliveredOrders || []).flatMap((order) => {
+        const orderStatus = getOrderStatus(order);
+        if (orderStatus !== 4) return [];
+
+        return (order?.sales_details || []).map((item, idx) => {
+            const productId = getProductIdFromSaleItem(item);
+            return {
+                key: `${order?.id || order?.invoice_id || "order"}-${item?.id || idx}`,
+                order,
+                item,
+                productId,
+                quantity: Number(item?.qty || item?.quantity || 1),
+                name: item?.product_info?.name || "Product",
+                image: item?.product_info?.image_path || null,
+            };
+        });
+    });
+
+    useEffect(() => {
+        if (!user || !token) return;
+        const customerIds = [user?.customer_id, user?.id]
+            .filter((id) => id !== null && id !== undefined && String(id).trim() !== "")
+            .map((id) => String(id));
+
+        const deliveredOrderItems = (orders || []).flatMap((order) => {
+            if (getOrderStatus(order) !== 4) return [];
+            return (order?.sales_details || []).map((item) => getProductIdFromSaleItem(item)).filter(Boolean);
+        });
+
+        const overviewItems = (overviewDeliveredOrders || []).flatMap((order) => {
+            if (getOrderStatus(order) !== 4) return [];
+            return (order?.sales_details || []).map((item) => getProductIdFromSaleItem(item)).filter(Boolean);
+        });
+
+        const uniqueProductIds = [...new Set([...deliveredOrderItems, ...overviewItems])];
+        const missingProductIds = uniqueProductIds.filter((productId) => reviewedProductMap[productId] === undefined);
+        if (missingProductIds.length === 0) return;
+
+        let cancelled = false;
+
+        const fetchReviewStatus = async () => {
+            try {
+                const statusPairs = await Promise.all(
+                    missingProductIds.map(async (productId) => {
+                        try {
+                            const response = await getProductReviews(productId);
+                            const reviews = response?.data || [];
+                            const hasReviewed = (Array.isArray(reviews) ? reviews : []).some((review) => {
+                                const reviewCustomerIds = [
+                                    review?.customer_id,
+                                    review?.customer?.id,
+                                    review?.customer?.customer_id,
+                                    review?.customer?.user_id
+                                ]
+                                    .filter((id) => id !== null && id !== undefined && String(id).trim() !== "")
+                                    .map((id) => String(id));
+
+                                return reviewCustomerIds.some((id) => customerIds.includes(id));
+                            });
+                            return [productId, hasReviewed];
+                        } catch (err) {
+                            console.error(`Failed to fetch review status for product ${productId}`, err);
+                            return [productId, false];
+                        }
+                    })
+                );
+
+                if (cancelled) return;
+                setReviewedProductMap((prev) => {
+                    const next = { ...prev };
+                    statusPairs.forEach(([productId, hasReviewed]) => {
+                        next[productId] = hasReviewed;
+                    });
+                    return next;
+                });
+            } catch (err) {
+                console.error("Failed to fetch review statuses", err);
+            }
+        };
+
+        fetchReviewStatus();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [user, token, orders, overviewDeliveredOrders, reviewedProductMap]);
+
+    const openReviewForItem = (item) => {
+        const productId = getProductIdFromSaleItem(item);
+        if (!productId) {
+            toast.error("Product is not available for review.");
+            return;
+        }
+
+        setReviewModal({
+            open: true,
+            productId,
+            product: {
+                id: productId,
+                name: item?.product_info?.name || "Product",
+                images: item?.product_info?.image_path ? [item.product_info.image_path] : []
+            }
+        });
     };
 
     if (loading || !user) {
@@ -883,6 +1041,65 @@ export default function ProfileDashboard() {
                                         <p className="text-[10px] md:text-xs text-gray-500">Edit your account</p>
                                     </button>
                                 </div>
+
+                                <div className="mt-6 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                    <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                                        <h3 className="text-lg font-bold text-gray-900">Delivered Products</h3>
+                                        <p className="text-xs text-gray-500 mt-1">Leave a review for products you received</p>
+                                    </div>
+
+                                    <div className="p-5">
+                                        {overviewDeliveredLoading ? (
+                                            <div className="flex justify-center py-8">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
+                                            </div>
+                                        ) : overviewDeliveredItems.length > 0 ? (
+                                            <div className="space-y-3">
+                                                {overviewDeliveredItems.map(({ key, order, item, productId, quantity, name, image }) => {
+                                                    const alreadyReviewed = !!(productId && reviewedProductMap[productId]);
+
+                                                    return (
+                                                        <div key={key} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:shadow-sm transition-all">
+                                                            <div className="h-14 w-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 relative">
+                                                                {image ? (
+                                                                    <Image
+                                                                        src={image}
+                                                                        alt={name}
+                                                                        fill
+                                                                        className="object-cover"
+                                                                        unoptimized
+                                                                    />
+                                                                ) : (
+                                                                    <div className="h-full w-full flex items-center justify-center text-gray-400">
+                                                                        <Package size={18} />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-semibold text-gray-900 line-clamp-1">{name}</p>
+                                                                <p className="text-xs text-gray-500">Order #{order?.invoice_id} - Qty: {quantity}</p>
+                                                            </div>
+                                                            {alreadyReviewed ? (
+                                                                <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full bg-green-50 text-green-700 border border-green-200">
+                                                                    Reviewed
+                                                                </span>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => openReviewForItem(item)}
+                                                                    className="px-3 py-2 text-xs font-semibold rounded-lg bg-[var(--brand-royal-red)] text-white hover:bg-[#a01830] transition-colors"
+                                                                >
+                                                                    Leave a Review
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-500">No delivered products found yet.</p>
+                                        )}
+                                    </div>
+                                </div>
                             </>
                         )}
 
@@ -922,6 +1139,15 @@ export default function ProfileDashboard() {
                                                 const orderStatus = getOrderStatus(order);
                                                 const showCancelAndRefund = orderStatus === 1 || orderStatus === 2;
                                                 const showRefund = orderStatus === 2 || isRefundEligibleForDeliveredOrder(order);
+                                                const showOrderConfirmedSupport = orderStatus === 2;
+                                                const reviewableOrderItem = orderStatus === 4
+                                                    ? (order?.sales_details || []).find((item) => {
+                                                        const productId = getProductIdFromSaleItem(item);
+                                                        return !!productId && !reviewedProductMap[productId];
+                                                    }) || null
+                                                    : null;
+                                                const canLeaveReview = !!reviewableOrderItem;
+                                                const whatsappSupportUrl = `${SUPPORT_WHATSAPP_BASE}?text=${encodeURIComponent(`Hi, I have a query regarding my order #${order?.invoice_id || ""}.`)}`;
 
                                                 return (
                                                 <div key={order.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-lg transition-all duration-300 group">
@@ -1002,7 +1228,42 @@ export default function ProfileDashboard() {
                                                                         Refund
                                                                     </button>
                                                                 )}
+                                                                {canLeaveReview && (
+                                                                    <button
+                                                                        onClick={() => openReviewForItem(reviewableOrderItem)}
+                                                                        className="flex-1 flex items-center justify-center gap-1 py-2 px-3 bg-[var(--brand-royal-red)] hover:bg-[#a01830] text-white text-xs font-semibold rounded-lg border border-[var(--brand-royal-red)] transition-all duration-200"
+                                                                    >
+                                                                        <CheckCircle size={12} />
+                                                                        Leave a Review
+                                                                    </button>
+                                                                )}
                                                             </div>
+
+                                                            {showOrderConfirmedSupport && (
+                                                                <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/70 p-2.5">
+                                                                    <p className="text-[11px] font-semibold text-emerald-900 mb-2">
+                                                                        Do you have any queries regarding this order?
+                                                                    </p>
+                                                                    <div className="flex gap-2">
+                                                                        <a
+                                                                            href={whatsappSupportUrl}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            className="flex-1 text-center py-2 px-3 bg-[#25D366] hover:bg-[#1fb157] text-white text-xs font-semibold rounded-lg transition-colors"
+                                                                        >
+                                                                            Contact on WhatsApp
+                                                                        </a>
+                                                                        <a
+                                                                            href={SUPPORT_FACEBOOK_INBOX}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            className="flex-1 text-center py-2 px-3 bg-[#1877F2] hover:bg-[#0f63d6] text-white text-xs font-semibold rounded-lg transition-colors"
+                                                                        >
+                                                                            Facebook Inbox
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1226,7 +1487,7 @@ export default function ProfileDashboard() {
                                                             </div>
                                                             {refund.sale && (
                                                                 <div className="text-right bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                                                    <p className="text-xs text-gray-500 mb-0.5">Original Order Total</p>
+                                                                    <p className="text-xs text-gray-500 mb-0.5">Total amount</p>
                                                                     <p className="text-lg font-bold text-[var(--brand-royal-red)]">৳{refund.sale.sub_total || 0}</p>
                                                                 </div>
                                                             )}
@@ -2296,6 +2557,18 @@ export default function ProfileDashboard() {
                                 </div>
                             </div>
                         )}
+
+                        <WriteReviewModal
+                            product={reviewModal.product}
+                            productId={reviewModal.productId}
+                            open={reviewModal.open}
+                            onClose={() => setReviewModal({ open: false, productId: null, product: null })}
+                            onSubmitted={(submittedProductId) => {
+                                if (!submittedProductId) return;
+                                setReviewedProductMap((prev) => ({ ...prev, [submittedProductId]: true }));
+                                setReviewModal({ open: false, productId: null, product: null });
+                            }}
+                        />
                     </div>
                 </div>
             </div>

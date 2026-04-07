@@ -10,7 +10,7 @@ import { X, Upload, Star, Loader2 } from "lucide-react";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "react-quill-new/dist/quill.snow.css";
 
-const WriteReviewModal = ({ productId, open, onClose, product }) => {
+const WriteReviewModal = ({ productId, open, onClose, product, onSubmitted }) => {
     const { user, token } = useAuth();
     const { showToast } = useToast();
 
@@ -99,6 +99,7 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
             if (response.success) {
                 // Success toast
                 showToast({ message: "Review submitted successfully!", type: "success" });
+                if (typeof onSubmitted === "function") onSubmitted(productId);
                 onClose();
                 // Reset form
                 setRating(0);
@@ -116,6 +117,7 @@ const WriteReviewModal = ({ productId, open, onClose, product }) => {
             // Check for "already reviewed" and show info toast instead of inline error
             if (message.toLowerCase().includes("already reviewed")) {
                 showToast({ message: "You have already reviewed this product.", type: "info" });
+                if (typeof onSubmitted === "function") onSubmitted(productId);
                 onClose();
             } else {
                 setError(message);

@@ -143,6 +143,13 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
     const orderStatus = Number(order?.tran_status ?? order?.status ?? 0);
     const isCashOnDelivery = /(cod|cash)/i.test(String(order?.pay_mode || ""));
     const shouldCollectRefundMethod = !(isCancel && orderStatus === 1 && isCashOnDelivery);
+    const shouldHideCashRefundOption = !isCancel && orderStatus === 4 && isCashOnDelivery;
+    const refundMethodOptions = shouldHideCashRefundOption
+        ? REFUND_METHODS.filter((m) => m.value !== "cash")
+        : REFUND_METHODS;
+    const defaultRefundMethod = shouldHideCashRefundOption
+        ? (refundMethodOptions[0]?.value || "store_credit")
+        : "cash";
     const reasons = isCancel ? CANCEL_REASONS : RETURN_REASONS;
 
     // Auto-fill return address from user profile / order data
@@ -160,11 +167,11 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
             setDescription("");
             setFiles([]);
             setCourier("");
-            setRefundMethod("cash");
+            setRefundMethod(defaultRefundMethod);
             setBankDetails({ accountName: "", accountNumber: "", bankName: "", branch: "" });
             setError("");
         }
-    }, [order, mode, open, user]);
+    }, [order, mode, open, user, defaultRefundMethod]);
 
     // File handling
     const handleFileChange = (e) => {
@@ -415,7 +422,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                             <CustomDropdown
                                 value={refundMethod}
                                 onChange={setRefundMethod}
-                                options={REFUND_METHODS}
+                                options={refundMethodOptions}
                                 placeholder="Select refund method..."
                             />
                         </div>
@@ -449,8 +456,8 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                     {/* ── Mobile Banking Details (conditional) ── */}
                     {shouldCollectRefundMethod && ["bkash", "nagad", "rocket"].includes(refundMethod) && (
                         <div className="border border-[var(--brand-royal-red)] bg-red-50 rounded-xl p-4 space-y-2 mt-3">
-                            <p className="text-xs font-bold text-[var(--brand-royal-red)] uppercase tracking-wide mb-2">{REFUND_METHODS.find(m => m.value === refundMethod)?.label} Account Details</p>
-                            <input type="tel" placeholder={"Enter " + REFUND_METHODS.find(m => m.value === refundMethod)?.label + " Number"}
+                            <p className="text-xs font-bold text-[var(--brand-royal-red)] uppercase tracking-wide mb-2">{refundMethodOptions.find(m => m.value === refundMethod)?.label} Account Details</p>
+                            <input type="tel" placeholder={"Enter " + refundMethodOptions.find(m => m.value === refundMethod)?.label + " Number"}
                                 value={bankDetails.accountNumber}
                                 onChange={(e) => setBankDetails((p) => ({ ...p, accountNumber: e.target.value }))}
                                 className="w-full border border-red-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] transition-all placeholder-gray-400" />

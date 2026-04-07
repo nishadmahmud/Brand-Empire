@@ -6,7 +6,7 @@ import Link from "next/link";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
-import { getBrandwiseProducts, getTopBrands, filterProductsByAttributes, getCategoriesFromServer, getProductsBySubcategory, getProductsByChildCategory, prefetchCategoryTreeProducts } from "@/lib/api";
+import { getBrandwiseProducts, getTopBrands, filterProductsByAttributes, getCategoriesFromServer, getProductsBySubcategory, getProductsByChildCategory, prefetchCategoryTreeProducts, getCampaigns } from "@/lib/api";
 
 export default function BrandPage() {
     const params = useParams();
@@ -141,6 +141,73 @@ export default function BrandPage() {
         });
     }, [brandSubcategories]);
 
+    const buildCampaignDiscountMap = (campaigns = []) => {
+        const discountMap = {};
+        campaigns.forEach((campaign) => {
+            const campaignProducts = Array.isArray(campaign?.products) ? campaign.products : [];
+            campaignProducts.forEach((product) => {
+                const productId = product?.id;
+                const mrp = Number(product?.retails_price || 0);
+                if (!productId || mrp <= 0) return;
+
+                const discountType = String(product?.pivot?.discount_type || campaign?.discount_type || "percentage").toLowerCase();
+                const discountValue = Number(product?.pivot?.discount ?? campaign?.discount ?? 0);
+                if (discountValue <= 0) return;
+
+                const discountedPrice = discountType === "amount"
+                    ? Math.max(0, mrp - discountValue)
+                    : Math.max(0, Math.round(mrp * (1 - discountValue / 100)));
+                const savings = Math.max(0, mrp - discountedPrice);
+
+                const existing = discountMap[productId];
+                if (!existing || savings > existing.savings) {
+                    discountMap[productId] = {
+                        discountType,
+                        discountValue,
+                        savings,
+                    };
+                }
+            });
+        });
+        return discountMap;
+    };
+
+    const getProductPricing = (product, campaignDiscountsMap = {}) => {
+        const mrp = Number(product.retails_price || 0);
+        let finalPrice = mrp;
+        let discountLabel = "";
+        let rawDiscount = Number(product.discount || 0);
+
+        if (rawDiscount > 0) {
+            const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : "percentage";
+            if (discountType === "amount") {
+                finalPrice = mrp - rawDiscount;
+                discountLabel = `\u09F3${rawDiscount} OFF`;
+            } else {
+                finalPrice = Math.round(mrp * (1 - rawDiscount / 100));
+                discountLabel = `${rawDiscount}% OFF`;
+            }
+            if (finalPrice < 0) finalPrice = 0;
+        }
+
+        const campaignDiscount = campaignDiscountsMap[product.id];
+        if (campaignDiscount && mrp > 0) {
+            const campaignFinalPrice = campaignDiscount.discountType === "amount"
+                ? Math.max(0, mrp - campaignDiscount.discountValue)
+                : Math.max(0, Math.round(mrp * (1 - campaignDiscount.discountValue / 100)));
+
+            if (rawDiscount <= 0 || campaignFinalPrice < finalPrice) {
+                finalPrice = campaignFinalPrice;
+                rawDiscount = campaignDiscount.discountValue;
+                discountLabel = campaignDiscount.discountType === "amount"
+                    ? `\u09F3${campaignDiscount.discountValue} OFF`
+                    : `${campaignDiscount.discountValue}% OFF`;
+            }
+        }
+
+        return { mrp, finalPrice, discountLabel, rawDiscount };
+    };
+
     // Handle subcategory selection — fetch subcategory products and filter by brand
     const handleSubcategoryChange = async (subcategoryId) => {
         setSelectedSubcategoryId(subcategoryId);
@@ -172,30 +239,27 @@ export default function BrandPage() {
                 return pBrand === brandLower;
             });
 
+            let campaignDiscountsMap = {};
+            try {
+                const campaignsResponse = await getCampaigns();
+                if (campaignsResponse?.success && Array.isArray(campaignsResponse?.campaigns?.data)) {
+                    const activeCampaigns = campaignsResponse.campaigns.data.filter((campaign) => campaign?.status === "active");
+                    campaignDiscountsMap = buildCampaignDiscountMap(activeCampaigns);
+                }
+            } catch (campaignError) {
+                console.error("Error fetching campaigns for brand subcategory discount overlay:", campaignError);
+            }
+
             // Transform
             const transformedProducts = filteredByBrand.map(product => {
-                const mrp = product.retails_price || 0;
-                let finalPrice = mrp;
-                let discountLabel = "";
-
-                if (product.discount > 0) {
-                    const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
-                    if (discountType === 'amount') {
-                        finalPrice = mrp - product.discount;
-                        discountLabel = `\u09F3${product.discount} OFF`;
-                    } else {
-                        finalPrice = Math.round(mrp * (1 - product.discount / 100));
-                        discountLabel = `${product.discount}% OFF`;
-                    }
-                    if (finalPrice < 0) finalPrice = 0;
-                }
+                const { mrp, finalPrice, discountLabel, rawDiscount } = getProductPricing(product, campaignDiscountsMap);
 
                 return {
                     id: product.id,
                     brand: product.brand_name || product.brands?.name || brandName || "BRAND",
                     name: product.name,
                     price: `\u09F3 ${finalPrice.toLocaleString()}`,
-                    originalPrice: product.discount > 0 ? `\u09F3 ${mrp.toLocaleString()}` : "",
+                    originalPrice: discountLabel ? `\u09F3 ${mrp.toLocaleString()}` : "",
                     discount: discountLabel,
                     images: product.image_paths && product.image_paths.length > 0
                         ? product.image_paths
@@ -211,7 +275,7 @@ export default function BrandPage() {
                     rating: product.review_summary?.average_rating || 0,
                     reviews: product.review_summary?.total_reviews || 0,
                     rawPrice: finalPrice,
-                    rawDiscount: product.discount || 0,
+                    rawDiscount,
                 };
             });
 
@@ -256,29 +320,26 @@ export default function BrandPage() {
                 return pBrand === brandLower;
             });
 
-            const transformedProducts = filteredByBrand.map(product => {
-                const mrp = product.retails_price || 0;
-                let finalPrice = mrp;
-                let discountLabel = "";
-
-                if (product.discount > 0) {
-                    const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
-                    if (discountType === 'amount') {
-                        finalPrice = mrp - product.discount;
-                        discountLabel = `\u09F3${product.discount} OFF`;
-                    } else {
-                        finalPrice = Math.round(mrp * (1 - product.discount / 100));
-                        discountLabel = `${product.discount}% OFF`;
-                    }
-                    if (finalPrice < 0) finalPrice = 0;
+            let campaignDiscountsMap = {};
+            try {
+                const campaignsResponse = await getCampaigns();
+                if (campaignsResponse?.success && Array.isArray(campaignsResponse?.campaigns?.data)) {
+                    const activeCampaigns = campaignsResponse.campaigns.data.filter((campaign) => campaign?.status === "active");
+                    campaignDiscountsMap = buildCampaignDiscountMap(activeCampaigns);
                 }
+            } catch (campaignError) {
+                console.error("Error fetching campaigns for brand child-category discount overlay:", campaignError);
+            }
+
+            const transformedProducts = filteredByBrand.map(product => {
+                const { mrp, finalPrice, discountLabel, rawDiscount } = getProductPricing(product, campaignDiscountsMap);
 
                 return {
                     id: product.id,
                     brand: product.brand_name || product.brands?.name || brandName || "BRAND",
                     name: product.name,
                     price: `\u09F3 ${finalPrice.toLocaleString()}`,
-                    originalPrice: product.discount > 0 ? `\u09F3 ${mrp.toLocaleString()}` : "",
+                    originalPrice: discountLabel ? `\u09F3 ${mrp.toLocaleString()}` : "",
                     discount: discountLabel,
                     images: product.image_paths && product.image_paths.length > 0
                         ? product.image_paths
@@ -294,7 +355,7 @@ export default function BrandPage() {
                     rating: product.review_summary?.average_rating || 0,
                     reviews: product.review_summary?.total_reviews || 0,
                     rawPrice: finalPrice,
-                    rawDiscount: product.discount || 0,
+                    rawDiscount,
                 };
             });
 
@@ -372,29 +433,26 @@ export default function BrandPage() {
                 }
 
                 if (productsArray.length > 0) {
-                    const transformedProducts = productsArray.map(product => {
-                        const mrp = product.retails_price || 0;
-                        let finalPrice = mrp;
-                        let discountLabel = "";
-
-                        if (product.discount > 0) {
-                            const discountType = product.discount_type ? String(product.discount_type).toLowerCase() : 'percentage';
-                            if (discountType === 'amount') {
-                                finalPrice = mrp - product.discount;
-                                discountLabel = `\u09F3${product.discount} OFF`;
-                            } else {
-                                finalPrice = Math.round(mrp * (1 - product.discount / 100));
-                                discountLabel = `${product.discount}% OFF`;
-                            }
-                            if (finalPrice < 0) finalPrice = 0;
+                    let campaignDiscountsMap = {};
+                    try {
+                        const campaignsResponse = await getCampaigns();
+                        if (campaignsResponse?.success && Array.isArray(campaignsResponse?.campaigns?.data)) {
+                            const activeCampaigns = campaignsResponse.campaigns.data.filter((campaign) => campaign?.status === "active");
+                            campaignDiscountsMap = buildCampaignDiscountMap(activeCampaigns);
                         }
+                    } catch (campaignError) {
+                        console.error("Error fetching campaigns for brand discount overlay:", campaignError);
+                    }
+
+                    const transformedProducts = productsArray.map(product => {
+                        const { mrp, finalPrice, discountLabel, rawDiscount } = getProductPricing(product, campaignDiscountsMap);
 
                         return {
                             id: product.id,
                             brand: product.brand_name || product.brands?.name || brandName || "BRAND",
                             name: product.name,
                             price: `\u09F3 ${finalPrice.toLocaleString()}`,
-                            originalPrice: product.discount > 0 ? `\u09F3 ${mrp.toLocaleString()}` : "",
+                            originalPrice: discountLabel ? `\u09F3 ${mrp.toLocaleString()}` : "",
                             discount: discountLabel,
                             images: product.image_paths && product.image_paths.length > 0
                                 ? product.image_paths
@@ -410,7 +468,7 @@ export default function BrandPage() {
                             rating: product.review_summary?.average_rating || 0,
                             reviews: product.review_summary?.total_reviews || 0,
                             rawPrice: finalPrice,
-                            rawDiscount: product.discount || 0,
+                            rawDiscount,
                         };
                     });
 

@@ -6,14 +6,34 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search, Package, Calendar, DollarSign, MapPin, Truck, CheckCircle2, Clock, XCircle, PauseCircle, ClipboardList, PackageCheck, Home } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "@/context/AuthContext";
 
 export default function TrackOrderPage() {
+    const { user, openAuthModal } = useAuth();
     const [formData, setFormData] = useState({
         invoice_id: "",
     });
     const [isLoading, setIsLoading] = useState(false);
     const [orderData, setOrderData] = useState(null);
     const [hasSearched, setHasSearched] = useState(false);
+    const [accessDenied, setAccessDenied] = useState(false);
+
+    const normalizePhone = (phone) => {
+        if (!phone) return "";
+        let digits = String(phone).replace(/\D/g, "");
+
+        if (digits.startsWith("880")) {
+            digits = digits.slice(2);
+        } else if (digits.startsWith("88") && digits.length > 11) {
+            digits = digits.slice(2);
+        }
+
+        if (digits.length === 10) {
+            digits = `0${digits}`;
+        }
+
+        return digits;
+    };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,6 +41,12 @@ export default function TrackOrderPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!user) {
+            toast.error("Please login to track your order");
+            openAuthModal("login");
+            return;
+        }
 
         if (!formData.invoice_id) {
             toast.error("Please enter Invoice ID");
@@ -30,12 +56,24 @@ export default function TrackOrderPage() {
         setIsLoading(true);
         setOrderData(null);
         setHasSearched(true);
+        setAccessDenied(false);
 
         try {
             const response = await trackOrder(formData);
 
             if (response.success && response.data && response.data.data && response.data.data.length > 0) {
-                setOrderData(response.data.data[0]);
+                const foundOrder = response.data.data[0];
+                const orderPhone = normalizePhone(foundOrder.delivery_customer_phone || foundOrder.customer_phone);
+                const userPhone = normalizePhone(user.mobile_number || user.phone);
+
+                if (!orderPhone || !userPhone || orderPhone !== userPhone) {
+                    setAccessDenied(true);
+                    setOrderData(null);
+                    toast.error("Sorry, we can't share this order details with you.");
+                    return;
+                }
+
+                setOrderData(foundOrder);
                 toast.success("Order details found!");
             } else {
                 toast.error("Order not found. Please check your Invoice ID.");
@@ -202,34 +240,47 @@ export default function TrackOrderPage() {
 
                     {/* Tracking Form */}
                     <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-10 mb-8 border border-gray-100">
-                        <form onSubmit={handleSubmit} className="space-y-6 max-w-xl mx-auto">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Invoice ID
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Package className="h-5 w-5 text-gray-400" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="invoice_id"
-                                        value={formData.invoice_id}
-                                        onChange={handleChange}
-                                        placeholder="INV-2024-XXX"
-                                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black transition-colors"
-                                    />
-                                </div>
+                        {!user ? (
+                            <div className="max-w-xl mx-auto text-center">
+                                <p className="text-gray-700 mb-4">Please login to track your order.</p>
+                                <button
+                                    type="button"
+                                    onClick={() => openAuthModal("login")}
+                                    className="inline-flex items-center justify-center py-2.5 px-5 rounded-lg text-sm font-medium text-white bg-[var(--brand-royal-red)] hover:bg-red-700 transition-colors"
+                                >
+                                    Login to Track Order
+                                </button>
                             </div>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="space-y-6 max-w-xl mx-auto">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Invoice ID
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Package className="h-5 w-5 text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            name="invoice_id"
+                                            value={formData.invoice_id}
+                                            onChange={handleChange}
+                                            placeholder="INV-2024-XXX"
+                                            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black transition-colors"
+                                        />
+                                    </div>
+                                </div>
 
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[var(--brand-royal-red)] hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--brand-royal-red)] disabled:opacity-70 disabled:cursor-not-allowed transition-all"
-                            >
-                                {isLoading ? "Searching..." : "Track Order"}
-                            </button>
-                        </form>
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[var(--brand-royal-red)] hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--brand-royal-red)] disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+                                >
+                                    {isLoading ? "Searching..." : "Track Order"}
+                                </button>
+                            </form>
+                        )}
                     </div>
 
                     {/* Results Section */}
@@ -349,6 +400,14 @@ export default function TrackOrderPage() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    ) : accessDenied ? (
+                        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-red-200">
+                            <div className="mx-auto h-12 w-12 text-red-300 mb-3">
+                                <XCircle className="h-full w-full" />
+                            </div>
+                            <h3 className="mt-2 text-sm font-medium text-red-700">Access Denied</h3>
+                            <p className="mt-1 text-sm text-red-500">Sorry sir, we can&apos;t share this order details with you.</p>
                         </div>
                     ) : hasSearched && !isLoading ? (
                         <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">

@@ -24,6 +24,30 @@ body {
   position: relative;
 }
 
+/* Global thin scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--brand-royal-red) #f1f1f1;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--brand-royal-red);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #a01830;
+}
+
 /* Full-width sections */
 .section-full {
   width: 100%;
