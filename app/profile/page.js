@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, trackOrder, uploadSingleFile, getCustomerRefunds, getProductReviews } from "@/lib/api";
+import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, trackOrder, uploadSingleFile, getCustomerRefunds, getProductReviews, getProductById } from "@/lib/api";
 import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -149,6 +149,7 @@ export default function ProfileDashboard() {
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [refunds, setRefunds] = useState([]);
     const [refundsLoading, setRefundsLoading] = useState(false);
+    const [refundProductMap, setRefundProductMap] = useState({});
     const [coupons, setCoupons] = useState([]);
     const [couponsLoading, setCouponsLoading] = useState(false);
 
@@ -442,6 +443,59 @@ export default function ProfileDashboard() {
     }, [user, activeSection]);
 
     useEffect(() => {
+        if (!refunds || refunds.length === 0) return;
+
+        const productIds = [...new Set(
+            refunds
+                .flatMap((refund) => (refund?.refund_details || []).map((item) => Number(item?.product_id)))
+                .filter((id) => Number.isFinite(id) && id > 0)
+        )];
+
+        const missingProductIds = productIds.filter((id) => !refundProductMap[id]);
+        if (missingProductIds.length === 0) return;
+
+        let cancelled = false;
+
+        const fetchRefundProducts = async () => {
+            try {
+                const entries = await Promise.all(
+                    missingProductIds.map(async (productId) => {
+                        try {
+                            const response = await getProductById(productId);
+                            const product = response?.data || {};
+                            const image = product?.image_path
+                                || (Array.isArray(product?.image_paths) ? product.image_paths[0] : null)
+                                || null;
+
+                            return [productId, { id: productId, name: product?.name || null, image }];
+                        } catch (err) {
+                            console.error(`Failed to fetch product details for refund item ${productId}`, err);
+                            return [productId, { id: productId, name: null, image: null }];
+                        }
+                    })
+                );
+
+                if (cancelled) return;
+                setRefundProductMap((prev) => {
+                    const next = { ...prev };
+                    entries.forEach(([id, data]) => {
+                        next[id] = data;
+                    });
+                    return next;
+                });
+            } catch (err) {
+                console.error("Failed to fetch refund product data", err);
+            }
+        };
+
+        fetchRefundProducts();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [refunds, refundProductMap]);
+
+    useEffect(() => {
         const fetchOverviewDeliveredOrders = async () => {
             if (!user || !token || activeSection !== "dashboard") return;
 
@@ -674,6 +728,192 @@ export default function ProfileDashboard() {
             }
         });
     };
+
+    const roundAmount = (amount) => Math.round(Number(amount || 0));
+
+    const renderRefundReturnCards = (requestType = "return") => (
+        <div className="space-y-6">
+            {refunds.map((refund) => {
+                const isRefundRequestTab = requestType === "refund";
+                const isPending = String(refund.status).toLowerCase() === "0" || String(refund.status).toLowerCase() === "pending";
+                const isApproved = String(refund.status).toLowerCase() === "1" || String(refund.status).toLowerCase() === "approved";
+                const statusLabel = isPending ? "Pending Review" : (isApproved ? "Approved" : "Rejected");
+                const statusColor = isPending ? "bg-orange-50 text-orange-600 border-orange-200" : (isApproved ? "bg-green-50 text-green-600 border-green-200" : "bg-red-50 text-red-600 border-red-200");
+
+                return (
+                    <div key={refund.id} className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-xl transition-all duration-300 group overflow-hidden">
+                        <div className="flex flex-wrap justify-between items-start gap-4 mb-5 border-b border-gray-100 pb-4">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                        {isRefundRequestTab ? "Refund Request" : "Return Request"}
+                                    </span>
+                                    <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${statusColor}`}>
+                                        {statusLabel}
+                                    </div>
+                                </div>
+                                <h3 className="font-bold text-gray-900 text-lg">#{refund.invoice_id}</h3>
+                                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    {new Date(refund.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                </p>
+                            </div>
+                            {refund.sale && (
+                                <div className="text-right bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                    <p className="text-xs text-gray-500 mb-0.5">Total amount</p>
+                                    <p className="text-lg font-bold text-[var(--brand-royal-red)]">৳{roundAmount(refund.sale.sub_total)}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
+                                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Request Details</h4>
+
+                                    <div className="space-y-3 text-sm">
+                                        {!isRefundRequestTab && (
+                                            <div className="flex items-start gap-3">
+                                                <div className="mt-0.5 p-1.5 bg-white rounded-md shadow-sm text-gray-400 group-hover:text-blue-500 transition-colors">
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <span className="block text-xs font-semibold text-gray-500 mb-0.5">Reason for Return</span>
+                                                    <span className="text-gray-900 font-medium">{refund.reason}</span>
+                                                    {refund.reason_note && (
+                                                        <span className="block text-gray-500 text-xs mt-1 italic leading-relaxed bg-white/60 p-2 rounded-lg border border-gray-100/50">"{refund.reason_note}"</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-0.5 p-1.5 bg-white rounded-md shadow-sm text-gray-400 group-hover:text-green-500 transition-colors">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <span className="block text-xs font-semibold text-gray-500 mb-0.5">Preferred Refund Method</span>
+                                                <span className="text-gray-900 font-medium capitalize">{refund.refund_method?.replace(/_/g, " ")}</span>
+                                            </div>
+                                        </div>
+
+                                        {!isRefundRequestTab && (
+                                            <div className="flex items-start gap-3">
+                                                <div className="mt-0.5 p-1.5 bg-white rounded-md shadow-sm text-gray-400 group-hover:text-orange-500 transition-colors">
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <span className="block text-xs font-semibold text-gray-500 mb-0.5">Courier Info</span>
+                                                    <span className="text-gray-900 font-medium capitalize">{refund.courier_info || "Not Specified"}</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {refund.refund_details && refund.refund_details.length > 0 && (
+                                    <div>
+                                        <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
+                                            {isRefundRequestTab ? "Order Items" : "Items Included"}
+                                        </h4>
+                                        <div className="space-y-3">
+                                            {refund.refund_details.map((item, idx) => {
+                                                const matchedSaleItem = refund.sale?.sales_details?.find((sd) => sd.id == item.sale_details_id);
+                                                const productId = Number(item.product_id || matchedSaleItem?.product_id || 0);
+                                                const fallbackMeta = refundProductMap[productId] || {};
+                                                const productName = matchedSaleItem?.product_info?.name || fallbackMeta?.name || `Product #${item.product_id}`;
+                                                const imageUrl = matchedSaleItem?.product_info?.image_path
+                                                    || (Array.isArray(matchedSaleItem?.product_info?.image_paths) ? matchedSaleItem.product_info.image_paths[0] : null)
+                                                    || fallbackMeta?.image
+                                                    || null;
+
+                                                return (
+                                                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            {productId ? (
+                                                                <a
+                                                                    href={`/product/${productId}`}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="w-10 h-10 bg-white rounded-lg border border-gray-200 overflow-hidden flex items-center justify-center text-gray-400 flex-shrink-0"
+                                                                >
+                                                                    {imageUrl ? (
+                                                                        <img src={imageUrl} alt={productName} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <Package className="w-5 h-5" />
+                                                                    )}
+                                                                </a>
+                                                            ) : (
+                                                                <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 overflow-hidden flex items-center justify-center text-gray-400 flex-shrink-0">
+                                                                    {imageUrl ? (
+                                                                        <img src={imageUrl} alt={productName} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <Package className="w-5 h-5" />
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            <div className="min-w-0">
+                                                                {productId ? (
+                                                                    <a
+                                                                        href={`/product/${productId}`}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        className="text-sm font-semibold text-gray-900 hover:text-[var(--brand-royal-red)] line-clamp-1"
+                                                                    >
+                                                                        {productName}
+                                                                    </a>
+                                                                ) : (
+                                                                    <p className="text-sm font-semibold text-gray-900 line-clamp-1">{productName}</p>
+                                                                )}
+                                                                <div className="flex items-center gap-2 mt-0.5">
+                                                                    <span className="text-xs text-gray-500">Qty: {item.qty}</span>
+                                                                    {matchedSaleItem?.size && (
+                                                                        <>
+                                                                            <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                                                            <span className="text-xs text-gray-500">Size: {matchedSaleItem.size}</span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-sm font-bold text-gray-900">৳{roundAmount(item.price)}</p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!isRefundRequestTab && refund.attachment && (
+                                    <div>
+                                        <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Attachment Provided</h4>
+                                        <a href={refund.attachment} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 p-2 pr-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all group/attach">
+                                            <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 overflow-hidden relative">
+                                                <img src={refund.attachment} alt="Attachment" className="w-full h-full object-cover group-hover/attach:scale-110 transition-transform duration-300" />
+                                            </div>
+                                            <span className="text-sm font-medium text-gray-700 group-hover/attach:text-[var(--brand-royal-red)]">View Attachment</span>
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
 
     if (loading || !user) {
         return (
@@ -1458,147 +1698,8 @@ export default function ProfileDashboard() {
                                         <div className="flex justify-center py-20">
                                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
                                         </div>
-                                    ) : refunds.length > 0 ? (
-                                        <div className="space-y-6">
-                                            {refunds.map(refund => {
-                                                const isPending = String(refund.status).toLowerCase() === "0" || String(refund.status).toLowerCase() === "pending";
-                                                const isApproved = String(refund.status).toLowerCase() === "1" || String(refund.status).toLowerCase() === "approved";
-                                                const statusLabel = isPending ? "Pending Review" : (isApproved ? "Approved" : "Rejected");
-                                                const statusColor = isPending ? "bg-orange-50 text-orange-600 border-orange-200" : (isApproved ? "bg-green-50 text-green-600 border-green-200" : "bg-red-50 text-red-600 border-red-200");
-
-                                                return (
-                                                    <div key={refund.id} className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-xl transition-all duration-300 group overflow-hidden">
-                                                        {/* Header */}
-                                                        <div className="flex flex-wrap justify-between items-start gap-4 mb-5 border-b border-gray-100 pb-4">
-                                                            <div>
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Return Request</span>
-                                                                    <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${statusColor}`}>
-                                                                        {statusLabel}
-                                                                    </div>
-                                                                </div>
-                                                                <h3 className="font-bold text-gray-900 text-lg">#{refund.invoice_id}</h3>
-                                                                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
-                                                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                                    </svg>
-                                                                    {new Date(refund.created_at).toLocaleDateString("en-US", { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                                </p>
-                                                            </div>
-                                                            {refund.sale && (
-                                                                <div className="text-right bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                                                    <p className="text-xs text-gray-500 mb-0.5">Total amount</p>
-                                                                    <p className="text-lg font-bold text-[var(--brand-royal-red)]">৳{refund.sale.sub_total || 0}</p>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Body */}
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                            {/* Left Column: Details */}
-                                                            <div className="space-y-4">
-                                                                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
-                                                                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Request Details</h4>
-
-                                                                    <div className="space-y-3 text-sm">
-                                                                        <div className="flex items-start gap-3">
-                                                                            <div className="mt-0.5 p-1.5 bg-white rounded-md shadow-sm text-gray-400 group-hover:text-blue-500 transition-colors">
-                                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                                </svg>
-                                                                            </div>
-                                                                            <div>
-                                                                                <span className="block text-xs font-semibold text-gray-500 mb-0.5">Reason for Return</span>
-                                                                                <span className="text-gray-900 font-medium">{refund.reason}</span>
-                                                                                {refund.reason_note && (
-                                                                                    <span className="block text-gray-500 text-xs mt-1 italic leading-relaxed bg-white/60 p-2 rounded-lg border border-gray-100/50">"{refund.reason_note}"</span>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="flex items-start gap-3">
-                                                                            <div className="mt-0.5 p-1.5 bg-white rounded-md shadow-sm text-gray-400 group-hover:text-green-500 transition-colors">
-                                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                                </svg>
-                                                                            </div>
-                                                                            <div>
-                                                                                <span className="block text-xs font-semibold text-gray-500 mb-0.5">Preferred Refund Method</span>
-                                                                                <span className="text-gray-900 font-medium capitalize">{refund.refund_method?.replace(/_/g, " ")}</span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="flex items-start gap-3">
-                                                                            <div className="mt-0.5 p-1.5 bg-white rounded-md shadow-sm text-gray-400 group-hover:text-orange-500 transition-colors">
-                                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                                                                </svg>
-                                                                            </div>
-                                                                            <div>
-                                                                                <span className="block text-xs font-semibold text-gray-500 mb-0.5">Courier Info</span>
-                                                                                <span className="text-gray-900 font-medium capitalize">{refund.courier_info || "Not Specified"}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Right Column: Items & Attachment */}
-                                                            <div className="space-y-4">
-                                                                {refund.refund_details && refund.refund_details.length > 0 && (
-                                                                    <div>
-                                                                        <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Items Included</h4>
-                                                                        <div className="space-y-3">
-                                                                            {refund.refund_details.map((item, idx) => {
-                                                                                // Attempt to find matching item in sale to get more details like size, price per unit etc.
-                                                                                const matchedSaleItem = refund.sale?.sales_details?.find(sd => sd.id == item.sale_details_id);
-
-                                                                                return (
-                                                                                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
-                                                                                        <div className="flex items-center gap-3">
-                                                                                            <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 flex items-center justify-center text-gray-400">
-                                                                                                <Package className="w-5 h-5" />
-                                                                                            </div>
-                                                                                            <div>
-                                                                                                <p className="text-sm font-semibold text-gray-900">Product #{item.product_id}</p>
-                                                                                                <div className="flex items-center gap-2 mt-0.5">
-                                                                                                    <span className="text-xs text-gray-500">Qty: {item.qty}</span>
-                                                                                                    {matchedSaleItem?.size && (
-                                                                                                        <>
-                                                                                                            <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                                                                            <span className="text-xs text-gray-500">Size: {matchedSaleItem.size}</span>
-                                                                                                        </>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <div className="text-right">
-                                                                                            <p className="text-sm font-bold text-gray-900">৳{item.price}</p>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {refund.attachment && (
-                                                                    <div>
-                                                                        <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Attachment Provided</h4>
-                                                                        <a href={refund.attachment} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 p-2 pr-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all group/attach">
-                                                                            <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 overflow-hidden relative">
-                                                                                <img src={refund.attachment} alt="Attachment" className="w-full h-full object-cover group-hover/attach:scale-110 transition-transform duration-300" />
-                                                                            </div>
-                                                                            <span className="text-sm font-medium text-gray-700 group-hover/attach:text-[var(--brand-royal-red)]">View Attachment</span>
-                                                                        </a>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
+                                     ) : refunds.length > 0 ? (
+                                        renderRefundReturnCards("refund")
                                     ) : (
                                         <div className="text-center py-20">
                                             <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
@@ -1625,44 +1726,8 @@ export default function ProfileDashboard() {
                                         <div className="flex justify-center py-20">
                                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
                                         </div>
-                                    ) : refunds.length > 0 ? (
-                                        <div className="space-y-4">
-                                            {refunds.map((refund) => {
-                                                const firstSaleItem = refund?.sale?.sales_details?.[0];
-                                                const firstProduct = firstSaleItem?.product_info;
-                                                const imageUrl = firstProduct?.image_path || firstProduct?.image_paths?.[0] || null;
-                                                const productName = firstProduct?.name || `Product #${firstSaleItem?.product_id || "N/A"}`;
-                                                const displayPrice = Number(refund?.sale?.sub_total || 0) + Number(refund?.sale?.delivery_fee || 0);
-
-                                                return (
-                                                    <div key={refund.id} className="border border-gray-100 rounded-xl p-4 hover:shadow-md transition-all">
-                                                        <div className="flex gap-4 items-center">
-                                                            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 border border-gray-100 flex-shrink-0">
-                                                                {imageUrl ? (
-                                                                    <img src={imageUrl} alt={productName} className="w-full h-full object-cover" />
-                                                                ) : (
-                                                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                                                        <Package className="w-7 h-7" />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="flex-1 min-w-0">
-                                                                <h3 className="font-semibold text-gray-900 text-sm md:text-base line-clamp-1">{productName}</h3>
-                                                                <p className="text-xs text-gray-500 mt-1 font-mono">#{refund.invoice_id}</p>
-                                                                <p className="text-xs text-gray-500 mt-1">
-                                                                    {new Date(refund.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
-                                                                </p>
-                                                            </div>
-
-                                                            <div className="text-right flex-shrink-0">
-                                                                <p className="text-lg font-bold text-[var(--brand-royal-red)]">৳{displayPrice}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
+                                     ) : refunds.length > 0 ? (
+                                        renderRefundReturnCards("return")
                                     ) : (
                                         <div className="text-center py-20">
                                             <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
@@ -2893,3 +2958,5 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
         </div>
     );
 }
+
+
