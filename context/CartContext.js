@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { trackAddToCart } from "@/lib/gtm";
 
 const CartContext = createContext();
 
@@ -36,6 +37,13 @@ export const CartProvider = ({ children }) => {
 
     // Add item to cart
     const addToCart = (product, quantity = 1, selectedSize = null, selectedColor = null) => {
+        trackAddToCart({
+            product,
+            quantity,
+            size: selectedSize,
+            currency: "BDT",
+        });
+
         setCartItems(prevItems => {
             // Check if item already exists with same size and color
             const existingItemIndex = prevItems.findIndex(

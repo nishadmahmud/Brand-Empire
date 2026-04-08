@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import AddressSelect from "../../components/AddressSelect";
+import { trackBeginCheckout, trackPurchase } from "@/lib/gtm";
 
 export default function CheckoutPage() {
     const { cartItems: allCartItems, getSubtotal, deliveryFee, updateDeliveryFee, clearCart } =
@@ -58,6 +59,7 @@ export default function CheckoutPage() {
     const [acceptedCheckoutPolicies, setAcceptedCheckoutPolicies] = useState(false);
 
     const formRef = useRef(null);
+    const hasTrackedBeginCheckoutRef = useRef(false);
 
     // Prefill form with user data
     // Load saved details on mount
@@ -125,6 +127,19 @@ export default function CheckoutPage() {
     }, [selectedDistrict, selectedCity, updateDeliveryFee]);
 
     const grandTotal = subTotal + deliveryFee - couponDiscount + donationAmount;
+
+    useEffect(() => {
+        if (hasTrackedBeginCheckoutRef.current) return;
+        if (!Array.isArray(cartItems) || cartItems.length === 0) return;
+
+        trackBeginCheckout({
+            items: cartItems,
+            currency: "BDT",
+            coupon: appliedCoupon?.coupon_code || couponCode || undefined,
+        });
+
+        hasTrackedBeginCheckoutRef.current = true;
+    }, [cartItems, appliedCoupon, couponCode]);
 
     // Handle coupon application
     const handleApplyCoupon = async () => {
@@ -319,10 +334,38 @@ export default function CheckoutPage() {
             const response = await saveSalesOrder(orderPayload);
 
             if (response.success) {
+                const invoiceId = response.data?.invoice_id || response.invoice_id || "INV-" + Date.now();
+
+                trackPurchase({
+                    transactionId: invoiceId,
+                    items: cartItems,
+                    value: grandTotal,
+                    tax: 0,
+                    shipping: deliveryFee,
+                    discount: couponDiscount,
+                    coupon: appliedCoupon?.coupon_code || couponCode || undefined,
+                    currency: "BDT",
+                    userData: {
+                        customer_id: user?.id || null,
+                        name: formData.firstName || user?.name || null,
+                        email: formData.email || user?.email || null,
+                        phone: formData.phone || user?.mobile_number || user?.phone || null,
+                        address: formData.address || user?.address || null,
+                        city: selectedCity || null,
+                        district: selectedDistrict || null,
+                        country: "BD",
+                    },
+                    orderMeta: {
+                        payment_method: paymentMethod,
+                        status: "placed",
+                        delivery_city: selectedCity || null,
+                        delivery_district: selectedDistrict || null,
+                    },
+                });
+
                 clearCart();
                 toast.success("Order placed successfully!");
                 // Redirect to success page with invoice ID from API response
-                const invoiceId = response.data?.invoice_id || response.invoice_id || "INV-" + Date.now();
                 router.push(`/order-success?invoice=${invoiceId}`);
             } else {
                 toast.error("Failed to place order. Please try again.");

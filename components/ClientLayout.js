@@ -11,6 +11,7 @@ import AuthModal from "./AuthModal";
 import CartModal from "./CartModal";
 import FloatingIcons from "./FloatingIcons";
 import FloatingIconsMobile from "./FloatingIconsMobile";
+import GTMPageViewTracker from "./GTMPageViewTracker";
 
 export default function ClientLayout({ children }) {
     const pathname = usePathname();
@@ -28,6 +29,7 @@ export default function ClientLayout({ children }) {
 
     return (
         <div className="flex flex-col min-h-screen">
+            <GTMPageViewTracker />
             {shouldShowMarquee && !isMarqueeClosed && (
                 <TopMarquee
                     onReady={() => setMarqueeActive(true)}

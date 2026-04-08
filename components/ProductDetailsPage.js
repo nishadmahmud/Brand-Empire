@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import ProductCard from "./ProductCard";
 import { dummyProduct, similarProducts, customersAlsoLiked } from "@/data/productData";
@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import SizeChartModal from "./SizeChartModal";
 import WriteReviewModal from "./WriteReviewModal";
 import DOMPurify from 'isomorphic-dompurify';
+import { trackViewItem } from "@/lib/gtm";
 
 const ProductDetailsPage = ({ productId }) => {
     const searchParams = useSearchParams();
@@ -42,6 +43,7 @@ const ProductDetailsPage = ({ productId }) => {
 
     // Coupons state for Best Offers section
     const [coupons, setCoupons] = useState([]);
+    const viewedProductIdRef = useRef(null);
 
     const { user, openAuthModal } = useAuth();
     const router = useRouter();
@@ -199,6 +201,7 @@ const ProductDetailsPage = ({ productId }) => {
                         id: apiProduct.id,
                         code: productCodeFromUrl || String(productId || apiProduct.id || ""),
                         name: apiProduct.name,
+                        category: apiProduct.category?.name || apiProduct.category_name || "",
                         price: finalPrice,
                         mrp: mrp,
                         discount: discountLabel,
@@ -258,6 +261,18 @@ const ProductDetailsPage = ({ productId }) => {
 
         fetchProduct();
     }, [productId]);
+
+    useEffect(() => {
+        if (loading || !product?.id) return;
+        if (String(viewedProductIdRef.current) === String(product.id)) return;
+
+        trackViewItem({
+            product,
+            currency: "BDT",
+        });
+
+        viewedProductIdRef.current = product.id;
+    }, [loading, product]);
 
     // Fetch related products
     useEffect(() => {

@@ -138,7 +138,7 @@ const SUPPORT_WHATSAPP_BASE = "https://wa.me/8801814111716";
 const SUPPORT_FACEBOOK_INBOX = "https://www.facebook.com/brandempirebd";
 
 export default function ProfileDashboard() {
-    const { user, logout, loading, token, updateProfile } = useAuth();
+    const { user, logout, loading, token, updateProfile, openAuthModal } = useAuth();
     const { wishlist, removeFromWishlist } = useWishlist();
     const router = useRouter();
 
@@ -180,6 +180,8 @@ export default function ProfileDashboard() {
     const [trackInvoiceId, setTrackInvoiceId] = useState("");
     const [trackOrderData, setTrackOrderData] = useState(null);
     const [trackLoading, setTrackLoading] = useState(false);
+    const [trackHasSearched, setTrackHasSearched] = useState(false);
+    const [trackAccessDenied, setTrackAccessDenied] = useState(false);
 
     // Order details modal state
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -214,6 +216,23 @@ export default function ProfileDashboard() {
             });
         }
     }, [user, loading, router]);
+
+    const normalizePhone = (phone) => {
+        if (!phone) return "";
+        let digits = String(phone).replace(/\D/g, "");
+
+        if (digits.startsWith("880")) {
+            digits = digits.slice(2);
+        } else if (digits.startsWith("88") && digits.length > 11) {
+            digits = digits.slice(2);
+        }
+
+        if (digits.length === 10) {
+            digits = `0${digits}`;
+        }
+
+        return digits;
+    };
 
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
@@ -370,13 +389,10 @@ export default function ProfileDashboard() {
                     let orderList = ordersData.data?.data || ordersData.data || [];
                     orderList = Array.isArray(orderList) ? orderList : [];
 
-                    // Filter out orders that have a refund/return request
+                    // Remove refunded line-items only; keep order if other items are still active
                     if (refundsData.success) {
                         const refundList = refundsData.data?.data || refundsData.data || [];
-                        const refundedInvoiceIds = new Set(
-                            (Array.isArray(refundList) ? refundList : []).map(r => String(r.invoice_id))
-                        );
-                        orderList = orderList.filter(order => !refundedInvoiceIds.has(String(order.invoice_id)));
+                        orderList = removeRefundedItemsFromOrders(orderList, refundList);
                     }
 
                     setOrders(orderList);
@@ -536,10 +552,7 @@ export default function ProfileDashboard() {
 
                     if (refundsData.success) {
                         const refundList = refundsData.data?.data || refundsData.data || [];
-                        const refundedInvoiceIds = new Set(
-                            (Array.isArray(refundList) ? refundList : []).map((r) => String(r.invoice_id))
-                        );
-                        deliveredList = deliveredList.filter((order) => !refundedInvoiceIds.has(String(order.invoice_id)));
+                        deliveredList = removeRefundedItemsFromOrders(deliveredList, refundList);
                     }
 
                     setOverviewDeliveredOrders(deliveredList);
@@ -559,6 +572,13 @@ export default function ProfileDashboard() {
 
     const handleTrackOrder = async (e) => {
         e.preventDefault();
+
+        if (!user) {
+            toast.error("Please login to track your order");
+            openAuthModal("login");
+            return;
+        }
+
         if (!trackInvoiceId.trim()) {
             toast.error("Please enter Invoice ID");
             return;
@@ -566,11 +586,24 @@ export default function ProfileDashboard() {
 
         setTrackLoading(true);
         setTrackOrderData(null);
+        setTrackHasSearched(true);
+        setTrackAccessDenied(false);
 
         try {
             const response = await trackOrder({ invoice_id: trackInvoiceId });
             if (response.success && response.data?.data && response.data.data.length > 0) {
-                setTrackOrderData(response.data.data[0]);
+                const foundOrder = response.data.data[0];
+                const orderPhone = normalizePhone(foundOrder.delivery_customer_phone || foundOrder.customer_phone);
+                const userPhone = normalizePhone(user.mobile_number || user.phone);
+
+                if (!orderPhone || !userPhone || orderPhone !== userPhone) {
+                    setTrackAccessDenied(true);
+                    setTrackOrderData(null);
+                    toast.error("Sorry, we can't share this order details with you.");
+                    return;
+                }
+
+                setTrackOrderData(foundOrder);
                 toast.success("Order found!");
             } else {
                 toast.error("Order not found");
@@ -754,6 +787,38 @@ export default function ProfileDashboard() {
 
     const roundAmount = (amount) => Math.round(Number(amount || 0));
 
+    const getRefundedSaleDetailIdSet = (refundList = []) => {
+        const ids = new Set();
+
+        (Array.isArray(refundList) ? refundList : []).forEach((refund) => {
+            const status = String(refund?.status ?? "").toLowerCase();
+            const isRejected = status === "rejected" || status === "2";
+            if (isRejected) return;
+
+            (Array.isArray(refund?.refund_details) ? refund.refund_details : []).forEach((detail) => {
+                const saleDetailId = Number(detail?.sale_details_id);
+                if (Number.isFinite(saleDetailId) && saleDetailId > 0) {
+                    ids.add(saleDetailId);
+                }
+            });
+        });
+
+        return ids;
+    };
+
+    const removeRefundedItemsFromOrders = (orderList = [], refundList = []) => {
+        const refundedSaleDetailIds = getRefundedSaleDetailIdSet(refundList);
+        if (refundedSaleDetailIds.size === 0) return Array.isArray(orderList) ? orderList : [];
+
+        return (Array.isArray(orderList) ? orderList : [])
+            .map((order) => {
+                const salesDetails = Array.isArray(order?.sales_details) ? order.sales_details : [];
+                const remainingSalesDetails = salesDetails.filter((item) => !refundedSaleDetailIds.has(Number(item?.id)));
+                return { ...order, sales_details: remainingSalesDetails };
+            })
+            .filter((order) => (order?.sales_details || []).length > 0);
+    };
+
     const renderRefundReturnCards = (requestType = "return") => (
         <div className="space-y-6">
             {refunds.map((refund) => {
@@ -762,6 +827,25 @@ export default function ProfileDashboard() {
                 const isApproved = String(refund.status).toLowerCase() === "1" || String(refund.status).toLowerCase() === "approved";
                 const statusLabel = isPending ? "Pending Review" : (isApproved ? "Approved" : "Rejected");
                 const statusColor = isPending ? "bg-orange-50 text-orange-600 border-orange-200" : (isApproved ? "bg-green-50 text-green-600 border-green-200" : "bg-red-50 text-red-600 border-red-200");
+                const refundItems = (refund.refund_details || []).map((item, idx) => {
+                    const matchedSaleItem = refund.sale?.sales_details?.find((sd) => sd.id == item.sale_details_id);
+                    const productId = Number(item.product_id || matchedSaleItem?.product_id || 0);
+                    const fallbackMeta = refundProductMap[productId] || {};
+                    const productName = matchedSaleItem?.product_info?.name || fallbackMeta?.name || `Product #${item.product_id}`;
+                    const imageUrl = matchedSaleItem?.product_info?.image_path
+                        || (Array.isArray(matchedSaleItem?.product_info?.image_paths) ? matchedSaleItem.product_info.image_paths[0] : null)
+                        || fallbackMeta?.image
+                        || null;
+
+                    return {
+                        key: `${item.sale_details_id || item.product_id || idx}-${idx}`,
+                        item,
+                        matchedSaleItem,
+                        productId,
+                        productName,
+                        imageUrl,
+                    };
+                });
 
                 return (
                     <div key={refund.id} className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-xl transition-all duration-300 group overflow-hidden">
@@ -790,6 +874,48 @@ export default function ProfileDashboard() {
                                 </div>
                             )}
                         </div>
+
+                        {refundItems.length > 0 && (
+                            <div className="mb-5">
+                                <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2">Products</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {refundItems.map(({ key, productId, productName, imageUrl }) => (
+                                        productId ? (
+                                            <a
+                                                key={key}
+                                                href={`/product/${productId}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="h-12 w-12 rounded-lg overflow-hidden border border-gray-200 bg-white hover:border-[var(--brand-royal-red)] transition-colors"
+                                                title={productName}
+                                            >
+                                                {imageUrl ? (
+                                                    <img src={imageUrl} alt={productName} className="h-full w-full object-cover" />
+                                                ) : (
+                                                    <div className="h-full w-full flex items-center justify-center text-gray-400">
+                                                        <Package className="w-4 h-4" />
+                                                    </div>
+                                                )}
+                                            </a>
+                                        ) : (
+                                            <div
+                                                key={key}
+                                                className="h-12 w-12 rounded-lg overflow-hidden border border-gray-200 bg-white"
+                                                title={productName}
+                                            >
+                                                {imageUrl ? (
+                                                    <img src={imageUrl} alt={productName} className="h-full w-full object-cover" />
+                                                ) : (
+                                                    <div className="h-full w-full flex items-center justify-center text-gray-400">
+                                                        <Package className="w-4 h-4" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">
@@ -844,24 +970,15 @@ export default function ProfileDashboard() {
                             </div>
 
                             <div className="space-y-4">
-                                {refund.refund_details && refund.refund_details.length > 0 && (
+                                {refundItems.length > 0 && (
                                     <div>
                                         <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
                                             {isRefundRequestTab ? "Order Items" : "Items Included"}
                                         </h4>
                                         <div className="space-y-3">
-                                            {refund.refund_details.map((item, idx) => {
-                                                const matchedSaleItem = refund.sale?.sales_details?.find((sd) => sd.id == item.sale_details_id);
-                                                const productId = Number(item.product_id || matchedSaleItem?.product_id || 0);
-                                                const fallbackMeta = refundProductMap[productId] || {};
-                                                const productName = matchedSaleItem?.product_info?.name || fallbackMeta?.name || `Product #${item.product_id}`;
-                                                const imageUrl = matchedSaleItem?.product_info?.image_path
-                                                    || (Array.isArray(matchedSaleItem?.product_info?.image_paths) ? matchedSaleItem.product_info.image_paths[0] : null)
-                                                    || fallbackMeta?.image
-                                                    || null;
-
+                                            {refundItems.map(({ key, item, matchedSaleItem, productId, productName, imageUrl }) => {
                                                 return (
-                                                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
+                                                    <div key={key} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
                                                         <div className="flex items-center gap-3 min-w-0">
                                                             {productId ? (
                                                                 <a
@@ -1411,8 +1528,8 @@ export default function ProfileDashboard() {
                                         <div className="space-y-4">
                                             {orders.map(order => {
                                                 const orderStatus = getOrderStatus(order);
-                                                const showCancelAndRefund = orderStatus === 1 || orderStatus === 2;
-                                                const showRefund = orderStatus === 2 || isRefundEligibleForDeliveredOrder(order);
+                                                const showCancelAndRefund = orderStatus === 1;
+                                                const showRefund = isRefundEligibleForDeliveredOrder(order);
                                                 const showOrderConfirmedSupport = orderStatus === 2;
                                                 const orderItems = order?.sales_details || [];
                                                 const whatsappSupportUrl = `${SUPPORT_WHATSAPP_BASE}?text=${encodeURIComponent(`Hi, I have a query regarding my order #${order?.invoice_id || ""}.`)}`;
@@ -1809,17 +1926,37 @@ export default function ProfileDashboard() {
                                 </div>
 
                                 <div className="p-6">
-                                    <form onSubmit={handleTrackOrder} className="mb-8">
-                                        <div className="flex gap-3">
-                                            <input type="text" value={trackInvoiceId} onChange={(e) => setTrackInvoiceId(e.target.value)}
-                                                placeholder="Enter Invoice ID (e.g., INV-12345)"
-                                                className="flex-1 px-4 py-3.5 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:outline-none text-gray-900 placeholder:text-gray-400" />
-                                            <button type="submit" disabled={trackLoading}
-                                                className="px-8 py-3.5 bg-gradient-to-r from-[var(--brand-royal-red)] to-red-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-red-500/30 disabled:opacity-50 transition-all duration-200">
-                                                {trackLoading ? "Searching..." : "Track"}
+                                    {!user ? (
+                                        <div className="max-w-xl mx-auto text-center mb-8">
+                                            <p className="text-gray-700 mb-4">Please login to track your order.</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => openAuthModal("login")}
+                                                className="inline-flex items-center justify-center py-2.5 px-5 rounded-lg text-sm font-medium text-white bg-[var(--brand-royal-red)] hover:bg-red-700 transition-colors"
+                                            >
+                                                Login to Track Order
                                             </button>
                                         </div>
-                                    </form>
+                                    ) : (
+                                        <form onSubmit={handleTrackOrder} className="mb-8">
+                                            <div className="flex gap-3">
+                                                <input
+                                                    type="text"
+                                                    value={trackInvoiceId}
+                                                    onChange={(e) => setTrackInvoiceId(e.target.value)}
+                                                    placeholder="Enter Invoice ID (e.g., INV-12345)"
+                                                    className="flex-1 px-4 py-3.5 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:outline-none text-gray-900 placeholder:text-gray-400"
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    disabled={trackLoading}
+                                                    className="px-8 py-3.5 bg-gradient-to-r from-[var(--brand-royal-red)] to-red-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-red-500/30 disabled:opacity-50 transition-all duration-200"
+                                                >
+                                                    {trackLoading ? "Searching..." : "Track"}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
 
                                     {trackOrderData && (
                                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-fade-in mt-6">
@@ -1939,6 +2076,26 @@ export default function ProfileDashboard() {
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {trackAccessDenied && !trackOrderData && (
+                                        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-red-200">
+                                            <div className="mx-auto h-12 w-12 text-red-300 mb-3">
+                                                <XCircle className="h-full w-full" />
+                                            </div>
+                                            <h3 className="mt-2 text-sm font-medium text-red-700">Access Denied</h3>
+                                            <p className="mt-1 text-sm text-red-500">Sorry, we can&apos;t share this order details with you.</p>
+                                        </div>
+                                    )}
+
+                                    {trackHasSearched && !trackLoading && !trackOrderData && !trackAccessDenied && (
+                                        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
+                                            <div className="mx-auto h-12 w-12 text-gray-300 mb-3">
+                                                <Package className="h-full w-full" />
+                                            </div>
+                                            <h3 className="mt-2 text-sm font-medium text-gray-900">No Order Found</h3>
+                                            <p className="mt-1 text-sm text-gray-500">Could not find an order with that Invoice ID.</p>
                                         </div>
                                     )}
                                 </div>

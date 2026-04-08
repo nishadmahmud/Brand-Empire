@@ -5,7 +5,7 @@ import { useToast } from "@/context/ToastContext";
 import { uploadReviewMedia, submitRefundRequest } from "@/lib/api";
 import {
     X, Upload, Loader2, AlertTriangle, RotateCcw,
-    ChevronDown, Check, Truck
+    ChevronDown, Check, Truck, Package
 } from "lucide-react";
 
 // ─── Data ──────────────────────────────────────────────────
@@ -134,6 +134,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
     const [returnAddress, setReturnAddress] = useState({
         name: "", phone: "", address: "",
     });
+    const [selectedRefundItems, setSelectedRefundItems] = useState({});
 
     // UI State
     const [loading, setLoading] = useState(false);
@@ -151,6 +152,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
         ? (refundMethodOptions[0]?.value || "store_credit")
         : "cash";
     const reasons = isCancel ? CANCEL_REASONS : RETURN_REASONS;
+    const orderItems = Array.isArray(order?.sales_details) ? order.sales_details : [];
 
     // Auto-fill return address from user profile / order data
     useEffect(() => {
@@ -170,8 +172,29 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
             setRefundMethod(defaultRefundMethod);
             setBankDetails({ accountName: "", accountNumber: "", bankName: "", branch: "" });
             setError("");
+
+            const initialSelection = {};
+            (Array.isArray(order?.sales_details) ? order.sales_details : []).forEach((item, idx) => {
+                const key = String(item?.id ?? `${item?.product_id || "p"}-${idx}`);
+                const maxQty = Math.max(1, Number(item?.qty ?? item?.quantity ?? 1));
+                initialSelection[key] = {
+                    selected: true,
+                    maxQty,
+                };
+            });
+            setSelectedRefundItems(initialSelection);
         }
     }, [order, mode, open, user, defaultRefundMethod]);
+
+    const toggleRefundItem = (key, checked) => {
+        setSelectedRefundItems((prev) => ({
+            ...prev,
+            [key]: {
+                ...(prev[key] || { qty: 1, maxQty: 1 }),
+                selected: checked,
+            },
+        }));
+    };
 
     // File handling
     const handleFileChange = (e) => {
@@ -203,18 +226,32 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                 }
             }
 
-            // Transform order items into refund_details
-            let refundDetails = [];
-            if (order && order.sales_details && Array.isArray(order.sales_details)) {
-                refundDetails = order.sales_details.map(item => ({
+            // Build item-level refund_details based on selected products + qty
+            const refundDetails = orderItems.reduce((acc, item, idx) => {
+                const key = String(item?.id ?? `${item?.product_id || "p"}-${idx}`);
+                const selection = selectedRefundItems[key];
+                const maxQty = Math.max(1, Number(item?.qty ?? item?.quantity ?? 1));
+                const isSelected = isCancel ? true : Boolean(selection?.selected);
+                const qty = maxQty;
+
+                if (!isSelected) return acc;
+
+                acc.push({
                     sale_details_id: item.id,
                     product_id: item.product_id,
                     product_item_id: item.product_item_id || null,
                     product_variant_id: item.product_variant_id || null,
                     child_product_variant_id: item.child_product_variant_id || null,
-                    qty: item.quantity || 1,
-                    price: parseFloat(item.price) || 0
-                }));
+                    qty,
+                    price: parseFloat(item.price) || 0,
+                });
+                return acc;
+            }, []);
+
+            if (refundDetails.length === 0) {
+                setError("Please select at least one product to continue.");
+                setLoading(false);
+                return;
             }
 
             const courierLabel = COURIERS.find(c => c.value === courier)?.label || courier;
@@ -300,20 +337,61 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                         </div>
                     )}
 
-                    {/* Order Summary */}
-                    {order?.sales_details?.[0]?.product_info && (
-                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                            {order.sales_details[0].product_info.image_path && (
-                                <img src={order.sales_details[0].product_info.image_path} alt="Product"
-                                    className="h-12 w-12 rounded-lg object-cover flex-shrink-0 border border-gray-200" />
-                            )}
-                            <div className="min-w-0">
-                                <p className="font-semibold text-sm text-gray-900 line-clamp-1">
-                                    {order.sales_details[0].product_info.name}
-                                </p>
-                                {order.sales_details.length > 1 && (
-                                    <p className="text-xs text-gray-500">+{order.sales_details.length - 1} more items</p>
-                                )}
+                    {/* Refund Items */}
+                    {orderItems.length > 0 && (
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1.5">
+                                {isCancel ? "Order Items" : "Select Products for Refund"}
+                            </label>
+                            <div className="space-y-2">
+                                {orderItems.map((item, idx) => {
+                                    const key = String(item?.id ?? `${item?.product_id || "p"}-${idx}`);
+                                    const maxQty = Math.max(1, Number(item?.qty ?? item?.quantity ?? 1));
+                                    const productName = item?.product_info?.name || `Product #${item?.product_id || idx + 1}`;
+                                    const itemImage = item?.product_info?.image_path
+                                        || (Array.isArray(item?.product_info?.image_paths) ? item.product_info.image_paths[0] : null)
+                                        || null;
+                                    const selected = isCancel ? true : Boolean(selectedRefundItems[key]?.selected);
+
+                                    return (
+                                        <div
+                                            key={key}
+                                            className={`p-3 rounded-xl border transition-colors ${selected
+                                                ? "border-[var(--brand-royal-red)]/30 bg-red-50/30"
+                                                : "border-gray-200 bg-white"
+                                                }`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                {!isCancel && (
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selected}
+                                                        onChange={(e) => toggleRefundItem(key, e.target.checked)}
+                                                        className="h-4 w-4 accent-[var(--brand-royal-red)] flex-shrink-0"
+                                                    />
+                                                )}
+                                                <div className="h-12 w-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0">
+                                                    {itemImage ? (
+                                                        <img src={itemImage} alt={productName} className="h-full w-full object-cover" />
+                                                    ) : (
+                                                        <div className="h-full w-full flex items-center justify-center text-gray-400">
+                                                            <Package size={16} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-semibold text-gray-900 line-clamp-1">{productName}</p>
+                                                    <p className="text-xs text-gray-500 mt-0.5">
+                                                        Ordered Qty: {maxQty}{item?.size ? ` - Size: ${item.size}` : ""}
+                                                    </p>
+                                                </div>
+                                                <div className="text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-md px-2.5 py-1 whitespace-nowrap">
+                                                    Qty: {maxQty}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
