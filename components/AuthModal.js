@@ -2,16 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import Link from "next/link";
 
 const AuthModal = () => {
     const { authModalOpen, authModalMode, closeAuthModal, setAuthModalMode, login, register } = useAuth();
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [registerAcceptedPolicies, setRegisterAcceptedPolicies] = useState(false);
+    const [showLoginPassword, setShowLoginPassword] = useState(false);
+    const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Form states
-    const [loginData, setLoginData] = useState({ email: "", password: "" });
+    const [loginData, setLoginData] = useState({ identifier: "", password: "" });
     const [registerData, setRegisterData] = useState({
         first_name: "",
         last_name: "",
@@ -25,7 +30,7 @@ const AuthModal = () => {
     useEffect(() => {
         if (!authModalOpen) {
             // Reset forms and errors when closed
-            setLoginData({ email: "", password: "" });
+            setLoginData({ identifier: "", password: "" });
             setRegisterData({
                 first_name: "",
                 last_name: "",
@@ -36,6 +41,9 @@ const AuthModal = () => {
             });
             setRegisterAcceptedPolicies(false);
             setError("");
+            setShowLoginPassword(false);
+            setShowRegisterPassword(false);
+            setShowConfirmPassword(false);
         }
     }, [authModalOpen]);
 
@@ -52,10 +60,31 @@ const AuthModal = () => {
         e.preventDefault();
         setError("");
         setLoading(true);
-        const result = await login(loginData.email, loginData.password);
+        // Detect if identifier is email or phone
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginData.identifier);
+        let phoneStr = loginData.identifier;
+
+        // Basic phone formatting for backend if starts with +88 or 88
+        if (!isEmail) {
+            phoneStr = phoneStr.replace(/\D/g, ''); // keep only numbers
+            if (phoneStr.startsWith('880')) {
+                phoneStr = phoneStr.substring(2);
+            } else if (phoneStr.startsWith('88')) {
+                phoneStr = phoneStr.substring(2);
+            }
+        }
+
+        // Pass to context, let context decide how to send it based on type.
+        // We will update AuthContext and api as well to accept `identifier` or both.
+        // For now, let's pass an object so context knows what type it is.
+        const payload = isEmail ? { email: loginData.identifier } : { mobile_number: phoneStr, phone: phoneStr };
+
+        const result = await login(payload, loginData.password);
         setLoading(false);
         if (!result.success) {
             setError(result.message);
+        } else {
+            showToast({ message: "Logged in successfully!", type: "success" });
         }
     };
 
@@ -80,6 +109,8 @@ const AuthModal = () => {
         setLoading(false);
         if (!result.success) {
             setError(result.message);
+        } else {
+            showToast({ message: "Registration successful!", type: "success" });
         }
     };
 
@@ -149,30 +180,43 @@ const AuthModal = () => {
                     {authModalMode === 'login' ? (
                         <form onSubmit={handleLoginSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wider">Email</label>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wider">Email or Phone</label>
                                 <input
-                                    type="email"
-                                    name="email"
-                                    value={loginData.email}
+                                    type="text"
+                                    name="identifier"
+                                    value={loginData.identifier}
                                     onChange={handleLoginChange}
                                     required
-                                    placeholder="Enter your email"
+                                    placeholder="Enter your email or phone (e.g. 017...)"
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
                                     style={{ fontSize: '16px' }}
                                 />
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wider">Password</label>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    value={loginData.password}
-                                    onChange={handleLoginChange}
-                                    required
-                                    placeholder="Enter your password"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
-                                    style={{ fontSize: '16px' }}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showLoginPassword ? "text" : "password"}
+                                        name="password"
+                                        value={loginData.password}
+                                        onChange={handleLoginChange}
+                                        required
+                                        placeholder="Enter your password"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg pr-12 focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
+                                        style={{ fontSize: '16px' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none flex items-center justify-center p-1"
+                                    >
+                                        {showLoginPassword ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /><line x1="3" y1="3" x2="21" y2="21" /></svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                                        )}
+                                    </button>
+                                </div>
                                 <div className="flex justify-end mt-1">
                                     <button type="button" className="text-xs text-gray-500 hover:text-[var(--brand-royal-red)]">
                                         Forgot Password?
@@ -275,30 +319,56 @@ const AuthModal = () => {
 
                             <div>
                                 <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wider">Password</label>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    value={registerData.password}
-                                    onChange={handleRegisterChange}
-                                    required
-                                    placeholder="••••••••"
-                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
-                                    style={{ fontSize: '16px' }}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showRegisterPassword ? "text" : "password"}
+                                        name="password"
+                                        value={registerData.password}
+                                        onChange={handleRegisterChange}
+                                        required
+                                        placeholder="••••••••"
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg pr-12 focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
+                                        style={{ fontSize: '16px' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none flex items-center justify-center p-1"
+                                    >
+                                        {showRegisterPassword ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /><line x1="3" y1="3" x2="21" y2="21" /></svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
 
                             <div>
                                 <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wider">Confirm Password</label>
-                                <input
-                                    type="password"
-                                    name="confirm_password"
-                                    value={registerData.confirm_password}
-                                    onChange={handleRegisterChange}
-                                    required
-                                    placeholder="••••••••"
-                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
-                                    style={{ fontSize: '16px' }}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        name="confirm_password"
+                                        value={registerData.confirm_password}
+                                        onChange={handleRegisterChange}
+                                        required
+                                        placeholder="••••••••"
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg pr-12 focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)]/20 focus:border-[var(--brand-royal-red)] transition-all text-sm"
+                                        style={{ fontSize: '16px' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none flex items-center justify-center p-1"
+                                    >
+                                        {showConfirmPassword ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /><line x1="3" y1="3" x2="21" y2="21" /></svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
 
                             <label className="flex items-start gap-2 text-xs text-gray-600 leading-relaxed cursor-pointer">

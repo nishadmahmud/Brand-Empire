@@ -26,7 +26,7 @@ export default function CheckoutPage() {
 
     // Filter to get only selected items for checkout
     const cartItems = allCartItems.filter(item => item.selected);
-    const { user } = useAuth();
+    const { user, openAuthModal } = useAuth();
     const router = useRouter();
 
     const subTotal = getSubtotal();
@@ -238,6 +238,12 @@ export default function CheckoutPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!user) {
+            toast.error("Please log in to place your order.");
+            openAuthModal('login');
+            return;
+        }
 
         if (!acceptedCheckoutPolicies) {
             toast.error("Please accept Terms, Privacy, Return and Shipping policies");
@@ -820,6 +826,12 @@ export default function CheckoutPage() {
                                         </>
                                     )}
                                 </button>
+
+                                {!user && (
+                                    <p className="mt-3 text-center text-xs text-gray-500">
+                                        Please <button type="button" onClick={() => openAuthModal('login')} className="text-[var(--brand-royal-red)] hover:underline font-semibold">log in</button> to place your order.
+                                    </p>
+                                )}
 
                                 <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
                                     <Shield className="h-3 w-3" />

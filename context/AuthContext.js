@@ -35,9 +35,9 @@ export const AuthProvider = ({ children }) => {
         setAuthModalOpen(false);
     };
 
-    const login = async (email, password) => {
+    const login = async (identifierOrPayload, password) => {
         try {
-            const data = await customerLogin(email, password);
+            const data = await customerLogin(identifierOrPayload, password);
             if (data.token) {
                 setToken(data.token);
                 setUser(data.customer);
