@@ -738,6 +738,21 @@ export default function ProfileDashboard() {
 
     const getOrderStatus = (order) => Number(order?.tran_status ?? order?.status ?? 0);
 
+    const formatOrderDateTime = (value) => {
+        if (!value) return "Date unavailable";
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) return "Date unavailable";
+
+        return parsed.toLocaleString("en-US", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        });
+    };
+
     const parseReturnDaysFromText = (text) => {
         if (!text || typeof text !== "string") return 0;
         const match = text.match(/(\d+)/);
@@ -1638,14 +1653,12 @@ export default function ProfileDashboard() {
                                                                         <h3 className="font-semibold text-gray-900 text-sm md:text-base line-clamp-1 mb-1">
                                                                             {`Order #${order.invoice_id}`}
                                                                         </h3>
+                                                                        <p className="text-[11px] text-gray-500">{formatOrderDateTime(order.created_at)}</p>
                                                                         <p className="text-[11px] text-gray-500 mt-1">{orderItems.length} item{orderItems.length > 1 ? "s" : ""}</p>
                                                                     </div>
                                                                     <div className="text-right flex-shrink-0">
                                                                         <p className="text-2xl font-bold text-[var(--brand-royal-red)]">
                                                                             ৳{(Number(order.sub_total ?? order.total ?? 0) + Number(order.delivery_fee ?? 0))}
-                                                                        </p>
-                                                                        <p className="text-sm font-medium text-gray-500 mt-1">
-                                                                            {new Date(order.created_at).toLocaleDateString("en-US", { day: 'numeric', month: 'short', year: 'numeric' })}
                                                                         </p>
                                                                     </div>
                                                                 </div>

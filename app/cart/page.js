@@ -117,13 +117,26 @@ const CartPage = () => {
                         {/* Items List */}
                         <div className="space-y-3">
                             {cartItems.map((item, index) => (
-                                <div key={`${item.id}-${item.selectedSize}-${item.selectedColor}-${index}`} className={`relative bg-white border rounded p-3 shadow-sm group transition-colors ${item.selected ? 'border-gray-200' : 'border-gray-100 bg-gray-50 opacity-75'}`}>
+                                <div
+                                    key={`${item.id}-${item.selectedSize}-${item.selectedColor}-${index}`}
+                                    role="link"
+                                    tabIndex={0}
+                                    onClick={() => router.push(`/product/${item.id}`)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            router.push(`/product/${item.id}`);
+                                        }
+                                    }}
+                                    className={`relative bg-white border rounded p-3 shadow-sm group transition-colors cursor-pointer ${item.selected ? 'border-gray-200' : 'border-gray-100 bg-gray-50 opacity-75'}`}
+                                >
 
                                     {/* Checkbox Absolute Top Left */}
                                     <div className="absolute top-3 left-3 z-10">
                                         <input
                                             type="checkbox"
                                             checked={item.selected || false}
+                                            onClick={(e) => e.stopPropagation()}
                                             onChange={() => toggleItemSelection(item.id, item.selectedSize, item.selectedColor)}
                                             className="w-4 h-4 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)] cursor-pointer"
                                         />
@@ -131,7 +144,10 @@ const CartPage = () => {
 
                                     {/* Close/Remove Button Top Right */}
                                     <button
-                                        onClick={() => removeFromCart(item.id, item.selectedSize, item.selectedColor)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeFromCart(item.id, item.selectedSize, item.selectedColor);
+                                        }}
                                         className="absolute top-3 right-3 text-gray-400 hover:text-gray-900 transition-colors"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -155,19 +171,19 @@ const CartPage = () => {
                                         {/* info */}
                                         <div className="flex-1 min-w-0 py-1">
                                             <h3 className="font-bold text-sm text-gray-900 mb-1">{item.brand || "Brand Empire"}</h3>
-                                            <Link
-                                                href={`/product/${item.id}`}
-                                                className="block truncate mb-2 text-sm text-gray-500 hover:text-[var(--brand-royal-red)] transition-colors"
-                                            >
+                                            <p className="block truncate mb-2 text-sm text-gray-500 group-hover:text-[var(--brand-royal-red)] transition-colors">
                                                 {item.name}
-                                            </Link>
+                                            </p>
 
                                             {/* Selectors Row */}
                                             <div className="flex items-center gap-3 mb-3">
                                                 {/* Size Selector */}
                                                 <div className="relative">
                                                     <button
-                                                        onClick={() => setOpenSizeModal(item)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setOpenSizeModal(item);
+                                                        }}
                                                         className="bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-xs font-bold text-gray-800 flex items-center gap-1"
                                                     >
                                                         Size: {item.selectedSize || 'N/A'}
@@ -183,12 +199,16 @@ const CartPage = () => {
                                                         <span>Qty:</span>
                                                         <button
                                                             className="hover:text-[var(--brand-royal-red)]"
-                                                            onClick={() => updateQuantity(item.id, item.quantity - 1, item.selectedSize, item.selectedColor)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                updateQuantity(item.id, item.quantity - 1, item.selectedSize, item.selectedColor);
+                                                            }}
                                                         >-</button>
                                                         <span>{item.quantity}</span>
                                                         <button
                                                             className="hover:text-[var(--brand-royal-red)]"
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 const maxLimit = item.variantStockMap?.[item.selectedSize] ?? item.maxStock ?? 99;
                                                                 if (item.quantity >= maxLimit) {
                                                                     const sizeMsg = item.selectedSize ? ` for Size ${item.selectedSize}` : '';

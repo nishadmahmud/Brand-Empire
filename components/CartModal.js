@@ -3,10 +3,12 @@
 import React, { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 
 const CartModal = () => {
+    const router = useRouter();
     const {
         cartItems,
         isCartOpen,
@@ -18,6 +20,11 @@ const CartModal = () => {
     } = useCart();
 
     const { showToast } = useToast();
+
+    const handleCardNavigation = (itemId) => {
+        setIsCartOpen(false);
+        router.push(`/product/${itemId}`);
+    };
 
     // Prevent body scroll when cart is open
     useEffect(() => {
@@ -81,7 +88,19 @@ const CartModal = () => {
                     ) : (
                         <div className="space-y-4">
                             {cartItems.map((item) => (
-                                <div key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} className="flex gap-4 pb-4 border-b border-gray-200">
+                                <div
+                                    key={`${item.id}-${item.selectedSize}-${item.selectedColor}`}
+                                    role="link"
+                                    tabIndex={0}
+                                    onClick={() => handleCardNavigation(item.id)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            handleCardNavigation(item.id);
+                                        }
+                                    }}
+                                    className="group flex cursor-pointer gap-4 pb-4 border-b border-gray-200"
+                                >
                                     {/* Product Image */}
                                     <div className="relative w-20 h-20 flex-shrink-0 bg-gray-100 rounded">
                                         <Image
@@ -95,13 +114,9 @@ const CartModal = () => {
 
                                     {/* Product Details */}
                                     <div className="flex-1 min-w-0">
-                                        <Link
-                                            href={`/product/${item.id}`}
-                                            onClick={() => setIsCartOpen(false)}
-                                            className="block truncate text-sm font-medium text-gray-900 hover:text-[var(--brand-royal-red)] transition-colors"
-                                        >
+                                        <p className="block truncate text-sm font-medium text-gray-900 transition-colors group-hover:text-[var(--brand-royal-red)]">
                                             {item.name}
-                                        </Link>
+                                        </p>
                                         {item.brand && (
                                             <p className="text-xs text-gray-500 mt-0.5">{item.brand}</p>
                                         )}
@@ -116,14 +131,18 @@ const CartModal = () => {
                                         <div className="flex items-center justify-between mt-2">
                                             <div className="flex items-center gap-2">
                                                 <button
-                                                    onClick={() => updateQuantity(item.id, item.quantity - 1, item.selectedSize, item.selectedColor)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        updateQuantity(item.id, item.quantity - 1, item.selectedSize, item.selectedColor);
+                                                    }}
                                                     className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100"
                                                 >
                                                     -
                                                 </button>
                                                 <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
                                                 <button
-                                                    onClick={() => {
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         const maxLimit = item.variantStockMap?.[item.selectedSize] ?? item.maxStock ?? 99;
                                                         if (item.quantity >= maxLimit) {
                                                             const sizeMsg = item.selectedSize ? ` for Size ${item.selectedSize}` : '';
@@ -143,7 +162,10 @@ const CartModal = () => {
 
                                     {/* Remove Button */}
                                     <button
-                                        onClick={() => removeFromCart(item.id, item.selectedSize, item.selectedColor)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeFromCart(item.id, item.selectedSize, item.selectedColor);
+                                        }}
                                         className="text-gray-400 hover:text-red-600 transition-colors"
                                         aria-label="Remove item"
                                     >

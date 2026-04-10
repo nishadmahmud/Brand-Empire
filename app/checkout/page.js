@@ -621,7 +621,19 @@ export default function CheckoutPage() {
 
                                 <div className="mb-6 max-h-[300px] space-y-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200">
                                     {cartItems.map((item, index) => (
-                                        <div key={`${item.id}-${item.selectedSize || index}`} className="flex gap-4">
+                                        <div
+                                            key={`${item.id}-${item.selectedSize || index}`}
+                                            role="link"
+                                            tabIndex={0}
+                                            onClick={() => router.push(`/product/${item.id}`)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    router.push(`/product/${item.id}`);
+                                                }
+                                            }}
+                                            className="group flex gap-4 cursor-pointer"
+                                        >
                                             <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-100 bg-gray-50">
                                                 <Image
                                                     src={item.image}
@@ -633,12 +645,9 @@ export default function CheckoutPage() {
                                             </div>
                                             <div className="flex flex-1 flex-col justify-between">
                                                 <div className="flex justify-between">
-                                                    <Link
-                                                        href={`/product/${item.id}`}
-                                                        className="line-clamp-1 text-sm font-medium text-gray-900 hover:text-[var(--brand-royal-red)] transition-colors"
-                                                    >
+                                                    <p className="line-clamp-1 text-sm font-medium text-gray-900 transition-colors group-hover:text-[var(--brand-royal-red)]">
                                                         {item.name}
-                                                    </Link>
+                                                    </p>
                                                     <p className="text-sm font-semibold text-gray-900">
                                                         {formatPrice(item.price * item.quantity)}
                                                     </p>
