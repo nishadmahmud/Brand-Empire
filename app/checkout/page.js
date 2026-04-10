@@ -633,9 +633,12 @@ export default function CheckoutPage() {
                                             </div>
                                             <div className="flex flex-1 flex-col justify-between">
                                                 <div className="flex justify-between">
-                                                    <h3 className="line-clamp-1 text-sm font-medium text-gray-900">
+                                                    <Link
+                                                        href={`/product/${item.id}`}
+                                                        className="line-clamp-1 text-sm font-medium text-gray-900 hover:text-[var(--brand-royal-red)] transition-colors"
+                                                    >
                                                         {item.name}
-                                                    </h3>
+                                                    </Link>
                                                     <p className="text-sm font-semibold text-gray-900">
                                                         {formatPrice(item.price * item.quantity)}
                                                     </p>

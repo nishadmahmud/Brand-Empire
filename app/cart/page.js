@@ -155,7 +155,12 @@ const CartPage = () => {
                                         {/* info */}
                                         <div className="flex-1 min-w-0 py-1">
                                             <h3 className="font-bold text-sm text-gray-900 mb-1">{item.brand || "Brand Empire"}</h3>
-                                            <p className="text-sm text-gray-500 truncate mb-2">{item.name}</p>
+                                            <Link
+                                                href={`/product/${item.id}`}
+                                                className="block truncate mb-2 text-sm text-gray-500 hover:text-[var(--brand-royal-red)] transition-colors"
+                                            >
+                                                {item.name}
+                                            </Link>
 
                                             {/* Selectors Row */}
                                             <div className="flex items-center gap-3 mb-3">

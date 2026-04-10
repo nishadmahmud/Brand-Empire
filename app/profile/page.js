@@ -2,13 +2,14 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { useToast } from "@/context/ToastContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, trackOrder, uploadSingleFile, getCustomerRefunds, getProductReviews, getProductById, getInvoiceSettings } from "@/lib/api";
+import { getCustomerOrders, getCustomerCoupons, getCouponList, collectCoupon, trackOrder, uploadSingleFile, getCustomerRefunds, getProductReviews, getProductById, getInvoiceSettings, updateCustomerPassword } from "@/lib/api";
 import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Home, Package, Heart, Tag, User, LogOut, ChevronDown, Clock, CheckCircle, Truck, PackageCheck, XCircle, CheckCircle2, PauseCircle, ClipboardList, DollarSign, MapPin, RotateCcw, AlertTriangle } from "lucide-react";
+import { Home, Package, Heart, Tag, User, LogOut, ChevronDown, Clock, CheckCircle, Truck, PackageCheck, XCircle, CheckCircle2, PauseCircle, ClipboardList, DollarSign, MapPin, RotateCcw, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import ReturnCancelModal from "@/components/ReturnCancelModal";
 import WriteReviewModal from "@/components/WriteReviewModal";
 import DOMPurify from "isomorphic-dompurify";
@@ -140,6 +141,7 @@ const SUPPORT_FACEBOOK_INBOX = "https://www.facebook.com/brandempirebd";
 export default function ProfileDashboard() {
     const { user, logout, loading, token, updateProfile, openAuthModal } = useAuth();
     const { wishlist, removeFromWishlist } = useWishlist();
+    const { showToast } = useToast();
     const router = useRouter();
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -175,6 +177,19 @@ export default function ProfileDashboard() {
     const [profileImage, setProfileImage] = useState(null);
     const [profileImagePreview, setProfileImagePreview] = useState(null);
     const [imageUploading, setImageUploading] = useState(false);
+    const [showPasswordFields, setShowPasswordFields] = useState(false);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [passwordForm, setPasswordForm] = useState({
+        current_password: "",
+        new_password: "",
+        new_password_confirmation: "",
+    });
+    const [passwordVisibility, setPasswordVisibility] = useState({
+        current_password: false,
+        new_password: false,
+        new_password_confirmation: false,
+    });
+    const [passwordError, setPasswordError] = useState("");
 
     // Track order states
     const [trackInvoiceId, setTrackInvoiceId] = useState("");
@@ -214,6 +229,18 @@ export default function ProfileDashboard() {
                 address_two: user.address_two || "",
                 primary_address_field: "address"
             });
+            setPasswordForm({
+                current_password: "",
+                new_password: "",
+                new_password_confirmation: "",
+            });
+            setPasswordVisibility({
+                current_password: false,
+                new_password: false,
+                new_password_confirmation: false,
+            });
+            setPasswordError("");
+            setShowPasswordFields(false);
         }
     }, [user, loading, router]);
 
@@ -295,6 +322,74 @@ export default function ProfileDashboard() {
         } finally {
             setIsUpdating(false);
             setImageUploading(false);
+        }
+    };
+
+    const handlePasswordInputChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordError("");
+        setPasswordForm((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    const handlePasswordUpdate = async (e) => {
+        e.preventDefault();
+
+        if (!user?.email) {
+            showToast({ message: "User email is not available.", type: "error" });
+            return;
+        }
+
+        if (!passwordForm.current_password || !passwordForm.new_password || !passwordForm.new_password_confirmation) {
+            setPasswordError("Please fill in all password fields.");
+            showToast({ message: "Please fill in all password fields.", type: "error" });
+            return;
+        }
+
+        if (passwordForm.new_password !== passwordForm.new_password_confirmation) {
+            setPasswordError("New password and confirm password do not match.");
+            showToast({ message: "New password and confirm password do not match.", type: "error" });
+            return;
+        }
+
+        setPasswordError("");
+        setIsChangingPassword(true);
+
+        try {
+            const result = await updateCustomerPassword(token, {
+                email: user.email,
+                current_password: passwordForm.current_password,
+                new_password: passwordForm.new_password,
+                new_password_confirmation: passwordForm.new_password_confirmation,
+            });
+
+            if (result?.success) {
+                showToast({ message: result.message || "Password changed successfully!", type: "success" });
+                setPasswordForm({
+                    current_password: "",
+                    new_password: "",
+                    new_password_confirmation: "",
+                });
+                setPasswordVisibility({
+                    current_password: false,
+                    new_password: false,
+                    new_password_confirmation: false,
+                });
+                setPasswordError("");
+                setShowPasswordFields(false);
+                return;
+            }
+
+            setPasswordError(result?.message || "Failed to update password.");
+            showToast({ message: result?.message || "Failed to update password.", type: "error" });
+        } catch (error) {
+            console.error("Error updating password:", error);
+            setPasswordError("Failed to update password. Please try again.");
+            showToast({ message: "Failed to update password. Please try again.", type: "error" });
+        } finally {
+            setIsChangingPassword(false);
         }
     };
 
@@ -2417,7 +2512,7 @@ export default function ProfileDashboard() {
                                     )}
                                 </div>
 
-                                <div className="p-6">
+                                <div className="p-6 space-y-6">
 
                                     {isEditing ? (
                                         <form onSubmit={handleProfileUpdate} className="space-y-6">
@@ -2723,6 +2818,129 @@ export default function ProfileDashboard() {
                                             </div>
                                         </div>
                                     )}
+
+                                    <div className="border rounded-2xl p-5 bg-gray-50">
+                                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-900">Change Password</h3>
+                                                <p className="text-sm text-gray-500 mt-1">Update your account password securely.</p>
+                                            </div>
+                                            {!showPasswordFields && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPasswordFields(true)}
+                                                    className="px-5 py-2.5 bg-[var(--brand-royal-red)] text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                                                >
+                                                    Change Password
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {showPasswordFields && (
+                                            <form onSubmit={handlePasswordUpdate} className="mt-5 space-y-4">
+                                                {passwordError && (
+                                                    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                                        {passwordError}
+                                                    </div>
+                                                )}
+                                                <div className="grid md:grid-cols-3 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                                                        <div className="relative">
+                                                            <input
+                                                                type={passwordVisibility.current_password ? "text" : "password"}
+                                                                name="current_password"
+                                                                value={passwordForm.current_password}
+                                                                onChange={handlePasswordInputChange}
+                                                                className={`w-full rounded-lg border px-4 py-2.5 pr-11 focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent ${passwordError ? "border-red-300" : "border-gray-300"}`}
+                                                                placeholder="Enter current password"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPasswordVisibility((prev) => ({ ...prev, current_password: !prev.current_password }))}
+                                                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+                                                                aria-label={passwordVisibility.current_password ? "Hide current password" : "Show current password"}
+                                                            >
+                                                                {passwordVisibility.current_password ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                                                        <div className="relative">
+                                                            <input
+                                                                type={passwordVisibility.new_password ? "text" : "password"}
+                                                                name="new_password"
+                                                                value={passwordForm.new_password}
+                                                                onChange={handlePasswordInputChange}
+                                                                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 pr-11 focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                                placeholder="Enter new password"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPasswordVisibility((prev) => ({ ...prev, new_password: !prev.new_password }))}
+                                                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+                                                                aria-label={passwordVisibility.new_password ? "Hide new password" : "Show new password"}
+                                                            >
+                                                                {passwordVisibility.new_password ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                                                        <div className="relative">
+                                                            <input
+                                                                type={passwordVisibility.new_password_confirmation ? "text" : "password"}
+                                                                name="new_password_confirmation"
+                                                                value={passwordForm.new_password_confirmation}
+                                                                onChange={handlePasswordInputChange}
+                                                                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 pr-11 focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent"
+                                                                placeholder="Confirm new password"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPasswordVisibility((prev) => ({ ...prev, new_password_confirmation: !prev.new_password_confirmation }))}
+                                                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+                                                                aria-label={passwordVisibility.new_password_confirmation ? "Hide confirm password" : "Show confirm password"}
+                                                            >
+                                                                {passwordVisibility.new_password_confirmation ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex gap-3 pt-2">
+                                                    <button
+                                                        type="submit"
+                                                        disabled={isChangingPassword}
+                                                        className="px-5 py-2.5 bg-[var(--brand-royal-red)] text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                    >
+                                                        {isChangingPassword ? "Updating..." : "Update Password"}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowPasswordFields(false);
+                                                            setPasswordError("");
+                                                            setPasswordForm({
+                                                                current_password: "",
+                                                                new_password: "",
+                                                                new_password_confirmation: "",
+                                                            });
+                                                            setPasswordVisibility({
+                                                                current_password: false,
+                                                                new_password: false,
+                                                                new_password_confirmation: false,
+                                                            });
+                                                        }}
+                                                        className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-white transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         )}

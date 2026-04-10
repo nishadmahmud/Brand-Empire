@@ -95,7 +95,13 @@ const CartModal = () => {
 
                                     {/* Product Details */}
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-sm font-medium text-gray-900 truncate">{item.name}</h3>
+                                        <Link
+                                            href={`/product/${item.id}`}
+                                            onClick={() => setIsCartOpen(false)}
+                                            className="block truncate text-sm font-medium text-gray-900 hover:text-[var(--brand-royal-red)] transition-colors"
+                                        >
+                                            {item.name}
+                                        </Link>
                                         {item.brand && (
                                             <p className="text-xs text-gray-500 mt-0.5">{item.brand}</p>
                                         )}
