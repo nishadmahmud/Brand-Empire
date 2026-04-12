@@ -895,7 +895,29 @@ export default function ProfileDashboard() {
         });
     };
 
+    const TAKA_SYMBOL = "\u09F3";
     const roundAmount = (amount) => Math.round(Number(amount || 0));
+    const formatTaka = (amount) => `${TAKA_SYMBOL} ${Number(amount || 0).toLocaleString("en-US")}`;
+    const walletBalance = Number(user?.wallet_balance || 0);
+    const loyaltyPoints = Math.round(walletBalance);
+    const membershipTiers = [
+        { name: "Basic", threshold: 0, color: "bg-green-500" },
+        { name: "Silver", threshold: 3000, color: "bg-slate-400" },
+        { name: "Gold", threshold: 15000, color: "bg-amber-500" },
+        { name: "VIP", threshold: 30000, color: "bg-purple-600" },
+    ];
+    const currentTierIndex = membershipTiers.reduce((activeIndex, tier, index) => (
+        loyaltyPoints >= tier.threshold ? index : activeIndex
+    ), 0);
+    const currentTier = membershipTiers[currentTierIndex];
+    const nextTier = membershipTiers[currentTierIndex + 1] || null;
+    const pointsToNextTier = nextTier ? Math.max(0, nextTier.threshold - loyaltyPoints) : 0;
+    const tierProgress = nextTier
+        ? Math.min(
+            100,
+            ((loyaltyPoints - currentTier.threshold) / Math.max(1, nextTier.threshold - currentTier.threshold)) * 100
+        )
+        : 100;
 
     const getRefundedSaleDetailIdSet = (refundList = []) => {
         const ids = new Set();
@@ -980,7 +1002,7 @@ export default function ProfileDashboard() {
                             {refund.sale && (
                                 <div className="text-right bg-gray-50 p-3 rounded-xl border border-gray-100">
                                     <p className="text-xs text-gray-500 mb-0.5">Total amount</p>
-                                    <p className="text-lg font-bold text-[var(--brand-royal-red)]">৳{roundAmount(refund.sale.sub_total)}</p>
+                                    <p className="text-lg font-bold text-[var(--brand-royal-red)]">{TAKA_SYMBOL}{roundAmount(refund.sale.sub_total)}</p>
                                 </div>
                             )}
                         </div>
@@ -1137,7 +1159,7 @@ export default function ProfileDashboard() {
                                                             </div>
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="text-sm font-bold text-gray-900">৳{roundAmount(item.price)}</p>
+                                                            <p className="text-sm font-bold text-gray-900">{TAKA_SYMBOL}{roundAmount(item.price)}</p>
                                                         </div>
                                                     </div>
                                                 );
@@ -1658,7 +1680,7 @@ export default function ProfileDashboard() {
                                                                     </div>
                                                                     <div className="text-right flex-shrink-0">
                                                                         <p className="text-2xl font-bold text-[var(--brand-royal-red)]">
-                                                                            ৳{(Number(order.sub_total ?? order.total ?? 0) + Number(order.delivery_fee ?? 0))}
+                                                                            {TAKA_SYMBOL}{(Number(order.sub_total ?? order.total ?? 0) + Number(order.delivery_fee ?? 0))}
                                                                         </p>
                                                                     </div>
                                                                 </div>
@@ -1885,8 +1907,8 @@ export default function ProfileDashboard() {
                                                                     </div>
                                                                 </div>
                                                                 <div className="text-right">
-                                                                    <p className="font-bold text-[var(--brand-royal-red)]">৳{item.price * item.qty}</p>
-                                                                    <p className="text-xs text-gray-400">৳{item.price} each</p>
+                                                                    <p className="font-bold text-[var(--brand-royal-red)]">{TAKA_SYMBOL}{item.price * item.qty}</p>
+                                                                    <p className="text-xs text-gray-400">{TAKA_SYMBOL}{item.price} each</p>
                                                                 </div>
                                                             </Link>
                                                         ))}
@@ -1924,28 +1946,28 @@ export default function ProfileDashboard() {
                                                     <div className="space-y-2 text-sm">
                                                         <div className="flex justify-between">
                                                             <span className="text-gray-600">Subtotal</span>
-                                                            <span className="font-medium">৳{selectedOrder.sub_total || 0}</span>
+                                                            <span className="font-medium">{TAKA_SYMBOL}{selectedOrder.sub_total || 0}</span>
                                                         </div>
                                                         <div className="flex justify-between">
                                                             <span className="text-gray-600">Delivery Fee</span>
-                                                            <span className="font-medium">৳{selectedOrder.delivery_fee || 0}</span>
+                                                            <span className="font-medium">{TAKA_SYMBOL}{selectedOrder.delivery_fee || 0}</span>
                                                         </div>
                                                         {selectedOrder.discount > 0 && (
                                                             <div className="flex justify-between text-green-600">
                                                                 <span>Discount</span>
-                                                                <span>-৳{selectedOrder.discount}</span>
+                                                                <span>-{TAKA_SYMBOL}{selectedOrder.discount}</span>
                                                             </div>
                                                         )}
                                                         {selectedOrder.donation > 0 && (
                                                             <div className="flex justify-between text-[var(--brand-royal-red)]">
                                                                 <span>Donation</span>
-                                                                <span>+৳{selectedOrder.donation}</span>
+                                                                <span>+{TAKA_SYMBOL}{selectedOrder.donation}</span>
                                                             </div>
                                                         )}
                                                         <div className="flex justify-between pt-3 border-t border-gray-200 text-lg font-bold">
                                                             <span>Total</span>
                                                             <span className="text-[var(--brand-royal-red)]">
-                                                                ৳{(Number(selectedOrder.sub_total || 0) + Number(selectedOrder.delivery_fee || 0) - Number(selectedOrder.discount || 0) + Number(selectedOrder.donation || 0))}
+                                                                {TAKA_SYMBOL}{(Number(selectedOrder.sub_total || 0) + Number(selectedOrder.delivery_fee || 0) - Number(selectedOrder.discount || 0) + Number(selectedOrder.donation || 0))}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -1959,7 +1981,7 @@ export default function ProfileDashboard() {
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="text-xs text-gray-500 mb-1">Paid Amount</p>
-                                                        <p className="font-semibold text-gray-900">৳{selectedOrder.paid_amount || 0}</p>
+                                                        <p className="font-semibold text-gray-900">{TAKA_SYMBOL}{selectedOrder.paid_amount || 0}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2141,7 +2163,7 @@ export default function ProfileDashboard() {
                                                         <span className="text-sm font-semibold text-gray-900">Total Amount</span>
                                                     </div>
                                                     <span className="text-xl font-bold text-[var(--brand-royal-red)]">
-                                                        ৳{trackOrderData.total || trackOrderData.sub_total}
+                                                        {TAKA_SYMBOL}{trackOrderData.total || trackOrderData.sub_total}
                                                     </span>
                                                 </div>
 
@@ -2173,11 +2195,11 @@ export default function ProfileDashboard() {
                                                                         {item.product_info?.name}
                                                                     </p>
                                                                     <p className="text-xs text-gray-500 mt-1">
-                                                                        Qty: {item.qty} {item.size ? `Â· Size: ${item.size}` : ""}
+                                                                        Qty: {item.qty} {item.size ? `ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Size: ${item.size}` : ""}
                                                                     </p>
                                                                 </div>
                                                                 <div className="text-sm font-bold text-gray-900">
-                                                                    ৳{item.price * item.qty}
+                                                                    {TAKA_SYMBOL}{item.price * item.qty}
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -2215,6 +2237,135 @@ export default function ProfileDashboard() {
                             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                                 <div className="p-4 md:p-6 bg-gradient-to-r from-gray-900 to-gray-800">
                                     <h2 className="text-lg md:text-2xl font-bold text-white">My Points & Benefits</h2>
+                                    <p className="text-white/60 text-xs md:text-sm mt-0.5">Wallet-based points and live membership status</p>
+                                </div>
+                                <div className="p-3 md:p-6 space-y-4 md:space-y-6">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                                        <div className="bg-white rounded-xl shadow-sm border p-3 md:p-6">
+                                            <div className="flex items-center gap-3 md:gap-4">
+                                                <div className="bg-[var(--brand-royal-red)] p-2 md:p-3 rounded-lg md:rounded-xl">
+                                                    <svg width="18" height="18" className="md:w-6 md:h-6" fill="white" stroke="white" strokeWidth="2">
+                                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                                                    </svg>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-[10px] md:text-xs text-gray-500">Available Points</p>
+                                                    <p className="text-lg md:text-3xl font-bold text-gray-900">{loyaltyPoints.toLocaleString("en-US")}</p>
+                                                    <p className="text-[10px] md:text-xs text-gray-500">Equivalent to {formatTaka(walletBalance)}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Link href="/" className="hidden md:flex bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 rounded-xl shadow-sm p-6 flex-col items-center justify-center">
+                                            <div className="bg-white p-3 rounded-xl mb-3">
+                                                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <circle cx="9" cy="21" r="1"></circle>
+                                                    <circle cx="20" cy="21" r="1"></circle>
+                                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                                                </svg>
+                                            </div>
+                                            <span className="text-white text-sm font-semibold">Shop now</span>
+                                        </Link>
+
+                                        <div className="bg-white rounded-xl shadow-sm border p-3 md:p-6">
+                                            <div className="flex items-center gap-3 md:gap-4">
+                                                <div className="bg-blue-600 p-2 md:p-3 rounded-lg md:rounded-xl">
+                                                    <svg width="18" height="18" className="md:w-6 md:h-6" fill="white" stroke="white" strokeWidth="2">
+                                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                                                    </svg>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-[10px] md:text-xs text-gray-500">Wallet Balance</p>
+                                                    <p className="text-lg md:text-3xl font-bold text-gray-900">{formatTaka(walletBalance)}</p>
+                                                    <p className="text-[10px] md:text-xs text-gray-500">{user?.is_member ? "Membership active" : "Membership inactive"}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-xl shadow-sm border p-4 md:p-6">
+                                        <h3 className="font-bold text-base md:text-lg mb-4 md:mb-6">Membership Tier</h3>
+                                        <div className="relative">
+                                            <div className="flex justify-between items-start mb-4">
+                                                {membershipTiers.map((tier, i) => {
+                                                    const isUnlocked = loyaltyPoints >= tier.threshold;
+                                                    return (
+                                                        <div key={i} className="flex flex-col items-center flex-1">
+                                                            <div className={`w-12 h-12 rounded-full ${isUnlocked ? tier.color : "bg-gray-300"} flex items-center justify-center mb-2 relative z-10`}>
+                                                                {isUnlocked ? (
+                                                                    <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
+                                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                                    </svg>
+                                                                ) : (
+                                                                    <svg width="24" height="24" fill="white" stroke="white" strokeWidth="2">
+                                                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                                    </svg>
+                                                                )}
+                                                            </div>
+                                                            <p className="font-semibold text-sm text-gray-900">{tier.name}</p>
+                                                            <p className="text-xs text-gray-500">{tier.threshold.toLocaleString("en-US")} points</p>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="absolute top-6 left-0 right-0 h-1 bg-gray-200 -z-0">
+                                                <div className="h-full bg-blue-600" style={{ width: `${tierProgress}%` }}></div>
+                                            </div>
+                                        </div>
+                                        <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50 p-4">
+                                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                                <div>
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Current Tier</p>
+                                                    <p className="text-lg font-bold text-gray-900">{currentTier.name}</p>
+                                                </div>
+                                                {nextTier ? (
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Next Tier</p>
+                                                        <p className="text-sm font-bold text-[var(--brand-royal-red)]">{nextTier.name} in {pointsToNextTier.toLocaleString("en-US")} points</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Status</p>
+                                                        <p className="text-sm font-bold text-green-600">Top tier unlocked</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-xl shadow-sm border">
+                                        <details className="group" open>
+                                            <summary className="flex items-center justify-between p-6 cursor-pointer">
+                                                <h3 className="font-bold text-lg">My Points Summary</h3>
+                                                <svg className="w-5 h-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                                </svg>
+                                            </summary>
+                                            <div className="px-6 pb-6 space-y-3">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Available Points</span>
+                                                    <span className="font-bold text-gray-900">{loyaltyPoints.toLocaleString("en-US")}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Wallet Balance</span>
+                                                    <span className="font-bold text-gray-900">{formatTaka(walletBalance)}</span>
+                                                </div>
+                                                <div className="flex justify-between pt-3 border-t">
+                                                    <span className="font-semibold text-gray-900">Member Status</span>
+                                                    <span className="font-bold text-blue-600 text-lg">{user?.is_member ? "Active" : "Inactive"}</span>
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {false && activeSection === "benefits" && (
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                                <div className="p-4 md:p-6 bg-gradient-to-r from-gray-900 to-gray-800">
+                                    <h2 className="text-lg md:text-2xl font-bold text-white">My Points & Benefits</h2>
                                     <p className="text-white/60 text-xs md:text-sm mt-0.5">Track your rewards and membership tier</p>
                                 </div>
                                 <div className="p-3 md:p-6 space-y-4 md:space-y-6">
@@ -2231,7 +2382,7 @@ export default function ProfileDashboard() {
                                                 <div className="min-w-0">
                                                     <p className="text-[10px] md:text-xs text-gray-500">Your Points</p>
                                                     <p className="text-lg md:text-3xl font-bold text-gray-900">283K</p>
-                                                    <p className="text-[10px] md:text-xs text-gray-500">â‰ˆ ৳1,504</p>
+                                                    <p className="text-[10px] md:text-xs text-gray-500">+ {TAKA_SYMBOL}1,504</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -2259,8 +2410,8 @@ export default function ProfileDashboard() {
                                                 </div>
                                                 <div className="min-w-0">
                                                     <p className="text-[10px] md:text-xs text-gray-500">Your Credit</p>
-                                                    <p className="text-lg md:text-3xl font-bold text-gray-900">৳500</p>
-                                                    <p className="text-[10px] md:text-xs text-gray-500">ðŸ“… Dec 2026</p>
+                                                    <p className="text-lg md:text-3xl font-bold text-gray-900">{TAKA_SYMBOL}500</p>
+                                                    <p className="text-[10px] md:text-xs text-gray-500">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Dec 2026</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -2309,10 +2460,10 @@ export default function ProfileDashboard() {
                                         </div>
                                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                                             {[
-                                                { name: "Delivery", discount: "10%", amount: "৳100", badge: "Renewal", expiry: "Dec 25", color: "bg-green-500" },
-                                                { name: "Basic", discount: "75%", amount: "৳750", badge: "New", expiry: "Dec 25", color: "bg-blue-600" },
-                                                { name: "Login", discount: "50%", amount: "৳500", badge: "New", expiry: "Dec 25", color: "bg-indigo-700" },
-                                                { name: "Premium", discount: "50%", amount: "৳500", badge: "Renewal", expiry: "Dec 25", color: "bg-orange-500" },
+                                                { name: "Delivery", discount: "10%", amount: `${TAKA_SYMBOL}100`, badge: "Renewal", expiry: "Dec 25", color: "bg-green-500" },
+                                                { name: "Basic", discount: "75%", amount: `${TAKA_SYMBOL}750`, badge: "New", expiry: "Dec 25", color: "bg-blue-600" },
+                                                { name: "Login", discount: "50%", amount: `${TAKA_SYMBOL}500`, badge: "New", expiry: "Dec 25", color: "bg-indigo-700" },
+                                                { name: "Premium", discount: "50%", amount: `${TAKA_SYMBOL}500`, badge: "Renewal", expiry: "Dec 25", color: "bg-orange-500" },
                                             ].map((coupon, i) => (
                                                 <div key={i} className={`${coupon.color} rounded-lg md:rounded-xl p-2.5 md:p-4 text-white`}>
                                                     <div className="flex items-center justify-between mb-1 md:mb-2">
@@ -2375,7 +2526,7 @@ export default function ProfileDashboard() {
                                                     </div>
                                                     <div>
                                                         <p className="font-semibold text-gray-900 mb-1">Make Purchases</p>
-                                                        <p className="text-sm text-gray-600">Earn 1 point per ৳1 spent</p>
+                                                        <p className="text-sm text-gray-600">Earn 1 point per {TAKA_SYMBOL}1 spent</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-3">
@@ -2471,9 +2622,9 @@ export default function ProfileDashboard() {
                                                                 </h3>
                                                                 <p className="text-xs text-gray-500 mb-2">{product.brand}</p>
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="font-bold text-sm text-[var(--brand-royal-red)]">৳{product.price}</span>
+                                                                    <span className="font-bold text-sm text-[var(--brand-royal-red)]">{TAKA_SYMBOL}{product.price}</span>
                                                                     {product.originalPrice && (
-                                                                        <span className="text-xs text-gray-400 line-through">৳{product.originalPrice}</span>
+                                                                        <span className="text-xs text-gray-400 line-through">{TAKA_SYMBOL}{product.originalPrice}</span>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -3187,7 +3338,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                                                     <p className="text-2xl font-bold text-[var(--brand-royal-red)]">
                                                         {coupon.coupon_amount_type === 'percentage'
                                                             ? `${parseFloat(coupon.amount)}% OFF`
-                                                            : `৳${parseFloat(coupon.amount)} OFF`
+                                                            : `${formatTaka(parseFloat(coupon.amount))} OFF`
                                                         }
                                                     </p>
                                                     <p className="text-sm text-gray-600 font-medium">{coupon.coupon_name}</p>
@@ -3209,7 +3360,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                                             {/* Details */}
                                             <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
                                                 {parseFloat(coupon.minimum_order_amount) > 0 && (
-                                                    <span>Min. order: ৳{parseFloat(coupon.minimum_order_amount)}</span>
+                                                    <span>Min. order: {formatTaka(parseFloat(coupon.minimum_order_amount))}</span>
                                                 )}
                                                 <span>
                                                     Expires: {new Date(coupon.expire_date).toLocaleDateString()}
@@ -3235,7 +3386,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                             </div>
                         ) : (
                             <div className="text-center py-20 text-gray-400">
-                                <p className="text-4xl mb-4">ðŸ·ï¸</p>
+                                <p className="text-4xl mb-4">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â·ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â</p>
                                 <p>No coupons available right now</p>
                             </div>
                         )}
@@ -3264,7 +3415,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                                         >
                                             {/* Urgency Badge */}
                                             <div className="absolute top-0 right-0 bg-orange-500 text-white text-xs px-2 py-1 rounded-bl font-medium">
-                                                â° {diffDays} day{diffDays !== 1 ? 's' : ''} left
+                                                ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â° {diffDays} day{diffDays !== 1 ? 's' : ''} left
                                             </div>
 
                                             {/* Discount Badge */}
@@ -3273,7 +3424,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                                                     <p className="text-2xl font-bold text-[var(--brand-royal-red)]">
                                                         {coupon.coupon_amount_type === 'percentage'
                                                             ? `${parseFloat(coupon.amount)}% OFF`
-                                                            : `৳${parseFloat(coupon.amount)} OFF`
+                                                            : `${formatTaka(parseFloat(coupon.amount))} OFF`
                                                         }
                                                     </p>
                                                     <p className="text-sm text-gray-600 font-medium">{coupon.coupon_name}</p>
@@ -3295,7 +3446,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                                             {/* Details */}
                                             <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
                                                 {parseFloat(coupon.minimum_order_amount) > 0 && (
-                                                    <span>Min. order: ৳{parseFloat(coupon.minimum_order_amount)}</span>
+                                                    <span>Min. order: {formatTaka(parseFloat(coupon.minimum_order_amount))}</span>
                                                 )}
                                                 <span className="text-orange-600 font-medium">
                                                     Expires: {expireDate.toLocaleDateString()}
@@ -3339,10 +3490,10 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                             <div className="grid md:grid-cols-2 gap-4">
                                 {myCoupons.map(coupon => (
                                     <div key={coupon.customer_coupon_id} className="border-2 border-dashed border-[var(--brand-royal-red)] rounded-lg p-5 bg-red-50/30">
-                                        <p className="text-2xl font-bold text-[var(--brand-royal-red)] mb-1">৳{coupon.amount} OFF</p>
+                                        <p className="text-2xl font-bold text-[var(--brand-royal-red)] mb-1">{formatTaka(coupon.amount)} OFF</p>
                                         <p className="text-xs text-gray-600 mb-3">
                                             {parseFloat(coupon.minimum_order_amount) > 0
-                                                ? `Min. order: ৳${coupon.minimum_order_amount}`
+                                                ? `Min. order: ${formatTaka(coupon.minimum_order_amount)}`
                                                 : 'No minimum order'
                                             }
                                         </p>
@@ -3355,7 +3506,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                             </div>
                         ) : (
                             <div className="text-center py-20 text-gray-400">
-                                <p className="text-4xl mb-4">ðŸ·ï¸</p>
+                                <p className="text-4xl mb-4">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â·ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â</p>
                                 <p className="mb-2">You haven't collected any coupons yet</p>
                                 <button
                                     onClick={() => setActiveTab("all")}
@@ -3371,6 +3522,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
         </div>
     );
 }
+
 
 
 

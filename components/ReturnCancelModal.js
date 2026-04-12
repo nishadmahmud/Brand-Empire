@@ -34,6 +34,11 @@ const COURIERS = [
     { value: "sundarban", label: "Sundarban Courier" },
     { value: "other", label: "Other" },
 ];
+const RETURN_METHODS = [
+    { value: "drop_off", label: "Drop Off" },
+    { value: "courier", label: "Courier" },
+];
+const DROP_OFF_ADDRESS = "Jamuna Future Park, Level-3, Brand Empire Drop Off Point";
 const REFUND_METHODS = [
     { value: "cash", label: "Cash" },
     { value: "bank_transfer", label: "Bank Transfer" },
@@ -126,6 +131,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
     const [reason, setReason] = useState("");
     const [description, setDescription] = useState("");
     const [files, setFiles] = useState([]);
+    const [returnMethod, setReturnMethod] = useState("courier");
     const [courier, setCourier] = useState("");
     const [refundMethod, setRefundMethod] = useState("store_wallet");
     const [bankDetails, setBankDetails] = useState({
@@ -168,6 +174,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
             setReason("");
             setDescription("");
             setFiles([]);
+            setReturnMethod("courier");
             setCourier("");
             setRefundMethod(defaultRefundMethod);
             setBankDetails({ accountName: "", accountNumber: "", bankName: "", branch: "" });
@@ -231,7 +238,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                 const key = String(item?.id ?? `${item?.product_id || "p"}-${idx}`);
                 const selection = selectedRefundItems[key];
                 const maxQty = Math.max(1, Number(item?.qty ?? item?.quantity ?? 1));
-                const isSelected = isCancel ? true : Boolean(selection?.selected);
+                const isSelected = Boolean(selection?.selected);
                 const qty = maxQty;
 
                 if (!isSelected) return acc;
@@ -254,7 +261,9 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                 return;
             }
 
-            const courierLabel = COURIERS.find(c => c.value === courier)?.label || courier;
+            const courierLabel = returnMethod === "drop_off"
+                ? "Drop Off"
+                : (COURIERS.find(c => c.value === courier)?.label || courier);
 
             const payload = {
                 invoice_id: order?.invoice_id,
@@ -341,7 +350,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                     {orderItems.length > 0 && (
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1.5">
-                                {isCancel ? "Order Items" : "Select Products for Refund"}
+                                Select Products
                             </label>
                             <div className="space-y-2">
                                 {orderItems.map((item, idx) => {
@@ -351,7 +360,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                                     const itemImage = item?.product_info?.image_path
                                         || (Array.isArray(item?.product_info?.image_paths) ? item.product_info.image_paths[0] : null)
                                         || null;
-                                    const selected = isCancel ? true : Boolean(selectedRefundItems[key]?.selected);
+                                    const selected = Boolean(selectedRefundItems[key]?.selected);
 
                                     return (
                                         <div
@@ -362,14 +371,12 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                                                 }`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                {!isCancel && (
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selected}
-                                                        onChange={(e) => toggleRefundItem(key, e.target.checked)}
-                                                        className="h-4 w-4 accent-[var(--brand-royal-red)] flex-shrink-0"
-                                                    />
-                                                )}
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selected}
+                                                    onChange={(e) => toggleRefundItem(key, e.target.checked)}
+                                                    className="h-4 w-4 accent-[var(--brand-royal-red)] flex-shrink-0"
+                                                />
                                                 <div className="h-12 w-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0">
                                                     {itemImage ? (
                                                         <img src={itemImage} alt={productName} className="h-full w-full object-cover" />
@@ -459,37 +466,59 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                     {/* ── Courier Selector ── */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1.5">
-                            Preferred Courier
+                            Return Method
                         </label>
                         <CustomDropdown
-                            value={courier}
-                            onChange={setCourier}
-                            options={COURIERS}
-                            placeholder="Select courier service..."
+                            value={returnMethod}
+                            onChange={setReturnMethod}
+                            options={RETURN_METHODS}
+                            placeholder="Select return method..."
                             icon={<Truck size={16} />}
                         />
                     </div>
 
+                    {returnMethod === "courier" && (
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1.5">
+                                Preferred Courier
+                            </label>
+                            <CustomDropdown
+                                value={courier}
+                                onChange={setCourier}
+                                options={COURIERS}
+                                placeholder="Select courier service..."
+                                icon={<Truck size={16} />}
+                            />
+                        </div>
+                    )}
+
                     {/* ── Return / Pick-up Address ── */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1.5">
-                            Return Pick-up Address
+                            {returnMethod === "drop_off" ? "Drop Off Address" : "Return Pick-up Address"}
                         </label>
-                        <p className="text-xs text-gray-400 mb-2">Auto-filled from your profile. You can edit if needed.</p>
+                        <p className="text-xs text-gray-400 mb-2">
+                            {returnMethod === "drop_off"
+                                ? "This drop off location is fixed and cannot be edited."
+                                : "Auto-filled from your profile. You can edit if needed."}
+                        </p>
                         <div className="space-y-2 bg-gray-50 border border-gray-100 rounded-xl p-3">
                             <input type="text" placeholder="Full Name"
                                 value={returnAddress.name}
+                                disabled={returnMethod === "drop_off"}
                                 onChange={(e) => setReturnAddress((p) => ({ ...p, name: e.target.value }))}
-                                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent transition-all placeholder-gray-400" />
+                                className={`w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent transition-all placeholder-gray-400 ${returnMethod === "drop_off" ? "bg-gray-100 opacity-60 cursor-not-allowed" : ""}`} />
                             <input type="tel" placeholder="Phone Number"
                                 value={returnAddress.phone}
+                                disabled={returnMethod === "drop_off"}
                                 onChange={(e) => setReturnAddress((p) => ({ ...p, phone: e.target.value }))}
-                                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent transition-all placeholder-gray-400" />
+                                className={`w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent transition-all placeholder-gray-400 ${returnMethod === "drop_off" ? "bg-gray-100 opacity-60 cursor-not-allowed" : ""}`} />
                             <textarea placeholder="Full address including area & district"
-                                value={returnAddress.address}
+                                value={returnMethod === "drop_off" ? DROP_OFF_ADDRESS : returnAddress.address}
+                                disabled={returnMethod === "drop_off"}
                                 onChange={(e) => setReturnAddress((p) => ({ ...p, address: e.target.value }))}
                                 rows={2}
-                                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent resize-none transition-all placeholder-gray-400" />
+                                className={`w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent resize-none transition-all placeholder-gray-400 ${returnMethod === "drop_off" ? "bg-gray-100 text-gray-700 cursor-not-allowed" : ""}`} />
                         </div>
                     </div>
 
