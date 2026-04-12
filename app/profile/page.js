@@ -898,6 +898,7 @@ export default function ProfileDashboard() {
     const TAKA_SYMBOL = "\u09F3";
     const roundAmount = (amount) => Math.round(Number(amount || 0));
     const formatTaka = (amount) => `${TAKA_SYMBOL} ${Number(amount || 0).toLocaleString("en-US")}`;
+    const getDonationAmount = (order) => Math.max(0, Number(order?.donation_amount ?? order?.donation ?? 0));
     const walletBalance = Number(user?.wallet_balance || 0);
     const loyaltyPoints = Math.round(walletBalance);
     const membershipTiers = [
@@ -1664,6 +1665,7 @@ export default function ProfileDashboard() {
                                                 const showRefund = isRefundEligibleForDeliveredOrder(order);
                                                 const showOrderConfirmedSupport = orderStatus === 2;
                                                 const orderItems = order?.sales_details || [];
+                                                const orderDonationAmount = getDonationAmount(order);
                                                 const whatsappSupportUrl = `${SUPPORT_WHATSAPP_BASE}?text=${encodeURIComponent(`Hi, I have a query regarding my order #${order?.invoice_id || ""}.`)}`;
 
                                                 return (
@@ -1680,8 +1682,13 @@ export default function ProfileDashboard() {
                                                                     </div>
                                                                     <div className="text-right flex-shrink-0">
                                                                         <p className="text-2xl font-bold text-[var(--brand-royal-red)]">
-                                                                            {TAKA_SYMBOL}{(Number(order.sub_total ?? order.total ?? 0) + Number(order.delivery_fee ?? 0))}
+                                                                            {TAKA_SYMBOL}{(Number(order.sub_total ?? order.total ?? 0) + Number(order.delivery_fee ?? 0) - Number(order.discount ?? 0) + orderDonationAmount)}
                                                                         </p>
+                                                                        {orderDonationAmount > 0 && (
+                                                                            <p className="text-[11px] text-gray-500 mt-1">
+                                                                                Donation: +{TAKA_SYMBOL}{orderDonationAmount}
+                                                                            </p>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1958,16 +1965,16 @@ export default function ProfileDashboard() {
                                                                 <span>-{TAKA_SYMBOL}{selectedOrder.discount}</span>
                                                             </div>
                                                         )}
-                                                        {selectedOrder.donation > 0 && (
+                                                        {getDonationAmount(selectedOrder) > 0 && (
                                                             <div className="flex justify-between text-[var(--brand-royal-red)]">
                                                                 <span>Donation</span>
-                                                                <span>+{TAKA_SYMBOL}{selectedOrder.donation}</span>
+                                                                <span>+{TAKA_SYMBOL}{getDonationAmount(selectedOrder)}</span>
                                                             </div>
                                                         )}
                                                         <div className="flex justify-between pt-3 border-t border-gray-200 text-lg font-bold">
                                                             <span>Total</span>
                                                             <span className="text-[var(--brand-royal-red)]">
-                                                                {TAKA_SYMBOL}{(Number(selectedOrder.sub_total || 0) + Number(selectedOrder.delivery_fee || 0) - Number(selectedOrder.discount || 0) + Number(selectedOrder.donation || 0))}
+                                                                {TAKA_SYMBOL}{(Number(selectedOrder.sub_total || 0) + Number(selectedOrder.delivery_fee || 0) - Number(selectedOrder.discount || 0) + getDonationAmount(selectedOrder))}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -2160,10 +2167,15 @@ export default function ProfileDashboard() {
                                                         <div className="bg-[var(--brand-royal-red)]/10 p-2.5 rounded-lg text-[var(--brand-royal-red)]">
                                                             <DollarSign className="h-5 w-5" />
                                                         </div>
-                                                        <span className="text-sm font-semibold text-gray-900">Total Amount</span>
+                                                        <div>
+                                                            <span className="text-sm font-semibold text-gray-900">Total Amount</span>
+                                                            {getDonationAmount(trackOrderData) > 0 && (
+                                                                <p className="text-xs text-gray-500">Includes donation: {TAKA_SYMBOL}{getDonationAmount(trackOrderData)}</p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <span className="text-xl font-bold text-[var(--brand-royal-red)]">
-                                                        {TAKA_SYMBOL}{trackOrderData.total || trackOrderData.sub_total}
+                                                        {TAKA_SYMBOL}{(Number(trackOrderData.sub_total || trackOrderData.total || 0) + Number(trackOrderData.delivery_fee || 0) - Number(trackOrderData.discount || 0) + getDonationAmount(trackOrderData))}
                                                     </span>
                                                 </div>
 

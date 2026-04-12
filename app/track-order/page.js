@@ -98,6 +98,12 @@ export default function TrackOrderPage() {
             minute: "numeric",
         });
     };
+    const TAKA_SYMBOL = "\u09F3";
+    const orderDonationAmount = Math.max(0, Number(orderData?.donation_amount ?? orderData?.donation ?? 0));
+    const orderSubtotalAmount = Number(orderData?.sub_total || 0);
+    const orderDeliveryAmount = Number(orderData?.delivery_fee || 0);
+    const orderDiscountAmount = Number(orderData?.discount || 0);
+    const orderTotalAmount = orderSubtotalAmount + orderDeliveryAmount - orderDiscountAmount + orderDonationAmount;
 
     // Timeline stages configuration
     const timelineStages = [
@@ -354,10 +360,15 @@ export default function TrackOrderPage() {
                                         <div className="bg-[var(--brand-royal-red)]/10 p-2.5 rounded-lg text-[var(--brand-royal-red)]">
                                             <DollarSign className="h-5 w-5" />
                                         </div>
-                                        <span className="text-sm font-semibold text-gray-900">Total Amount</span>
+                                        <div>
+                                            <span className="text-sm font-semibold text-gray-900">Total Amount</span>
+                                            {orderDonationAmount > 0 && (
+                                                <p className="text-xs text-gray-500">Includes donation: {TAKA_SYMBOL}{orderDonationAmount}</p>
+                                            )}
+                                        </div>
                                     </div>
                                     <span className="text-xl font-bold text-[var(--brand-royal-red)]">
-                                        ৳{orderData.sub_total + (orderData.delivery_fee || 0)}
+                                        {TAKA_SYMBOL}{orderTotalAmount}
                                     </span>
                                 </div>
 
@@ -393,7 +404,7 @@ export default function TrackOrderPage() {
                                                     </p>
                                                 </div>
                                                 <div className="text-sm font-bold text-gray-900">
-                                                    ৳{item.price * item.qty}
+                                                    {TAKA_SYMBOL}{item.price * item.qty}
                                                 </div>
                                             </div>
                                         ))}
@@ -423,3 +434,4 @@ export default function TrackOrderPage() {
         </div>
     );
 }
+

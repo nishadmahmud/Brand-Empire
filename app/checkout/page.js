@@ -279,13 +279,16 @@ export default function CheckoutPage() {
             console.error("Failed to save checkout details to local storage", error);
         }
 
+        const normalizedDonationAmount = Math.max(0, Number(donationAmount) || 0);
+
         // Construct the payload as per user requirements
         const orderPayload = {
             pay_mode: paymentMethod,
             paid_amount: 0,
             user_id: process.env.NEXT_PUBLIC_USER_ID, // Store/Sales ID
             sub_total: subTotal,
-            donation: donationAmount,
+            donation_amount: normalizedDonationAmount,
+            donation: normalizedDonationAmount,
             vat: 0,
             tax: 0, // Assuming 0 for now
             discount: 0, // Coupon discount if any
