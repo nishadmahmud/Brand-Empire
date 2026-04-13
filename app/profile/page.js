@@ -244,6 +244,29 @@ export default function ProfileDashboard() {
         }
     }, [user, loading, router]);
 
+    // Auth Guard
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col items-center gap-6 max-w-sm w-full animate-in fade-in zoom-in duration-500">
+                    <div className="relative">
+                        <div className="w-20 h-20 border-4 border-red-50 rounded-full"></div>
+                        <div className="absolute top-0 w-20 h-20 border-4 border-[var(--brand-royal-red)] border-t-transparent rounded-full animate-spin"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <User className="w-8 h-8 text-[var(--brand-royal-red)] animate-pulse" />
+                        </div>
+                    </div>
+                    <div className="text-center">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Finding your profile...</h3>
+                        <p className="text-gray-500 text-sm">Please wait while we secure your session</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) return null;
+
     const normalizePhone = (phone) => {
         if (!phone) return "";
         let digits = String(phone).replace(/\D/g, "");
@@ -2207,7 +2230,7 @@ export default function ProfileDashboard() {
                                                                         {item.product_info?.name}
                                                                     </p>
                                                                     <p className="text-xs text-gray-500 mt-1">
-                                                                        Qty: {item.qty} {item.size ? `ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Size: ${item.size}` : ""}
+                                                                        Qty: {item.qty} {item.size ? ` · Size: ${item.size}` : ""}
                                                                     </p>
                                                                 </div>
                                                                 <div className="text-sm font-bold text-gray-900">
@@ -2423,7 +2446,7 @@ export default function ProfileDashboard() {
                                                 <div className="min-w-0">
                                                     <p className="text-[10px] md:text-xs text-gray-500">Your Credit</p>
                                                     <p className="text-lg md:text-3xl font-bold text-gray-900">{TAKA_SYMBOL}500</p>
-                                                    <p className="text-[10px] md:text-xs text-gray-500">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Dec 2026</p>
+                                                    <p className="text-[10px] md:text-xs text-gray-500">📅 Expires Dec 2026</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -3398,7 +3421,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                             </div>
                         ) : (
                             <div className="text-center py-20 text-gray-400">
-                                <p className="text-4xl mb-4">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â·ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â</p>
+                                <p className="text-4xl mb-4">🎫</p>
                                 <p>No coupons available right now</p>
                             </div>
                         )}
@@ -3427,7 +3450,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                                         >
                                             {/* Urgency Badge */}
                                             <div className="absolute top-0 right-0 bg-orange-500 text-white text-xs px-2 py-1 rounded-bl font-medium">
-                                                ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â° {diffDays} day{diffDays !== 1 ? 's' : ''} left
+                                                ⏰ {diffDays} day{diffDays !== 1 ? 's' : ''} left
                                             </div>
 
                                             {/* Discount Badge */}
@@ -3518,7 +3541,7 @@ function CouponsSection({ user, myCoupons, myCouponsLoading }) {
                             </div>
                         ) : (
                             <div className="text-center py-20 text-gray-400">
-                                <p className="text-4xl mb-4">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â·ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â</p>
+                                <p className="text-4xl mb-4">🎫</p>
                                 <p className="mb-2">You haven't collected any coupons yet</p>
                                 <button
                                     onClick={() => setActiveTab("all")}

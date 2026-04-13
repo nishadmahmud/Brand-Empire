@@ -185,7 +185,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                 const key = String(item?.id ?? `${item?.product_id || "p"}-${idx}`);
                 const maxQty = Math.max(1, Number(item?.qty ?? item?.quantity ?? 1));
                 initialSelection[key] = {
-                    selected: true,
+                    selected: false,
                     maxQty,
                 };
             });
