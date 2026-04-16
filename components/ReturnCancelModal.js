@@ -123,7 +123,7 @@ const CustomDropdown = ({ value, onChange, options, placeholder, icon }) => {
 };
 
 // ─── Main Modal ────────────────────────────────────────────
-const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
+const ReturnCancelModal = ({ open, onClose, order, mode = "return", refundedItemIds = new Set() }) => {
     const { user, token } = useAuth();
     const { showToast } = useToast();
 
@@ -148,6 +148,7 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
 
     const isCancel = mode === "cancel";
     const orderStatus = Number(order?.tran_status ?? order?.status ?? 0);
+    const hideShippingForCancel = isCancel && orderStatus < 2;
     const isCashOnDelivery = /(cod|cash)/i.test(String(order?.pay_mode || ""));
     const shouldCollectRefundMethod = !(isCancel && orderStatus === 1 && isCashOnDelivery);
     const shouldHideCashRefundOption = !isCancel && orderStatus === 4 && isCashOnDelivery;
@@ -184,9 +185,12 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
             (Array.isArray(order?.sales_details) ? order.sales_details : []).forEach((item, idx) => {
                 const key = String(item?.id ?? `${item?.product_id || "p"}-${idx}`);
                 const maxQty = Math.max(1, Number(item?.qty ?? item?.quantity ?? 1));
+                const isAlreadyRefunded = refundedItemIds instanceof Set ? refundedItemIds.has(Number(item.id)) : false;
+                
                 initialSelection[key] = {
                     selected: false,
                     maxQty,
+                    isAlreadyRefunded
                 };
             });
             setSelectedRefundItems(initialSelection);
@@ -261,9 +265,11 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                 return;
             }
 
-            const courierLabel = returnMethod === "drop_off"
-                ? "Drop Off"
-                : (COURIERS.find(c => c.value === courier)?.label || courier);
+            const courierLabel = hideShippingForCancel
+                ? "Not Applicable"
+                : (returnMethod === "drop_off"
+                    ? "Drop Off"
+                    : (COURIERS.find(c => c.value === courier)?.label || courier));
 
             const payload = {
                 invoice_id: order?.invoice_id,
@@ -368,14 +374,15 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                                             className={`p-3 rounded-xl border transition-colors ${selected
                                                 ? "border-[var(--brand-royal-red)]/30 bg-red-50/30"
                                                 : "border-gray-200 bg-white"
-                                                }`}
+                                                } ${selectedRefundItems[key]?.isAlreadyRefunded ? "opacity-60 cursor-not-allowed bg-gray-50" : ""}`}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <input
                                                     type="checkbox"
                                                     checked={selected}
+                                                    disabled={selectedRefundItems[key]?.isAlreadyRefunded}
                                                     onChange={(e) => toggleRefundItem(key, e.target.checked)}
-                                                    className="h-4 w-4 accent-[var(--brand-royal-red)] flex-shrink-0"
+                                                    className="h-4 w-4 accent-[var(--brand-royal-red)] flex-shrink-0 disabled:opacity-50"
                                                 />
                                                 <div className="h-12 w-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0">
                                                     {itemImage ? (
@@ -387,7 +394,14 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                                                     )}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-sm font-semibold text-gray-900 line-clamp-1">{productName}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm font-semibold text-gray-900 line-clamp-1">{productName}</p>
+                                                        {selectedRefundItems[key]?.isAlreadyRefunded && (
+                                                            <span className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide rounded-full bg-red-50 text-red-700 border border-red-200 whitespace-nowrap">
+                                                                Returned
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <p className="text-xs text-gray-500 mt-0.5">
                                                         Ordered Qty: {maxQty}{item?.size ? ` - Size: ${item.size}` : ""}
                                                     </p>
@@ -464,6 +478,8 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                     </div>
 
                     {/* ── Courier Selector ── */}
+                    {!hideShippingForCancel && (
+                    <>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1.5">
                             Return Method
@@ -521,6 +537,8 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return" }) => {
                                 className={`w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] focus:border-transparent resize-none transition-all placeholder-gray-400 ${returnMethod === "drop_off" ? "bg-gray-100 text-gray-700 cursor-not-allowed" : ""}`} />
                         </div>
                     </div>
+                    </>
+                    )}
 
                     {/* ── Refund Method ── */}
                     {shouldCollectRefundMethod && (

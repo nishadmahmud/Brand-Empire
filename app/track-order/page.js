@@ -151,8 +151,8 @@ export default function TrackOrderPage() {
                                 <div key={stage.id} className="relative flex flex-col items-center z-10">
                                     {/* Circle */}
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isCompleted
-                                            ? "bg-gradient-to-br from-[var(--brand-royal-red)] to-purple-600 text-white shadow-lg"
-                                            : "bg-white border-2 border-gray-300 text-gray-400"
+                                        ? "bg-gradient-to-br from-[var(--brand-royal-red)] to-purple-600 text-white shadow-lg"
+                                        : "bg-white border-2 border-gray-300 text-gray-400"
                                         } ${isCurrent ? "ring-4 ring-purple-100 scale-110" : ""}`}>
                                         {isCompleted ? (
                                             <CheckCircle2 className="w-5 h-5" />
@@ -186,8 +186,8 @@ export default function TrackOrderPage() {
                             <div key={stage.id} className="flex items-start gap-4">
                                 <div className="flex flex-col items-center">
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isCompleted
-                                            ? "bg-gradient-to-br from-[var(--brand-royal-red)] to-purple-600 text-white"
-                                            : "bg-white border-2 border-gray-300 text-gray-400"
+                                        ? "bg-gradient-to-br from-[var(--brand-royal-red)] to-purple-600 text-white"
+                                        : "bg-white border-2 border-gray-300 text-gray-400"
                                         } ${isCurrent ? "ring-2 ring-purple-100" : ""}`}>
                                         {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <span className="text-xs">{stage.id}</span>}
                                     </div>
@@ -358,7 +358,7 @@ export default function TrackOrderPage() {
                                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[var(--brand-royal-red)]/5 to-purple-50 rounded-xl border border-[var(--brand-royal-red)]/10">
                                     <div className="flex items-center gap-3">
                                         <div className="bg-[var(--brand-royal-red)]/10 p-2.5 rounded-lg text-[var(--brand-royal-red)]">
-                                            <DollarSign className="h-5 w-5" />
+                                            <span className="font-bold">Tk</span>
                                         </div>
                                         <div>
                                             <span className="text-sm font-semibold text-gray-900">Total Amount</span>

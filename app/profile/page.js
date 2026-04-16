@@ -510,7 +510,9 @@ export default function ProfileDashboard() {
                     // Remove refunded line-items only; keep order if other items are still active
                     if (refundsData.success) {
                         const refundList = refundsData.data?.data || refundsData.data || [];
-                        orderList = removeRefundedItemsFromOrders(orderList, refundList);
+                        // We purposefully DO NOT remove refunded items from active orders
+                        // so they can be shown with a "Canceled" badge.
+                        // orderList = removeRefundedItemsFromOrders(orderList, refundList);
                     }
 
                     setOrders(orderList);
@@ -530,7 +532,7 @@ export default function ProfileDashboard() {
 
     useEffect(() => {
         const fetchRefunds = async () => {
-            if (!user || !token || !["refunds", "returns"].includes(activeSection)) return;
+            if (!user || !token || !["dashboard", "orders", "refunds", "returns"].includes(activeSection)) return;
 
             setRefundsLoading(true);
             try {
@@ -748,6 +750,34 @@ export default function ProfileDashboard() {
         }
     };
 
+    const getRefundedSaleDetailIdSet = (refundsList) => {
+        const ids = new Set();
+        (refundsList || []).forEach(refund => {
+            const status = String(refund?.status ?? "").toLowerCase();
+            const isRejected = status === "rejected" || status === "2";
+            if (isRejected) return;
+
+            (refund.refund_details || []).forEach(item => {
+                const saleDetailId = Number(item.sale_details_id);
+                if (Number.isFinite(saleDetailId) && saleDetailId > 0) {
+                    ids.add(saleDetailId);
+                }
+            });
+        });
+        return ids;
+    };
+
+    const TAKA_SYMBOL = "Tk";
+
+    // Derived State for Order List
+    const refundedSaleDetailIds = getRefundedSaleDetailIdSet(refunds);
+    const filteredOrders = (orders || []).filter(order => {
+        const orderItems = order?.sales_details || [];
+        const isFullyCanceled = orderItems.length > 0 && orderItems.every(item => refundedSaleDetailIds.has(Number(item.id)));
+        if (activeOrderTab === "5") return isFullyCanceled;
+        return !isFullyCanceled;
+    });
+
     const getStatusColor = (status) => {
         const s = Number(status);
         if (s === 1) return "bg-blue-50 text-blue-700 border-blue-100";
@@ -918,7 +948,7 @@ export default function ProfileDashboard() {
         });
     };
 
-    const TAKA_SYMBOL = "\u09F3";
+
     const roundAmount = (amount) => Math.round(Number(amount || 0));
     const formatTaka = (amount) => `${TAKA_SYMBOL} ${Number(amount || 0).toLocaleString("en-US")}`;
     const getDonationAmount = (order) => Math.max(0, Number(order?.donation_amount ?? order?.donation ?? 0));
@@ -943,24 +973,7 @@ export default function ProfileDashboard() {
         )
         : 100;
 
-    const getRefundedSaleDetailIdSet = (refundList = []) => {
-        const ids = new Set();
 
-        (Array.isArray(refundList) ? refundList : []).forEach((refund) => {
-            const status = String(refund?.status ?? "").toLowerCase();
-            const isRejected = status === "rejected" || status === "2";
-            if (isRejected) return;
-
-            (Array.isArray(refund?.refund_details) ? refund.refund_details : []).forEach((detail) => {
-                const saleDetailId = Number(detail?.sale_details_id);
-                if (Number.isFinite(saleDetailId) && saleDetailId > 0) {
-                    ids.add(saleDetailId);
-                }
-            });
-        });
-
-        return ids;
-    };
 
     const removeRefundedItemsFromOrders = (orderList = [], refundList = []) => {
         const refundedSaleDetailIds = getRefundedSaleDetailIdSet(refundList);
@@ -975,13 +988,33 @@ export default function ProfileDashboard() {
             .filter((order) => (order?.sales_details || []).length > 0);
     };
 
-    const renderRefundReturnCards = (requestType = "return") => (
-        <div className="space-y-6">
-            {refunds.map((refund) => {
-                const isRefundRequestTab = requestType === "refund";
-                const isPending = String(refund.status).toLowerCase() === "0" || String(refund.status).toLowerCase() === "pending";
-                const isApproved = String(refund.status).toLowerCase() === "1" || String(refund.status).toLowerCase() === "approved";
-                const statusLabel = isPending ? "Pending Review" : (isApproved ? "Approved" : "Rejected");
+    const CANCEL_REASONS = [
+        "Ordered wrong item",
+        "Changed my mind",
+        "Found a better price elsewhere",
+        "Duplicate order",
+        "Delivery taking too long",
+    ];
+
+    const renderRefundReturnCards = (requestType = "return") => {
+        const filteredRefunds = refunds.filter((refund) => {
+            const isCancelReason = CANCEL_REASONS.includes(refund.reason);
+            const isPreDelivery = refund.sale && Number(refund.sale.tran_status || refund.sale.status) < 4;
+            const isCancellation = isCancelReason || isPreDelivery;
+
+            if (requestType === "return") {
+                return !isCancellation;
+            }
+            return true;
+        });
+
+        return (
+            <div className="space-y-6">
+                {filteredRefunds.map((refund) => {
+                    const isRefundRequestTab = requestType === "refund";
+                    const isPending = String(refund.status).toLowerCase() === "0" || String(refund.status).toLowerCase() === "pending";
+                    const isApproved = String(refund.status).toLowerCase() === "1" || String(refund.status).toLowerCase() === "approved";
+                    const statusLabel = isPending ? "Pending Review" : (isApproved ? "Approved" : "Rejected");
                 const statusColor = isPending ? "bg-orange-50 text-orange-600 border-orange-200" : (isApproved ? "bg-green-50 text-green-600 border-green-200" : "bg-red-50 text-red-600 border-red-200");
                 const refundItems = (refund.refund_details || []).map((item, idx) => {
                     const matchedSaleItem = refund.sale?.sales_details?.find((sd) => sd.id == item.sale_details_id);
@@ -1098,9 +1131,7 @@ export default function ProfileDashboard() {
 
                                         <div className="flex items-start gap-3">
                                             <div className="mt-0.5 p-1.5 bg-white rounded-md shadow-sm text-gray-400 group-hover:text-green-500 transition-colors">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
+                                                <span className="font-bold">Tk</span>
                                             </div>
                                             <div>
                                                 <span className="block text-xs font-semibold text-gray-500 mb-0.5">Preferred Refund Method</span>
@@ -1208,8 +1239,9 @@ export default function ProfileDashboard() {
                     </div>
                 );
             })}
-        </div>
-    );
+            </div>
+        );
+    };
 
     if (loading || !user) {
         return (
@@ -1682,18 +1714,25 @@ export default function ProfileDashboard() {
                                         </div>
                                     ) : orders.length > 0 ? (
                                         <div className="space-y-4">
-                                            {orders.map(order => {
-                                                const orderStatus = getOrderStatus(order);
-                                                const showCancelAndRefund = orderStatus === 1;
-                                                const showRefund = isRefundEligibleForDeliveredOrder(order);
-                                                const showOrderConfirmedSupport = orderStatus === 2;
-                                                const orderItems = order?.sales_details || [];
-                                                const orderDonationAmount = getDonationAmount(order);
-                                                const whatsappSupportUrl = `${SUPPORT_WHATSAPP_BASE}?text=${encodeURIComponent(`Hi, I have a query regarding my order #${order?.invoice_id || ""}.`)}`;
+                                            {filteredOrders.length === 0 ? (
+                                                <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                                    <p className="text-gray-500 text-sm">No orders matching this status.</p>
+                                                </div>
+                                            ) : (
+                                                filteredOrders.map(order => {
+                                                    const orderStatus = getOrderStatus(order);
+                                                    const orderItems = order?.sales_details || [];
+                                                    const isFullyCanceled = orderItems.length > 0 && orderItems.every(item => refundedSaleDetailIds.has(Number(item.id)));
+                                                    
+                                                    const showCancelAndRefund = orderStatus === 1 && !isFullyCanceled;
+                                                    const showRefund = isRefundEligibleForDeliveredOrder(order);
+                                                    const showOrderConfirmedSupport = orderStatus === 2;
+                                                    const orderDonationAmount = getDonationAmount(order);
+                                                    const whatsappSupportUrl = `${SUPPORT_WHATSAPP_BASE}?text=${encodeURIComponent(`Hi, I have a query regarding my order #${order?.invoice_id || ""}.`)}`;
 
                                                 return (
-                                                <div key={order.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-lg transition-all duration-300 group">
-                                                    <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                                                    <div key={order.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-lg transition-all duration-300 group">
+                                                        <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                                                             <div>
                                                                 <div className="flex justify-between items-start gap-4">
                                                                     <div>
@@ -1727,6 +1766,7 @@ export default function ProfileDashboard() {
                                                                     {orderItems.map((item, idx) => {
                                                                         const productId = getProductIdFromSaleItem(item);
                                                                         const canReviewItem = orderStatus === 4 && !!productId && !reviewedProductMap[productId];
+                                                                        const isItemCanceled = refundedSaleDetailIds.has(Number(item.id));
                                                                         const itemImage = item?.product_info?.image_path
                                                                             || (Array.isArray(item?.product_info?.image_paths) ? item.product_info.image_paths[0] : null)
                                                                             || null;
@@ -1770,18 +1810,26 @@ export default function ProfileDashboard() {
                                                                                         </p>
                                                                                     </div>
                                                                                 </div>
-                                                                                {canReviewItem ? (
-                                                                                    <button
-                                                                                        onClick={() => openReviewForItem(item)}
-                                                                                        className="px-3 py-1.5 bg-[var(--brand-royal-red)] hover:bg-[#a01830] text-white text-[11px] font-semibold rounded-md transition-colors whitespace-nowrap"
-                                                                                    >
-                                                                                        Leave a Review
-                                                                                    </button>
-                                                                                ) : (orderStatus === 4 && productId && reviewedProductMap[productId]) ? (
-                                                                                    <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full bg-green-50 text-green-700 border border-green-200 whitespace-nowrap">
-                                                                                        Reviewed
-                                                                                    </span>
-                                                                                ) : null}
+                                                                                <div className="flex flex-col items-end gap-1.5">
+                                                                                    {isItemCanceled && (
+                                                                                        <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full bg-red-50 text-red-700 border border-red-200 whitespace-nowrap">
+                                                                                            Returned
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {(orderStatus === 4 && productId && reviewedProductMap[productId]) && (
+                                                                                        <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full bg-green-50 text-green-700 border border-green-200 whitespace-nowrap">
+                                                                                            Reviewed
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {(!isItemCanceled && canReviewItem) && (
+                                                                                        <button
+                                                                                            onClick={() => openReviewForItem(item)}
+                                                                                            className="px-3 py-1.5 bg-[var(--brand-royal-red)] hover:bg-[#a01830] text-white text-[11px] font-semibold rounded-md transition-colors whitespace-nowrap"
+                                                                                        >
+                                                                                            Leave a Review
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
                                                                         );
                                                                     })}
@@ -1842,9 +1890,11 @@ export default function ProfileDashboard() {
                                                                 </div>
                                                             )}
                                                         </div>
-                                                </div>
-                                            )})}
-                                        </div>
+                                                    </div>
+                                                )
+                                            })
+                                        )}
+                                    </div>
                                     ) : (
                                         <div className="text-center py-20">
                                             <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
@@ -1864,6 +1914,7 @@ export default function ProfileDashboard() {
                                     onClose={() => setReturnModal({ open: false, order: null, mode: "return" })}
                                     order={returnModal.order}
                                     mode={returnModal.mode}
+                                    refundedItemIds={refundedSaleDetailIds}
                                 />
 
                                 {/* Order Details Modal */}
@@ -1970,7 +2021,7 @@ export default function ProfileDashboard() {
                                                 {/* Price Breakdown */}
                                                 <div className="p-4 bg-gray-50 rounded-xl">
                                                     <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                                        <DollarSign size={18} />
+                                                        <span className="text-sm font-bold">Tk</span>
                                                         Price Breakdown
                                                     </h4>
                                                     <div className="space-y-2 text-sm">
@@ -2034,7 +2085,7 @@ export default function ProfileDashboard() {
                                         <div className="flex justify-center py-20">
                                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
                                         </div>
-                                     ) : refunds.length > 0 ? (
+                                    ) : refunds.length > 0 ? (
                                         renderRefundReturnCards("refund")
                                     ) : (
                                         <div className="text-center py-20">
@@ -2062,7 +2113,7 @@ export default function ProfileDashboard() {
                                         <div className="flex justify-center py-20">
                                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--brand-royal-red)]"></div>
                                         </div>
-                                     ) : refunds.length > 0 ? (
+                                    ) : refunds.length > 0 ? (
                                         renderRefundReturnCards("return")
                                     ) : (
                                         <div className="text-center py-20">
@@ -2188,7 +2239,7 @@ export default function ProfileDashboard() {
                                                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[var(--brand-royal-red)]/5 to-purple-50 rounded-xl border border-[var(--brand-royal-red)]/10">
                                                     <div className="flex items-center gap-3">
                                                         <div className="bg-[var(--brand-royal-red)]/10 p-2.5 rounded-lg text-[var(--brand-royal-red)]">
-                                                            <DollarSign className="h-5 w-5" />
+                                                            <span className="font-bold">Tk</span>
                                                         </div>
                                                         <div>
                                                             <span className="text-sm font-semibold text-gray-900">Total Amount</span>
@@ -3222,7 +3273,7 @@ export default function ProfileDashboard() {
                             </div>
                         )}
 
-<WriteReviewModal
+                        <WriteReviewModal
                             product={reviewModal.product}
                             productId={reviewModal.productId}
                             open={reviewModal.open}
