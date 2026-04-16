@@ -18,7 +18,9 @@ export default function PolicyHtmlPage({ title, subtitle, settingKey }) {
                 const settings = response?.data || {};
                 const rawHtml = settings?.[settingKey] || "";
                 if (!cancelled) {
-                    setHtmlContent(rawHtml);
+                    // Replace &nbsp; with regular spaces to allow natural line wrapping
+                    const processedHtml = rawHtml.replace(/&nbsp;/g, " ");
+                    setHtmlContent(processedHtml);
                 }
             } catch (error) {
                 console.error(`Failed to fetch ${settingKey}`, error);
@@ -52,7 +54,7 @@ export default function PolicyHtmlPage({ title, subtitle, settingKey }) {
                 ) : htmlContent ? (
                     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 md:p-8 overflow-hidden">
                         <div
-                            className="policy-html prose max-w-none text-gray-700"
+                            className="policy-html max-w-none text-gray-700"
                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }}
                         />
                     </div>

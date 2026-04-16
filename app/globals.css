@@ -118,12 +118,68 @@ body {
   animation: fade-in 0.2s ease-out;
 }
 
-/* Policy HTML rendering safety for long unbroken content */
-.policy-html,
-.policy-html * {
+.policy-html {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #374151; /* gray-700 */
   max-width: 100%;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.policy-html p {
+  margin-bottom: 1rem;
+}
+
+.policy-html p:last-child {
+  margin-bottom: 0;
+}
+
+.policy-html strong, 
+.policy-html b {
+  font-weight: 700;
+  color: #111827; /* gray-900 */
+}
+
+.policy-html h1, .policy-html h2, .policy-html h3, .policy-html h4 {
+  color: #111827;
+  font-weight: 800;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.policy-html h1 { font-size: 1.875rem; }
+.policy-html h2 { font-size: 1.5rem; }
+.policy-html h3 { font-size: 1.25rem; }
+
+.policy-html ul, .policy-html ol {
+  margin-bottom: 1.25rem;
+  padding-left: 1.5rem;
+}
+
+.policy-html ul {
+  list-style-type: disc;
+}
+
+.policy-html ol {
+  list-style-type: decimal;
+}
+
+.policy-html li {
+  margin-bottom: 0.5rem;
+}
+
+.policy-html a {
+  color: var(--brand-royal-red);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-weight: 500;
+}
+
+.policy-html blockquote {
+  border-left: 4px solid #E5E7EB;
+  padding-left: 1rem;
+  font-style: italic;
+  margin: 1.5rem 0;
 }
 
 .policy-html img,
@@ -131,4 +187,9 @@ body {
 .policy-html iframe,
 .policy-html table {
   max-width: 100%;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
 }
+
+
+
