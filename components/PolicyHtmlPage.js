@@ -54,7 +54,7 @@ export default function PolicyHtmlPage({ title, subtitle, settingKey }) {
                 ) : htmlContent ? (
                     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 md:p-8 overflow-hidden">
                         <div
-                            className="policy-html max-w-none text-gray-700"
+                            className="html-content max-w-none text-gray-700"
                             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }}
                         />
                     </div>

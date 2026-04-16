@@ -802,8 +802,8 @@ const ProductDetailsPage = ({ productId }) => {
                                 <span>Product Details</span>
                                 <svg className="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                             </summary>
-                            <div className="mt-4 text-sm text-gray-700 space-y-2 break-words [overflow-wrap:anywhere] [&_*]:break-words [&_*]:[overflow-wrap:anywhere] [&_img]:max-w-full [&_table]:w-full [&_table]:table-fixed">
-                                <div dangerouslySetInnerHTML={{ __html: product.description }} />
+                            <div className="mt-4 html-content">
+                                <div dangerouslySetInnerHTML={{ __html: (product.description || "").replace(/&nbsp;/g, " ") }} />
                                 {product.details?.fit && <div className="mt-4"><h4 className="font-bold mb-2">Size & Fit</h4><p>{product.details.fit}</p></div>}
                             </div>
                         </details>
@@ -998,7 +998,7 @@ const RatingsSection = ({ product }) => {
                     {product.reviews.map((review) => (
                         <div key={review.id} className="border-b border-gray-100 pb-8 last:border-0">
                             <div className="flex items-start justify-between mb-3"><div className="flex items-center gap-3"><p className="text-sm font-bold text-gray-900">{review.customer?.name || review.author}</p></div></div>
-                            <div className="pl-13 ml-1" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(review.comment || review.text) }} />
+                            <div className="html-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((review.comment || review.text || "").replace(/&nbsp;/g, " ")) }} />
                         </div>
                     ))}
                 </div>
