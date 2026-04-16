@@ -36,7 +36,7 @@ export const CartProvider = ({ children }) => {
     }, [cartItems]);
 
     // Add item to cart
-    const addToCart = (product, quantity = 1, selectedSize = null, selectedColor = null) => {
+    const addToCart = (product, quantity = 1, selectedSize = null, selectedColor = null, variantId = null, childVariantId = null) => {
         trackAddToCart({
             product,
             quantity,
@@ -45,11 +45,13 @@ export const CartProvider = ({ children }) => {
         });
 
         setCartItems(prevItems => {
-            // Check if item already exists with same size and color
+            // Check if item already exists with same size, color, and variant IDs
             const existingItemIndex = prevItems.findIndex(
                 item => item.id === product.id &&
                     item.selectedSize === selectedSize &&
-                    item.selectedColor === selectedColor
+                    item.selectedColor === selectedColor &&
+                    item.variantId === variantId &&
+                    item.childVariantId === childVariantId
             );
 
             if (existingItemIndex > -1) {
@@ -70,7 +72,7 @@ export const CartProvider = ({ children }) => {
                     item.quantity = maxLimit; // Capped at max
                 }
 
-                // Update other product properties (like return_delivery_days) from the latest product data
+                // Update other product properties from the latest product data
                 item.return_delivery_days = product.return_delivery_days || item.return_delivery_days || null;
                 item.price = parseFloat(product.price);
                 item.originalPrice = product.originalPrice ? parseFloat(product.originalPrice) : null;
@@ -90,15 +92,17 @@ export const CartProvider = ({ children }) => {
                     price: parseFloat(product.price),
                     originalPrice: product.originalPrice ? parseFloat(product.originalPrice) : null,
                     discount: product.discount || null,
-                    image: product.images?.[0] || product.image, // Fixed: Handle both array and single string
+                    image: product.images?.[0] || product.image,
                     quantity: quantity,
                     selectedSize: selectedSize,
                     selectedColor: selectedColor,
+                    variantId: variantId,
+                    childVariantId: childVariantId,
                     brand: product.brand || null,
-                    maxStock: product.currentStock || 99, // Use currentStock from transformedProduct
-                    variantStockMap: product.variantStockMap || {}, // Store variant stock info
+                    maxStock: product.currentStock || 99,
+                    variantStockMap: product.variantStockMap || {},
                     availableSizes: product.sizes || [],
-                    return_delivery_days: product.return_delivery_days || null, // Add return delivery days from API
+                    return_delivery_days: product.return_delivery_days || null,
                     selected: true
                 }];
             }
@@ -106,20 +110,22 @@ export const CartProvider = ({ children }) => {
     };
 
     // Remove item from cart
-    const removeFromCart = (productId, selectedSize = null, selectedColor = null) => {
+    const removeFromCart = (productId, selectedSize = null, selectedColor = null, variantId = null, childVariantId = null) => {
         setCartItems(prevItems =>
             prevItems.filter(item =>
                 !(item.id === productId &&
                     item.selectedSize === selectedSize &&
-                    item.selectedColor === selectedColor)
+                    item.selectedColor === selectedColor &&
+                    item.variantId === variantId &&
+                    item.childVariantId === childVariantId)
             )
         );
     };
 
     // Update item quantity
-    const updateQuantity = (productId, quantity, selectedSize = null, selectedColor = null) => {
+    const updateQuantity = (productId, quantity, selectedSize = null, selectedColor = null, variantId = null, childVariantId = null) => {
         if (quantity <= 0) {
-            removeFromCart(productId, selectedSize, selectedColor);
+            removeFromCart(productId, selectedSize, selectedColor, variantId, childVariantId);
             return;
         }
 
@@ -127,7 +133,9 @@ export const CartProvider = ({ children }) => {
             prevItems.map(item => {
                 if (item.id === productId &&
                     item.selectedSize === selectedSize &&
-                    item.selectedColor === selectedColor) {
+                    item.selectedColor === selectedColor &&
+                    item.variantId === variantId &&
+                    item.childVariantId === childVariantId) {
 
                     // Calculate stock limit
                     let maxLimit = item.maxStock || 99;
@@ -146,19 +154,23 @@ export const CartProvider = ({ children }) => {
     };
 
     // Update item size (Critical for Cart Page)
-    const updateSize = (itemId, oldSize, newSize, selectedColor) => {
+    const updateSize = (itemId, oldSize, newSize, selectedColor, oldVariantId, oldChildVariantId, newVariantId, newChildVariantId) => {
         setCartItems(prevItems => {
-            // Check if there is ALREADY an item with the NEW size
+            // Check if there is ALREADY an item with the NEW size and IDs
             const targetItemIndex = prevItems.findIndex(
                 item => item.id === itemId &&
                     item.selectedSize === newSize &&
-                    item.selectedColor === selectedColor
+                    item.selectedColor === selectedColor &&
+                    item.variantId === newVariantId &&
+                    item.childVariantId === newChildVariantId
             );
 
             const sourceItemIndex = prevItems.findIndex(
                 item => item.id === itemId &&
                     item.selectedSize === oldSize &&
-                    item.selectedColor === selectedColor
+                    item.selectedColor === selectedColor &&
+                    item.variantId === oldVariantId &&
+                    item.childVariantId === oldChildVariantId
             );
 
             if (sourceItemIndex === -1) return prevItems;
@@ -195,7 +207,9 @@ export const CartProvider = ({ children }) => {
                 updatedItems[sourceItemIndex] = {
                     ...item,
                     selectedSize: newSize,
-                    quantity: Math.min(item.quantity, maxLimit) // Clamp quantity to new size's stock
+                    variantId: newVariantId,
+                    childVariantId: newChildVariantId,
+                    quantity: Math.min(item.quantity, maxLimit)
                 };
                 return updatedItems;
             }
@@ -209,12 +223,14 @@ export const CartProvider = ({ children }) => {
     };
 
     // Toggle item selection
-    const toggleItemSelection = (itemId, selectedSize, selectedColor) => {
+    const toggleItemSelection = (itemId, selectedSize, selectedColor, variantId, childVariantId) => {
         setCartItems(prevItems =>
             prevItems.map(item => {
                 if (item.id === itemId &&
                     item.selectedSize === selectedSize &&
-                    item.selectedColor === selectedColor) {
+                    item.selectedColor === selectedColor &&
+                    item.variantId === variantId &&
+                    item.childVariantId === childVariantId) {
                     return { ...item, selected: !item.selected };
                 }
                 return item;
@@ -247,8 +263,6 @@ export const CartProvider = ({ children }) => {
     // Calculate total (Selected only)
     const getTotal = () => {
         const subtotal = getSubtotal();
-        // If subtotal is 0 (no items selected), delivery fee might still apply if we enforce it, 
-        // but typically total is 0 if nothing is selected.
         return subtotal > 0 ? subtotal + deliveryFee : 0;
     };
 
@@ -269,7 +283,7 @@ export const CartProvider = ({ children }) => {
         addToCart,
         removeFromCart,
         updateQuantity,
-        updateSize, // Export new function
+        updateSize,
         toggleItemSelection,
         selectAllItems,
         getSelectedCount,

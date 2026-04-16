@@ -294,6 +294,8 @@ export default function CheckoutPage() {
             discount: 0, // Coupon discount if any
             product: cartItems.map((item) => ({
                 product_id: item.id,
+                product_variant_id: item.variantId || null,
+                product_child_variant_id: item.childVariantId || null,
                 qty: item.quantity,
                 price: item.price,
                 mode: 1, // Assuming fixed mode

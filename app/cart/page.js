@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { getProductById } from "@/lib/api";
 
 const CartPage = () => {
     const {
@@ -27,6 +28,85 @@ const CartPage = () => {
     const router = useRouter();
 
     const [openSizeModal, setOpenSizeModal] = React.useState(null); // stores item ID to show modal for
+    const [fetchedProducts, setFetchedProducts] = React.useState({});
+
+    // Temporary selection state for the modal
+    const [tempSelection, setTempSelection] = React.useState({
+        size: "",
+        childSize: "",
+        variantId: null,
+        childVariantId: null
+    });
+
+    // Fetch full product details for items in bag to handle size/variant changes
+    React.useEffect(() => {
+        const fetchDetails = async () => {
+            let updated = false;
+            const newFetched = { ...fetchedProducts };
+            
+            for (const item of cartItems) {
+                if (!newFetched[item.id]) {
+                    try {
+                        const res = await getProductById(item.id);
+                        if (res.success && res.data) {
+                            newFetched[item.id] = res.data;
+                            updated = true;
+                        }
+                    } catch (err) {
+                        console.error("Error fetching product details for cart:", err);
+                    }
+                }
+            }
+            
+            if (updated) {
+                setFetchedProducts(newFetched);
+            }
+        };
+
+        if (cartItems.length > 0) {
+            fetchDetails();
+        }
+    }, [cartItems, fetchedProducts]);
+
+    const handleOpenSizeModal = (item) => {
+        setOpenSizeModal(item);
+        
+        // Try to parse the name if it's combined "Size - Child"
+        let size = item.selectedSize || "";
+        let childSize = "";
+        if (size.includes(" - ")) {
+            [size, childSize] = size.split(" - ");
+        }
+
+        setTempSelection({
+            size: size,
+            childSize: childSize,
+            variantId: item.variantId,
+            childVariantId: item.childVariantId
+        });
+    };
+
+    const handleUpdateSize = () => {
+        if (!openSizeModal) return;
+
+        let finalSizeName = tempSelection.size;
+        if (tempSelection.childSize) {
+            finalSizeName = `${tempSelection.size} - ${tempSelection.childSize}`;
+        }
+
+        updateSize(
+            openSizeModal.id, 
+            openSizeModal.selectedSize, 
+            finalSizeName, 
+            openSizeModal.selectedColor, 
+            openSizeModal.variantId, 
+            openSizeModal.childVariantId, 
+            tempSelection.variantId, 
+            tempSelection.childVariantId
+        );
+        
+        setOpenSizeModal(null);
+    };
 
     // Format price helper function
     const formatPrice = (amount) => {
@@ -50,7 +130,7 @@ const CartPage = () => {
 
     if (cartItems.length === 0) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 pb-10"> {/* Removed pt-20, handled by layout */}
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 pb-10">
                 <div className="text-center max-w-md px-4">
                     <div className="w-24 h-24 mx-auto bg-white rounded-full flex items-center justify-center shadow-sm mb-6">
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--brand-royal-red)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -74,11 +154,17 @@ const CartPage = () => {
         );
     }
 
-    return (
-        <div className="min-h-screen bg-gray-50 pb-10"> {/* Removed pt-[100px] */}
-            <div className="max-w-[1000px] mx-auto px-4 pt-6"> {/* Added pt-6 for spacing from navbar */}
+    // Modal data helpers
+    const currentProductDetails = openSizeModal ? fetchedProducts[openSizeModal.id] : null;
+    const selectedVariant = currentProductDetails?.product_variants?.find(v => v.name === tempSelection.size);
+    const hasChildVariants = selectedVariant?.child_variants?.length > 0;
+    const isChildRequired = hasChildVariants;
 
-                {/* Header Row (Moved outside grid for alignment) */}
+    return (
+        <div className="min-h-screen bg-gray-50 pb-10">
+            <div className="max-w-[1000px] mx-auto px-4 pt-6">
+
+                {/* Header Row */}
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-3">
                         <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -99,7 +185,7 @@ const CartPage = () => {
                     {/* Left Column: Items */}
                     <div className="space-y-4">
 
-                        {/* Login Banner (if not logged in) */}
+                        {/* Login Banner */}
                         {!user && (
                             <div className="bg-white p-4 rounded border border-gray-200 flex justify-between items-center shadow-sm">
                                 <div>
@@ -118,7 +204,7 @@ const CartPage = () => {
                         <div className="space-y-3">
                             {cartItems.map((item, index) => (
                                 <div
-                                    key={`${item.id}-${item.selectedSize}-${item.selectedColor}-${index}`}
+                                    key={`${item.id}-${item.selectedSize}-${item.selectedColor}-${item.variantId || ''}-${item.childVariantId || ''}-${index}`}
                                     role="link"
                                     tabIndex={0}
                                     onClick={() => router.push(`/product/${item.id}`)}
@@ -131,22 +217,22 @@ const CartPage = () => {
                                     className={`relative bg-white border rounded p-3 shadow-sm group transition-colors cursor-pointer ${item.selected ? 'border-gray-200' : 'border-gray-100 bg-gray-50 opacity-75'}`}
                                 >
 
-                                    {/* Checkbox Absolute Top Left */}
+                                    {/* Checkbox */}
                                     <div className="absolute top-3 left-3 z-10">
                                         <input
                                             type="checkbox"
                                             checked={item.selected || false}
                                             onClick={(e) => e.stopPropagation()}
-                                            onChange={() => toggleItemSelection(item.id, item.selectedSize, item.selectedColor)}
+                                            onChange={() => toggleItemSelection(item.id, item.selectedSize, item.selectedColor, item.variantId, item.childVariantId)}
                                             className="w-4 h-4 text-[var(--brand-royal-red)] border-gray-300 rounded focus:ring-[var(--brand-royal-red)] cursor-pointer"
                                         />
                                     </div>
 
-                                    {/* Close/Remove Button Top Right */}
+                                    {/* Remove Button */}
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            removeFromCart(item.id, item.selectedSize, item.selectedColor);
+                                            removeFromCart(item.id, item.selectedSize, item.selectedColor, item.variantId, item.childVariantId);
                                         }}
                                         className="absolute top-3 right-3 text-gray-400 hover:text-gray-900 transition-colors"
                                     >
@@ -156,7 +242,7 @@ const CartPage = () => {
                                         </svg>
                                     </button>
 
-                                    <div className="flex gap-4 pl-8"> {/* Added pl-8 to make room for checkbox */}
+                                    <div className="flex gap-4 pl-8">
                                         {/* Image */}
                                         <div className="w-28 h-36 flex-shrink-0 bg-gray-100 rounded overflow-hidden relative">
                                             <Image
@@ -177,12 +263,11 @@ const CartPage = () => {
 
                                             {/* Selectors Row */}
                                             <div className="flex items-center gap-3 mb-3">
-                                                {/* Size Selector */}
                                                 <div className="relative">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            setOpenSizeModal(item);
+                                                            handleOpenSizeModal(item);
                                                         }}
                                                         className="bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-xs font-bold text-gray-800 flex items-center gap-1"
                                                     >
@@ -193,7 +278,6 @@ const CartPage = () => {
                                                     </button>
                                                 </div>
 
-                                                {/* Qty Selector */}
                                                 <div className="relative">
                                                     <div className="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-gray-800 flex items-center gap-2">
                                                         <span>Qty:</span>
@@ -201,7 +285,7 @@ const CartPage = () => {
                                                             className="hover:text-[var(--brand-royal-red)]"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                updateQuantity(item.id, item.quantity - 1, item.selectedSize, item.selectedColor);
+                                                                updateQuantity(item.id, item.quantity - 1, item.selectedSize, item.selectedColor, item.variantId, item.childVariantId);
                                                             }}
                                                         >-</button>
                                                         <span>{item.quantity}</span>
@@ -215,7 +299,7 @@ const CartPage = () => {
                                                                     showToast({ message: `Only ${maxLimit} is in stock${sizeMsg}`, type: 'error' });
                                                                     return;
                                                                 }
-                                                                updateQuantity(item.id, item.quantity + 1, item.selectedSize, item.selectedColor);
+                                                                updateQuantity(item.id, item.quantity + 1, item.selectedSize, item.selectedColor, item.variantId, item.childVariantId);
                                                             }}
                                                         >+</button>
                                                     </div>
@@ -248,8 +332,6 @@ const CartPage = () => {
 
                     {/* Right Column: Price Details */}
                     <div className="h-fit space-y-4">
-
-                        {/* Price Details */}
                         <div className="bg-white border border-gray-200 rounded p-4 shadow-sm sticky top-28">
                             <h2 className="text-xs font-bold text-gray-500 uppercase mb-4">Price Details ({selectedCount} Selected)</h2>
 
@@ -262,7 +344,6 @@ const CartPage = () => {
                                     <span className="text-gray-600">Discount on MRP</span>
                                     <span className="text-green-600">-{formatPrice(totalDiscount)}</span>
                                 </div>
-                                {/* Coupon Discount Skipped as requested */}
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Delivery Fee</span>
                                     <span className="text-sm text-[var(--brand-royal-red)] font-medium">Calculated at Checkout</span>
@@ -294,18 +375,18 @@ const CartPage = () => {
                 </div>
             </div>
 
-            {/* Size Selection Modal/Overlay */}
+            {/* Size Selection Modal */}
             {openSizeModal && (
                 <div
                     className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
                     onClick={() => setOpenSizeModal(null)}
                 >
                     <div
-                        className="bg-white rounded-lg w-full max-w-sm p-6"
+                        className="bg-white rounded-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-bold text-gray-900 uppercase">Select Size</h3>
+                            <h3 className="font-bold text-gray-900 uppercase">Edit Variation</h3>
                             <button onClick={() => setOpenSizeModal(null)}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -314,7 +395,7 @@ const CartPage = () => {
                             </button>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg mb-6">
                             <div className="w-16 h-20 bg-gray-100 rounded overflow-hidden relative border border-gray-200">
                                 <Image
                                     src={openSizeModal.image}
@@ -331,22 +412,79 @@ const CartPage = () => {
                             </div>
                         </div>
 
-                        <div className="mt-6 grid grid-cols-4 gap-3">
-                            {/* Use available sizes if present, otherwise fallback to defaults or current size */}
-                            {(openSizeModal.availableSizes && openSizeModal.availableSizes.length > 0
-                                ? openSizeModal.availableSizes
-                                : ['S', 'M', 'L', 'XL', 'XXL']).map((size, index) => (
-                                    <button
-                                        key={`size-${index}-${size}`}
-                                        onClick={() => {
-                                            updateSize(openSizeModal.id, openSizeModal.selectedSize, size, openSizeModal.selectedColor);
-                                            setOpenSizeModal(null);
-                                        }}
-                                        className={`h-12 rounded-full border border-gray-300 font-bold text-sm hover:border-[var(--brand-royal-red)] hover:text-[var(--brand-royal-red)] transition-all ${openSizeModal.selectedSize === size ? 'bg-[var(--brand-royal-red)] text-white border-[var(--brand-royal-red)] hover:bg-red-700 hover:text-white' : 'text-gray-700'}`}
-                                    >
-                                        {size}
-                                    </button>
-                                ))}
+                        {/* Step 1: Size Selection */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-3 block">
+                                    Select Size
+                                </label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {(openSizeModal.availableSizes && openSizeModal.availableSizes.length > 0
+                                        ? openSizeModal.availableSizes
+                                        : ['S', 'M', 'L', 'XL', 'XXL']).map((size, index) => {
+                                            const isSelected = tempSelection.size === size;
+                                            return (
+                                                <button
+                                                    key={`size-${index}-${size}`}
+                                                    onClick={() => {
+                                                        const productDetails = fetchedProducts[openSizeModal.id];
+                                                        const variant = productDetails?.product_variants?.find(v => v.name === size);
+                                                        setTempSelection({
+                                                            ...tempSelection,
+                                                            size: size,
+                                                            variantId: variant?.id || null,
+                                                            childSize: "", // Reset child selection on size change
+                                                            childVariantId: null
+                                                        });
+                                                    }}
+                                                    className={`h-10 rounded-md border font-bold text-xs transition-all ${isSelected ? 'bg-[var(--brand-royal-red)] text-white border-[var(--brand-royal-red)]' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
+                                                >
+                                                    {size}
+                                                </button>
+                                            );
+                                        })}
+                                </div>
+                            </div>
+
+                            {/* Step 2: Child Variant Selection (e.g. Length) */}
+                            {selectedVariant?.child_variants?.length > 0 && (
+                                <div className="pt-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase mb-3 block">
+                                        Select Option (e.g. Length)
+                                    </label>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {selectedVariant.child_variants.map((child, index) => {
+                                            const isSelected = tempSelection.childSize === child.name;
+                                            return (
+                                                <button
+                                                    key={`child-${index}-${child.name}`}
+                                                    onClick={() => {
+                                                        setTempSelection({
+                                                            ...tempSelection,
+                                                            childSize: child.name,
+                                                            childVariantId: child.id
+                                                        });
+                                                    }}
+                                                    className={`h-10 rounded-md border font-bold text-xs transition-all ${isSelected ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
+                                                >
+                                                    {child.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Action Bar */}
+                        <div className="mt-8">
+                            <button
+                                onClick={handleUpdateSize}
+                                disabled={isChildRequired && !tempSelection.childSize}
+                                className={`w-full py-3 rounded-lg font-bold text-sm uppercase shadow-sm transition-all ${isChildRequired && !tempSelection.childSize ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[var(--brand-royal-red)] text-white hover:bg-red-700 shadow-md'}`}
+                            >
+                                {isChildRequired && !tempSelection.childSize ? "Select an Option" : "Update Bag"}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -355,6 +493,5 @@ const CartPage = () => {
         </div>
     );
 };
-
 
 export default CartPage;

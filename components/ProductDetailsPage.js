@@ -78,7 +78,7 @@ const ProductDetailsPage = ({ productId }) => {
                                 setSubcategoryName(subcat.name);
 
                                 if (childIdFromUrl && subcat.child_categories) {
-                                    const child = subcat.child_categories.find(c => c.id == childIdFromUrl);
+                                                                    const child = subcat.child_categories.find(c => c.id == childIdFromUrl);
                                     if (child) {
                                         setChildName(child.name);
                                     }
@@ -183,9 +183,6 @@ const ProductDetailsPage = ({ productId }) => {
                             };
 
                             // Check stock availability
-                            // If no children: quantity > 0
-                            // If children: at least one child must have quantity > 0? 
-                            // For simplicity, we trust parent quantity unless children explicitly are all 0
                             if (v.child_variants && v.child_variants.length > 0) {
                                 const allChildrenNoStock = v.child_variants.every(c => c.quantity === 0);
                                 if (allChildrenNoStock) unavailableSizes.push(v.name);
@@ -217,10 +214,8 @@ const ProductDetailsPage = ({ productId }) => {
                                 : apiProduct.gallery ? JSON.parse(apiProduct.gallery) : [apiProduct.image])
                             .filter(img => typeof img === 'string' && img.trim() !== ""),
                         sizes: apiProduct.product_variants ? apiProduct.product_variants.map(v => v.name).filter(Boolean) : [],
-                        // Stores
                         variants: variantMap,
                         unavailableSizes: unavailableSizes,
-                        //
                         currentStock: apiProduct.current_stock || 0,
                         stockStatus: apiProduct.status || "In Stock",
                         isOutOfStock: isOutOfStock,
@@ -350,8 +345,6 @@ const ProductDetailsPage = ({ productId }) => {
                     if (isCancelled) return;
                     setRelatedProducts(transformedRelated);
 
-                    // Hack: related-products API often misses variants, so fetch detail for each related product
-                    // and update size chips progressively as each response arrives.
                     transformedRelated.forEach((relatedProduct) => {
                         const hasSizes = Array.isArray(relatedProduct.sizes) && relatedProduct.sizes.length > 0;
                         if (hasSizes) return;
@@ -483,11 +476,18 @@ const ProductDetailsPage = ({ productId }) => {
         setSizeError(false);
 
         let sizeName = selectedSize;
-        if (selectedChildSize) {
-            sizeName = `${selectedSize} - ${selectedChildSize}`;
+        let variantId = selectedVariant?.id || null;
+        let childVariantId = null;
+
+        if (selectedChildSize && selectedVariant?.children) {
+            const child = selectedVariant.children.find(c => c.name === selectedChildSize);
+            if (child) {
+                childVariantId = child.id;
+                sizeName = `${selectedSize} - ${selectedChildSize}`;
+            }
         }
 
-        addToCart(product, 1, sizeName);
+        addToCart(product, 1, sizeName, null, variantId, childVariantId);
         showToast(product);
     };
 
@@ -507,11 +507,18 @@ const ProductDetailsPage = ({ productId }) => {
         setSizeError(false);
 
         let sizeName = selectedSize;
-        if (selectedChildSize) {
-            sizeName = `${selectedSize} - ${selectedChildSize}`;
+        let variantId = selectedVariant?.id || null;
+        let childVariantId = null;
+
+        if (selectedChildSize && selectedVariant?.children) {
+            const child = selectedVariant.children.find(c => c.name === selectedChildSize);
+            if (child) {
+                childVariantId = child.id;
+                sizeName = `${selectedSize} - ${selectedChildSize}`;
+            }
         }
 
-        addToCart(product, 1, sizeName);
+        addToCart(product, 1, sizeName, null, variantId, childVariantId);
         router.push('/checkout');
     };
 

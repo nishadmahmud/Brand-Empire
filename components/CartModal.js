@@ -89,7 +89,7 @@ const CartModal = () => {
                         <div className="space-y-4">
                             {cartItems.map((item) => (
                                 <div
-                                    key={`${item.id}-${item.selectedSize}-${item.selectedColor}`}
+                                    key={`${item.id}-${item.selectedSize}-${item.selectedColor}-${item.variantId || ''}-${item.childVariantId || ''}`}
                                     role="link"
                                     tabIndex={0}
                                     onClick={() => handleCardNavigation(item.id)}
@@ -133,7 +133,7 @@ const CartModal = () => {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        updateQuantity(item.id, item.quantity - 1, item.selectedSize, item.selectedColor);
+                                                        updateQuantity(item.id, item.quantity - 1, item.selectedSize, item.selectedColor, item.variantId, item.childVariantId);
                                                     }}
                                                     className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100"
                                                 >
@@ -149,7 +149,7 @@ const CartModal = () => {
                                                             showToast({ message: `Only ${maxLimit} is in stock${sizeMsg}`, type: 'error' });
                                                             return;
                                                         }
-                                                        updateQuantity(item.id, item.quantity + 1, item.selectedSize, item.selectedColor);
+                                                        updateQuantity(item.id, item.quantity + 1, item.selectedSize, item.selectedColor, item.variantId, item.childVariantId);
                                                     }}
                                                     className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100"
                                                 >
@@ -164,7 +164,7 @@ const CartModal = () => {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            removeFromCart(item.id, item.selectedSize, item.selectedColor);
+                                            removeFromCart(item.id, item.selectedSize, item.selectedColor, item.variantId, item.childVariantId);
                                         }}
                                         className="text-gray-400 hover:text-red-600 transition-colors"
                                         aria-label="Remove item"
