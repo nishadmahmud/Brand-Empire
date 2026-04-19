@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { uploadReviewMedia, submitRefundRequest } from "@/lib/api";
+import { uploadReviewMedia, submitRefundRequest, updateEcommerceStatus } from "@/lib/api";
 import {
     X, Upload, Loader2, AlertTriangle, RotateCcw,
     ChevronDown, Check, Truck, Package
@@ -289,6 +289,9 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return", refundedItem
             try {
                 const data = await submitRefundRequest(token, payload);
                 if (!data?.success && data?.message) throw new Error(data.message);
+
+                // Update ecommerce status to 11 as requested
+                await updateEcommerceStatus(order?.invoice_id, 11);
             } catch (apiErr) {
                 throw new Error("Failed to submit request: " + apiErr.message);
             }

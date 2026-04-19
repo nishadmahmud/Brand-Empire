@@ -197,6 +197,35 @@ export default function ProfileDashboard() {
     const [trackLoading, setTrackLoading] = useState(false);
     const [trackHasSearched, setTrackHasSearched] = useState(false);
     const [trackAccessDenied, setTrackAccessDenied] = useState(false);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+
+    // Initial Auth Check
+    useEffect(() => {
+        const checkAuth = async () => {
+            if (!user || !token) return;
+            setIsCheckingAuth(true);
+            try {
+                // Try a small authed call to verify token
+                const customerId = user.id || user.customer_id;
+                const data = await getCustomerOrders(token, customerId, "1");
+                
+                // If it explicitly says unauthenticated
+                if (data && data.success === false && 
+                    (String(data.message).toLowerCase().includes("unauthenticated") || 
+                     String(data.message).toLowerCase().includes("token"))) {
+                    logout();
+                }
+            } catch (err) {
+                // In this specific app, authed fetch failures (TypeError/CORS) 
+                // typically mean a 302 redirect to an unauth page which fails CORS.
+                console.error("Auth verification failed:", err);
+                logout();
+            } finally {
+                setIsCheckingAuth(false);
+            }
+        };
+        checkAuth();
+    }, []); // Run once on mount
 
     // Order details modal state
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -507,21 +536,25 @@ export default function ProfileDashboard() {
                     let orderList = ordersData.data?.data || ordersData.data || [];
                     orderList = Array.isArray(orderList) ? orderList : [];
 
-                    // Remove refunded line-items only; keep order if other items are still active
                     if (refundsData.success) {
                         const refundList = refundsData.data?.data || refundsData.data || [];
-                        // We purposefully DO NOT remove refunded items from active orders
-                        // so they can be shown with a "Canceled" badge.
-                        // orderList = removeRefundedItemsFromOrders(orderList, refundList);
                     }
 
                     setOrders(orderList);
                 } else {
                     setOrders([]);
+                    // Check for auth failure in response
+                    if (String(ordersData.message).toLowerCase().includes("unauthenticated")) {
+                        logout();
+                    }
                 }
             } catch (err) {
                 console.error("Failed to fetch orders or refunds", err);
                 setOrders([]);
+                // If we have a token but fetch failed (likely CORS error from redirect)
+                if (token) {
+                    logout();
+                }
             } finally {
                 setOrdersLoading(false);
             }
@@ -544,10 +577,16 @@ export default function ProfileDashboard() {
                     setRefunds(Array.isArray(refundList) ? refundList : []);
                 } else {
                     setRefunds([]);
+                    if (String(data.message).toLowerCase().includes("unauthenticated")) {
+                        logout();
+                    }
                 }
             } catch (err) {
                 console.error("Failed to fetch refunds", err);
                 setRefunds([]);
+                if (token) {
+                    logout();
+                }
             } finally {
                 setRefundsLoading(false);
             }
