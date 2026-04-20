@@ -18,8 +18,9 @@ export default function CategoryPage() {
 
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    const [localPage, setLocalPage] = useState(1);
+    const [apiTotalPages, setApiTotalPages] = useState(1);
+    const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
     const [sortBy, setSortBy] = useState("recommended");
     const [mobileSortOpen, setMobileSortOpen] = useState(false);
@@ -60,9 +61,6 @@ export default function CategoryPage() {
         return sizes;
     }, [products]);
 
-    // Pre-select subcategory filter when arriving from navbar with ?subcategory=X
-    // REMOVED - navigation should work normally, multi-select is for WITHIN page filtering
-
     // Close sort dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -79,14 +77,12 @@ export default function CategoryPage() {
         const fetchAttributes = async () => {
             try {
                 const data = await getAttributes();
-                // Handle both array response and {success, data} response
                 let attrArray = [];
                 if (Array.isArray(data)) {
                     attrArray = data;
                 } else if (data.success && Array.isArray(data.data)) {
                     attrArray = data.data;
                 }
-                // Filter only active attributes with active values
                 const filtered = attrArray
                     .filter(attr => attr.status === 'active')
                     .map(attr => ({
@@ -118,7 +114,6 @@ export default function CategoryPage() {
                             const subcat = category.sub_category.find(s => s.id == subcategoryId);
                             if (subcat) {
                                 setSubcategoryName(subcat.name);
-                                // Update banner from subcategory (singular 'banner' or first item of 'banners' array)
                                 if (subcat.banner) {
                                     currentBanner = subcat.banner;
                                 } else if (subcat.banners && subcat.banners.length > 0) {
@@ -179,7 +174,7 @@ export default function CategoryPage() {
         });
         return discountMap;
     };
-    // Helper function to transform product data
+
     const transformProduct = (product, campaignDiscountsMap = {}) => {
         const mrp = product.retails_price || 0;
         let finalPrice = mrp;
@@ -242,153 +237,122 @@ export default function CategoryPage() {
             childCategoryId: product.child_category_id,
         };
     };
-    // Fetch products based on current level AND selected filters
+
+    // Background fetch products
     useEffect(() => {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                let allProducts = [];
+                let firstPageProducts = [];
 
-                // If attribute filters are selected, use the filter-products API with category_id
+                // 1. Fetch First Page
+                let response;
                 if (filters.attributeValues.length > 0) {
-                    const response = await filterProductsByAttributes(filters.attributeValues, page, { categoryId });
-                    if (response.success && response.data?.data) {
-                        allProducts = response.data.data;
-                    }
-                    if (response.pagination) {
-                        setTotalPages(response.pagination.last_page);
-                    }
-                }
-                // Otherwise use category-based fetching
-                else if (filters.categories.length > 0) {
-                    // Mixed multi-select mode: supports selecting subcategories and child categories together.
-                    const selectedIds = filters.categories.map((id) => Number(id));
-                    const subcategoryIds = (currentCategoryData?.sub_category || []).map((sub) => Number(sub.id));
-                    const childCategoryIds = (currentCategoryData?.sub_category || []).flatMap((sub) =>
-                        (sub.child_categories || []).map((child) => Number(child.id))
-                    );
-                    const subcategoryIdSet = new Set(subcategoryIds);
-                    const childCategoryIdSet = new Set(childCategoryIds);
-
-                    const selectedSubcategoryIds = selectedIds.filter((id) => subcategoryIdSet.has(id));
-                    const selectedChildCategoryIds = selectedIds.filter((id) => childCategoryIdSet.has(id));
-
-                    const fetchPromises = [
-                        ...selectedSubcategoryIds.map((id) => getProductsBySubcategory(id, page)),
-                        ...selectedChildCategoryIds.map((id) => getProductsByChildCategory(id, page)),
-                    ];
-
-                    if (fetchPromises.length > 0) {
-                        const responses = await Promise.all(fetchPromises);
-                        responses.forEach((response) => {
-                            if (response.success && response.data) {
-                                allProducts = [...allProducts, ...response.data];
-                            }
-                        });
-                        setTotalPages(1);
-                    } else if (subcategoryId) {
-                        const response = await getProductsBySubcategory(subcategoryId, page);
-                        if (response.success && response.data) {
-                            allProducts = response.data;
-                        }
-                        if (response.pagination) {
-                            setTotalPages(response.pagination.last_page);
-                        }
-                    } else {
-                        const response = await getCategoryWiseProducts(categoryId, page);
-                        if (response.success && response.data) {
-                            allProducts = response.data;
-                        }
-                        if (response.pagination) {
-                            setTotalPages(response.pagination.last_page);
-                        }
-                    }
+                    response = await filterProductsByAttributes(filters.attributeValues, 1, { categoryId });
                 } else if (subcategoryId) {
-                    // We're on a subcategory page
-                    const response = await getProductsBySubcategory(subcategoryId, page);
-                    if (response.success && response.data) {
-                        allProducts = response.data;
-                    }
-                    if (response.pagination) {
-                        setTotalPages(response.pagination.last_page);
-                    }
+                    response = await getProductsBySubcategory(subcategoryId, 1);
                 } else {
-                    // We're on main category page
-                    const response = await getCategoryWiseProducts(categoryId, page);
-                    if (response.success && response.data) {
-                        allProducts = response.data;
-                    }
+                    response = await getCategoryWiseProducts(categoryId, 1);
+                }
+
+                if (response?.success && response?.data) {
+                    const dataBatch = Array.isArray(response.data) ? response.data : (response.data.data || []);
                     if (response.pagination) {
-                        setTotalPages(response.pagination.last_page);
+                        setApiTotalPages(response.pagination.last_page);
+                    }
+
+                    const campaignMap = await getActiveCampaignsMap();
+                    const initialTransformed = dataBatch.map(p => transformProduct(p, campaignMap));
+                    setProducts(initialTransformed);
+                    setLoading(false); // Show first page immediately
+
+                    // 2. Background Fetch remaining pages if any
+                    if (response.pagination?.last_page > 1) {
+                        setIsBackgroundLoading(true);
+                        fetchAllPages(response.pagination.last_page, campaignMap);
                     }
                 }
-
-                // Remove duplicates by product id
-                const uniqueProducts = allProducts.filter((product, index, self) =>
-                    index === self.findIndex(p => p.id === product.id)
-                );
-
-                // Hack: fetch active campaigns and overlay campaign discounts by product ID.
-                let campaignDiscountsMap = {};
-                try {
-                    const campaignsResponse = await getCampaigns();
-                    if (campaignsResponse?.success && Array.isArray(campaignsResponse?.campaigns?.data)) {
-                        const activeCampaigns = campaignsResponse.campaigns.data.filter((campaign) => campaign?.status === "active");
-                        campaignDiscountsMap = buildCampaignDiscountMap(activeCampaigns);
-                    }
-                } catch (campaignError) {
-                    console.error("Error fetching campaigns for category discount overlay:", campaignError);
-                }
-
-                // Transform products
-                const transformedProducts = uniqueProducts.map((product) => transformProduct(product, campaignDiscountsMap));
-                setProducts(transformedProducts);
-
             } catch (error) {
                 console.error("Error fetching products:", error);
-            } finally {
                 setLoading(false);
             }
         };
 
+        const getActiveCampaignsMap = async () => {
+            try {
+                const campaignsResponse = await getCampaigns();
+                if (campaignsResponse?.success && Array.isArray(campaignsResponse?.campaigns?.data)) {
+                    const activeCampaigns = campaignsResponse.campaigns.data.filter((campaign) => campaign?.status === "active");
+                    return buildCampaignDiscountMap(activeCampaigns);
+                }
+            } catch (err) {
+                console.error("Campaign fetch error:", err);
+            }
+            return {};
+        };
+
+        const fetchAllPages = async (lastPage, campaignMap) => {
+            for (let p = 2; p <= lastPage; p++) {
+                try {
+                    let res;
+                    if (filters.attributeValues.length > 0) {
+                        res = await filterProductsByAttributes(filters.attributeValues, p, { categoryId });
+                    } else if (subcategoryId) {
+                        res = await getProductsBySubcategory(subcategoryId, p);
+                    } else {
+                        res = await getCategoryWiseProducts(categoryId, p);
+                    }
+
+                    if (res?.success && res?.data) {
+                        const newItems = Array.isArray(res.data) ? res.data : (res.data.data || []);
+                        const transformed = newItems.map(item => transformProduct(item, campaignMap));
+                        
+                        setProducts(prev => {
+                            const combined = [...prev, ...transformed];
+                            return combined.filter((item, index, self) =>
+                                index === self.findIndex(t => t.id === item.id)
+                            );
+                        });
+                    }
+                } catch (err) {
+                    console.error(`Error fetching page ${p}:`, err);
+                }
+            }
+            setIsBackgroundLoading(false);
+        };
+
         if (categoryId) {
+            setLocalPage(1);
             fetchProducts();
         }
-    }, [categoryId, subcategoryId, page, filters.categories, filters.attributeValues, currentCategoryData]);
+    }, [categoryId, subcategoryId, filters.attributeValues]);
 
-    // Apply filters and sorting (categories already handled by API fetch)
-    const filteredAndSortedProducts = React.useMemo(() => {
+    const filteredAndSortedProducts = useMemo(() => {
         let result = [...products];
 
-        // Apply brand filter
         if (filters.brands.length > 0) {
             result = result.filter(p => filters.brands.includes(p.brand));
         }
 
-        // Apply price range filter
         result = result.filter(p =>
             p.rawPrice >= filters.priceRange[0] &&
             p.rawPrice <= filters.priceRange[1]
         );
 
-        // Apply color filter
         if (filters.colors.length > 0) {
             result = result.filter(p => filters.colors.includes(p.color));
         }
 
-        // Apply size filter
         if (filters.sizes.length > 0) {
             result = result.filter(p =>
                 p.sizes.some(size => filters.sizes.includes(size))
             );
         }
 
-        // Apply discount filter
         if (filters.discount > 0) {
             result = result.filter(p => p.rawDiscount >= filters.discount);
         }
 
-        // Apply sorting
         switch (sortBy) {
             case "price-low":
                 result.sort((a, b) => a.rawPrice - b.rawPrice);
@@ -406,11 +370,21 @@ export default function CategoryPage() {
         return result;
     }, [products, filters, sortBy]);
 
+    const paginatedProducts = useMemo(() => {
+        const startIndex = (localPage - 1) * 20;
+        return filteredAndSortedProducts.slice(startIndex, startIndex + 20);
+    }, [filteredAndSortedProducts, localPage]);
+
+    const totalPages = useMemo(() => {
+        return Math.max(1, Math.ceil(filteredAndSortedProducts.length / 20));
+    }, [filteredAndSortedProducts]);
+
     const handleFilterChange = (filterType, value) => {
         setFilters(prev => ({
             ...prev,
             [filterType]: value
         }));
+        setLocalPage(1);
     };
 
     const handleClearAll = () => {
@@ -423,6 +397,7 @@ export default function CategoryPage() {
             discount: 0,
             attributeValues: [],
         });
+        setLocalPage(1);
     };
 
     const handleSubCategoryChange = (subId) => {
@@ -432,7 +407,7 @@ export default function CategoryPage() {
         } else {
             params.delete('subcategory');
         }
-        params.delete('child'); // Reset child when sub changes
+        params.delete('child');
         router.push(`${pathname}?${params.toString()}`);
     };
 
@@ -458,61 +433,41 @@ export default function CategoryPage() {
         ? currentCategoryData?.sub_category?.find(s => s.id == subcategoryId)?.child_categories || []
         : [];
 
-    // Background prefetch for subcategory + child-category product lists to make filter clicks instant.
     useEffect(() => {
         if (!currentCategoryData?.sub_category?.length) return;
-
         const subcategoryIds = currentCategoryData.sub_category.map((sub) => sub.id);
         const childCategoryIds = currentCategoryData.sub_category.flatMap((sub) =>
             (sub.child_categories || []).map((child) => child.id)
         );
-
         prefetchCategoryTreeProducts({
             subcategoryIds,
             childCategoryIds,
             includeAllPages: true
-        }).catch((error) => {
-            console.error("Category prefetch failed:", error);
-        });
+        }).catch((error) => console.error("Category prefetch failed:", error));
     }, [currentCategoryData]);
 
     return (
         <div className="min-h-screen bg-gray-50 pt-0 md:pt-4">
-
-            {/* Banner */}
             {bannerImage && (
                 <div className="w-full h-[200px] md:h-[300px] relative">
-                    <img
-                        src={bannerImage}
-                        alt={categoryName}
-                        className="w-full h-full object-cover"
-                    />
+                    <img src={bannerImage} alt={categoryName} className="w-full h-full object-cover" />
                 </div>
             )}
-
-            {/* Breadcrumb - with Filter/Sort on mobile */}
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-3">
                     <div className="flex items-center justify-between">
-                        {/* Breadcrumb Links */}
                         <div className="flex items-center gap-2 text-xs md:text-sm text-gray-600 flex-wrap">
                             <a href="/" className="hover:text-[var(--brand-royal-red)]">Home</a>
                             <span>/</span>
-                            {categoryName ? (
+                            {categoryName && (
                                 <>
-                                    <a
-                                        href={`/category/${categoryId}`}
-                                        className={`hover:text-[var(--brand-royal-red)] ${!subcategoryName ? 'text-gray-900 font-medium' : ''}`}
-                                    >
+                                    <a href={`/category/${categoryId}`} className={`hover:text-[var(--brand-royal-red)] ${!subcategoryName ? 'text-gray-900 font-medium' : ''}`}>
                                         {categoryName}
                                     </a>
                                     {subcategoryName && (
                                         <>
                                             <span>/</span>
-                                            <a
-                                                href={`/category/${categoryId}?subcategory=${subcategoryId}`}
-                                                className={`hover:text-[var(--brand-royal-red)] ${!childName ? 'text-gray-900 font-medium' : ''}`}
-                                            >
+                                            <a href={`/category/${categoryId}?subcategory=${subcategoryId}`} className={`hover:text-[var(--brand-royal-red)] ${!childName ? 'text-gray-900 font-medium' : ''}`}>
                                                 {subcategoryName}
                                             </a>
                                         </>
@@ -524,148 +479,28 @@ export default function CategoryPage() {
                                         </>
                                     )}
                                 </>
-                            ) : (
-                                <span className="text-gray-900 font-medium">Products</span>
                             )}
-                            {/* Item count on mobile */}
                             <span className="lg:hidden text-gray-400 ml-1">
                                 ({loading ? "..." : filteredAndSortedProducts.length})
                             </span>
                         </div>
-
-                        {/* Filter & Sort - Mobile only in breadcrumb */}
                         <div className="flex items-center gap-2 lg:hidden">
-                            <button
-                                onClick={() => setMobileFiltersOpen(true)}
-                                className="flex items-center justify-center gap-1 px-3 py-1.5 border border-gray-200 rounded-full hover:bg-gray-50 bg-white text-xs font-medium transition-colors"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="4" y1="21" x2="4" y2="14"></line>
-                                    <line x1="4" y1="10" x2="4" y2="3"></line>
-                                    <line x1="12" y1="21" x2="12" y2="12"></line>
-                                    <line x1="12" y1="8" x2="12" y2="3"></line>
-                                    <line x1="20" y1="21" x2="20" y2="16"></line>
-                                    <line x1="20" y1="12" x2="20" y2="3"></line>
-                                </svg>
+                            <button onClick={() => setMobileFiltersOpen(true)} className="flex items-center justify-center gap-1 px-3 py-1.5 border border-gray-200 rounded-full hover:bg-gray-50 bg-white text-xs font-medium transition-colors">
                                 <span>Filter</span>
                             </button>
                             <div className="relative" ref={sortDropdownRef}>
-                                <button
-                                    onClick={() => setMobileSortOpen(!mobileSortOpen)}
-                                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                                >
+                                <button onClick={() => setMobileSortOpen(!mobileSortOpen)} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap bg-white text-gray-700 border-gray-200 hover:bg-gray-50">
                                     <span>
-                                        {sortBy === "recommended" ? "Sort" :
-                                            sortBy === "newest" ? "New" :
-                                                sortBy === "price-low" ? "Low" :
-                                                    sortBy === "price-high" ? "High" : "Sort"}
+                                        {sortBy === "recommended" ? "Sort" : sortBy === "newest" ? "New" : sortBy === "price-low" ? "Low" : sortBy === "price-high" ? "High" : "Sort"}
                                     </span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${mobileSortOpen ? 'rotate-180' : ''}`}>
-                                        <path d="m6 9 6 6 6-6" />
-                                    </svg>
                                 </button>
-
-                                {mobileSortOpen && (
-                                    <>
-                                        <div className="fixed inset-0 bg-black/50 z-[100] md:hidden" onClick={() => setMobileSortOpen(false)}></div>
-                                        <div className="fixed inset-x-0 bottom-0 z-[101] w-full rounded-t-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-xl md:rounded-lg md:absolute md:top-full md:left-0 md:right-auto md:bottom-auto md:w-56 md:mt-2 bg-white border-t md:border border-gray-100 py-2 pb-20 md:pb-2 max-h-[60vh] md:max-h-96 overflow-y-auto">
-                                            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 md:hidden">
-                                                <span className="font-bold text-gray-900">Sort By</span>
-                                                <button onClick={() => setMobileSortOpen(false)} className="p-1">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                                </button>
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    setSortBy("recommended");
-                                                    setMobileSortOpen(false);
-                                                }}
-                                                className={`w-full text-left px-4 py-3 md:py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortBy === "recommended" ? 'text-[var(--brand-royal-red)] font-bold' : 'text-gray-700'
-                                                    }`}
-                                            >
-                                                Recommended
-                                                {sortBy === "recommended" && (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--brand-royal-red)]">
-                                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                                    </svg>
-                                                )}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setSortBy("newest");
-                                                    setMobileSortOpen(false);
-                                                }}
-                                                className={`w-full text-left px-4 py-3 md:py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortBy === "newest" ? 'text-[var(--brand-royal-red)] font-bold' : 'text-gray-700'
-                                                    }`}
-                                            >
-                                                Newest First
-                                                {sortBy === "newest" && (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--brand-royal-red)]">
-                                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                                    </svg>
-                                                )}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setSortBy("price-low");
-                                                    setMobileSortOpen(false);
-                                                }}
-                                                className={`w-full text-left px-4 py-3 md:py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortBy === "price-low" ? 'text-[var(--brand-royal-red)] font-bold' : 'text-gray-700'
-                                                    }`}
-                                            >
-                                                Price: Low to High
-                                                {sortBy === "price-low" && (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--brand-royal-red)]">
-                                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                                    </svg>
-                                                )}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setSortBy("price-high");
-                                                    setMobileSortOpen(false);
-                                                }}
-                                                className={`w-full text-left px-4 py-3 md:py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortBy === "price-high" ? 'text-[var(--brand-royal-red)] font-bold' : 'text-gray-700'
-                                                    }`}
-                                            >
-                                                Price: High to Low
-                                                {sortBy === "price-high" && (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--brand-royal-red)]">
-                                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                                    </svg>
-                                                )}
-                                            </button>
-                                        </div>
-                                    </>
-                                )}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            {/* Top Filters - Mobile */}
-            <div className="md:hidden bg-white border-b border-gray-100 px-4">
-                <CategoryTopFilters
-                    availableSizes={availableSizes}
-                    selectedSizes={filters.sizes}
-                    onSizeChange={(size) => {
-                        const newSizes = filters.sizes.includes(size)
-                            ? filters.sizes.filter(s => s !== size)
-                            : [...filters.sizes, size];
-                        handleFilterChange('sizes', newSizes);
-                    }}
-                    selectedAttributeValues={filters.attributeValues}
-                    onAttributeChange={(values) => handleFilterChange('attributeValues', values)}
-                    hiddenAttributeNames={[categoryName, subcategoryName, childName].filter(Boolean)}
-                />
-            </div>
-
-            {/* Main Content */}
             <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-6">
-
                 <div className="flex gap-6">
-                    {/* Filter Sidebar - Desktop */}
                     <div className="hidden lg:block w-64 flex-shrink-0">
                         <FilterSidebar
                             filters={filters}
@@ -677,20 +512,14 @@ export default function CategoryPage() {
                             categories={subcategoryId ? childCategories : subCategories}
                         />
                     </div>
-
-                    {/* Products Section */}
                     <div className="flex-1">
-                        {/* Header with Filters and Sort - Desktop */}
                         <div className="hidden md:flex items-start justify-between mb-6 gap-4 border-b border-gray-200 pb-4">
-                            {/* Left: Filters */}
                             <div className="flex-1">
                                 <CategoryTopFilters
                                     availableSizes={availableSizes}
                                     selectedSizes={filters.sizes}
                                     onSizeChange={(size) => {
-                                        const newSizes = filters.sizes.includes(size)
-                                            ? filters.sizes.filter(s => s !== size)
-                                            : [...filters.sizes, size];
+                                        const newSizes = filters.sizes.includes(size) ? filters.sizes.filter(s => s !== size) : [...filters.sizes, size];
                                         handleFilterChange('sizes', newSizes);
                                     }}
                                     selectedAttributeValues={filters.attributeValues}
@@ -699,66 +528,49 @@ export default function CategoryPage() {
                                     hiddenAttributeNames={[categoryName, subcategoryName, childName].filter(Boolean)}
                                 />
                             </div>
-
-                            {/* Right: Sort Dropdown */}
                             <div className="flex-shrink-0">
                                 <div className="relative">
-                                    <select
-                                        value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value)}
-                                        className="px-4 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] appearance-none font-medium pr-8"
-                                    >
+                                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-royal-red)] appearance-none font-medium pr-8">
                                         <option value="recommended">Recommended</option>
                                         <option value="newest">Newest First</option>
                                         <option value="price-low">Price: Low to High</option>
                                         <option value="price-high">Price: High to Low</option>
                                     </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Products Grid */}
                         {loading ? (
                             <div className="flex justify-center items-center py-20">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand-royal-red)]"></div>
                             </div>
-                        ) : filteredAndSortedProducts.length > 0 ? (
+                        ) : paginatedProducts.length > 0 ? (
                             <div className="relative z-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
-                                {filteredAndSortedProducts.map((product) => (
-                                    <ProductCard key={product.id} product={product} categoryId={categoryId} />
-                                ))}
+                                {paginatedProducts.map((product) => <ProductCard key={product.id} product={product} categoryId={categoryId} />)}
                             </div>
                         ) : (
                             <div className="text-center py-20">
                                 <p className="text-gray-500 text-lg">No products found matching your filters.</p>
-                                <button
-                                    onClick={handleClearAll}
-                                    className="mt-4 text-[var(--brand-royal-red)] font-semibold hover:underline"
-                                >
-                                    Clear all filters
-                                </button>
+                                <button onClick={handleClearAll} className="mt-4 text-[var(--brand-royal-red)] font-semibold hover:underline">Clear all filters</button>
                             </div>
                         )}
-
-                        {/* Pagination */}
                         {totalPages > 1 && (
                             <div className="flex justify-center items-center gap-4 mt-12">
                                 <button
-                                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                                    disabled={page === 1}
+                                    onClick={() => { setLocalPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                    disabled={localPage === 1}
                                     className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Previous
                                 </button>
-                                <span className="text-gray-700">
-                                    Page {page} of {totalPages}
-                                </span>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-gray-700 font-medium">Page {localPage} of {totalPages}</span>
+                                    {isBackgroundLoading && (
+                                        <span className="text-[10px] text-[var(--brand-royal-red)] animate-pulse uppercase font-bold tracking-tight">Loading more products...</span>
+                                    )}
+                                </div>
                                 <button
-                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={page === totalPages}
+                                    onClick={() => { setLocalPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                    disabled={localPage === totalPages}
                                     className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Next
@@ -768,20 +580,13 @@ export default function CategoryPage() {
                     </div>
                 </div>
             </div>
-
-            {/* Mobile Filter Modal */}
             {mobileFiltersOpen && (
                 <div className="fixed inset-0 z-[70] lg:hidden">
                     <div className="absolute inset-0 bg-black/50" onClick={() => setMobileFiltersOpen(false)}></div>
                     <div className="absolute right-0 top-0 bottom-0 w-80 bg-white overflow-y-auto pb-32">
                         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                             <h2 className="text-lg font-bold">Filters</h2>
-                            <button onClick={() => setMobileFiltersOpen(false)}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                </svg>
-                            </button>
+                            <button onClick={() => setMobileFiltersOpen(false)}>X</button>
                         </div>
                         <FilterSidebar
                             filters={filters}
@@ -799,7 +604,5 @@ export default function CategoryPage() {
                 </div>
             )}
         </div>
-
     );
 }
-
