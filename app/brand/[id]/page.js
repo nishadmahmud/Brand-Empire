@@ -38,9 +38,42 @@ export default function BrandPage() {
     });
 
     const [brandSubcategories, setBrandSubcategories] = useState([]);
-    const [selectedSubcategoryId, setSelectedSubcategoryId] = useState(null);
-    const [selectedChildCategoryId, setSelectedChildCategoryId] = useState(null);
     const [productCategoryIds, setProductCategoryIds] = useState(new Set());
+    const areBrandCategoriesLockedRef = useRef(false);
+    const childCategoryIdSet = useMemo(() => {
+        const ids = new Set();
+        (brandSubcategories || []).forEach((category) => {
+            (category.sub_category || []).forEach((sub) => {
+                (sub.child_categories || []).forEach((child) => ids.add(String(child.id)));
+            });
+        });
+        return ids;
+    }, [brandSubcategories]);
+
+    const buildValidCategoryIdSet = (items) => {
+        return new Set(
+            items
+                .map((p) => p.categoryId)
+                .filter((id) => id !== null && id !== undefined && id !== "" && !Number.isNaN(Number(id)))
+                .map((id) => String(id))
+        );
+    };
+
+    const setBrandCategoryIdsOnce = (items) => {
+        if (areBrandCategoriesLockedRef.current) return;
+        const categoryIds = buildValidCategoryIdSet(items);
+        if (categoryIds.size > 0) {
+            setProductCategoryIds(categoryIds);
+            areBrandCategoriesLockedRef.current = true;
+        }
+    };
+
+    useEffect(() => {
+        // Brand changed: unlock and rebuild categories once for the new brand.
+        areBrandCategoriesLockedRef.current = false;
+        setProductCategoryIds(new Set());
+        setBrandSubcategories([]);
+    }, [brandId]);
 
     const availableSizes = useMemo(() => {
         const sizes = products
@@ -174,7 +207,9 @@ export default function BrandPage() {
             reviews: product.review_summary?.total_reviews || 0,
             rawPrice: finalPrice,
             rawDiscount,
-            categoryId: product.category_id
+            categoryId: product.category_id ?? product.categoryId ?? null,
+            subcategoryId: product.sub_category_id ?? product.subcategory_id ?? product.sub_category?.id ?? product.subcategory?.id ?? null,
+            childCategoryId: product.child_category_id ?? product.childcategory_id ?? product.child_category?.id ?? product.childCategory?.id ?? null
         };
     };
 
@@ -190,6 +225,65 @@ export default function BrandPage() {
                         campaignMap = buildCampaignDiscountMap(campaignsRes.campaigns.data.filter(c => c.status === "active"));
                     }
                 } catch (e) { console.error(e); }
+
+                const selectedCategoryIds = filters.categories.map(String);
+                const isSameBrandProduct = (p) => {
+                    const apiBrandId = p.brand_id ?? p.brands?.id ?? p.brand?.id ?? null;
+                    if (apiBrandId != null && String(apiBrandId) === String(brandId)) return true;
+                    const apiBrandName = String(p.brand_name || p.brands?.name || p.brand?.name || "").toLowerCase();
+                    const expectedBrandName = String(brandName || "").toLowerCase();
+                    return expectedBrandName ? apiBrandName === expectedBrandName : false;
+                };
+
+                // Category selection should fetch by selected sub/child category, then keep only this brand.
+                if (selectedCategoryIds.length > 0) {
+                    const uniqueById = (items) =>
+                        items.filter((item, index, self) => index === self.findIndex((t) => t.id === item.id));
+
+                    // Show first page quickly for selected sub/child categories.
+                    const selectedTargets = [];
+                    let firstPageMerged = [];
+                    for (const selectedId of selectedCategoryIds) {
+                        const fetchFn = childCategoryIdSet.has(String(selectedId)) ? getProductsByChildCategory : getProductsBySubcategory;
+                        const firstRes = await fetchFn(selectedId, 1);
+                        if (!firstRes?.success || !firstRes?.data) continue;
+
+                        const firstItems = Array.isArray(firstRes.data) ? firstRes.data : (firstRes.data.data || []);
+                        const firstPageBrandItems = firstItems.filter(isSameBrandProduct).map((p) => transformProduct(p, campaignMap, brandName));
+                        firstPageMerged = [...firstPageMerged, ...firstPageBrandItems];
+
+                        selectedTargets.push({
+                            id: selectedId,
+                            fetchFn,
+                            lastPage: firstRes.pagination?.last_page || 1,
+                        });
+                    }
+
+                    const firstPageUnique = uniqueById(firstPageMerged);
+                    setProducts(firstPageUnique);
+                    setBrandCategoryIdsOnce(firstPageUnique);
+                    setApiTotalPages(1);
+                    setLoading(false);
+
+                    // Then fetch remaining pages in background and append.
+                    setIsBackgroundLoading(true);
+                    for (const target of selectedTargets) {
+                        for (let p = 2; p <= target.lastPage; p++) {
+                            const pageRes = await target.fetchFn(target.id, p);
+                            if (!pageRes?.success || !pageRes?.data) continue;
+
+                            const pageItems = Array.isArray(pageRes.data) ? pageRes.data : (pageRes.data.data || []);
+                            const pageBrandItems = pageItems
+                                .filter(isSameBrandProduct)
+                                .map((item) => transformProduct(item, campaignMap, brandName));
+                            if (pageBrandItems.length === 0) continue;
+
+                            setProducts((prev) => uniqueById([...prev, ...pageBrandItems]));
+                        }
+                    }
+                    setIsBackgroundLoading(false);
+                    return;
+                }
 
                 // 1. Fetch First Page
                 let response;
@@ -214,39 +308,54 @@ export default function BrandPage() {
                     setProducts(initialTransformed);
                     
                     // Update Category IDs for Sidebar
-                    const catIds = new Set(initialTransformed.map(p => String(p.categoryId)).filter(id => id && id !== "undefined"));
-                    setProductCategoryIds(catIds);
+                    setBrandCategoryIdsOnce(initialTransformed);
 
                     setLoading(false);
 
                     // 2. Background Fetch rest
-                    if (response.pagination?.last_page > 1) {
-                        setIsBackgroundLoading(true);
-                        const lastPage = response.pagination.last_page;
+                    setIsBackgroundLoading(true);
+                    if (filters.attributeValues.length > 0) {
+                        let mergedTransformed = [...initialTransformed];
+                        const lastPage = response.pagination?.last_page || 1;
                         for (let p = 2; p <= lastPage; p++) {
-                            let res;
-                            if (filters.attributeValues.length > 0) {
-                                res = await filterProductsByAttributes(filters.attributeValues, p, { brandId });
-                            } else {
-                                res = await getBrandwiseProducts(brandId, p);
-                            }
+                            const res = await filterProductsByAttributes(filters.attributeValues, p, { brandId });
                             if (res?.success && res?.data) {
                                 const newItems = Array.isArray(res.data) ? res.data : (res.data.data || []);
                                 const transformed = newItems.map(item => transformProduct(item, campaignMap, brandName));
-                                setProducts(prev => {
-                                    const combined = [...prev, ...transformed];
-                                    const unique = combined.filter((item, index, self) =>
-                                        index === self.findIndex(t => t.id === item.id)
-                                    );
-                                    // Also update cat IDs
-                                    const newCatIds = new Set(unique.map(p => String(p.categoryId)).filter(id => id && id !== "undefined"));
-                                    setProductCategoryIds(newCatIds);
-                                    return unique;
-                                });
+                                mergedTransformed = [...mergedTransformed, ...transformed];
                             }
                         }
-                        setIsBackgroundLoading(false);
+                        const unique = mergedTransformed.filter((item, index, self) =>
+                            index === self.findIndex((t) => t.id === item.id)
+                        );
+                        setProducts(unique);
+                        setBrandCategoryIdsOnce(unique);
+                    } else {
+                        // Brand endpoint can have multiple pages even when pagination metadata is absent.
+                        // Keep fetching until a page returns fewer than 20 items.
+                        let mergedTransformed = [...initialTransformed];
+                        let p = 2;
+                        const pageLimit = 20;
+                        const maxSafetyPages = 200;
+                        while (p <= maxSafetyPages) {
+                            const res = await getBrandwiseProducts(brandId, p, pageLimit);
+                            if (!res?.success || !res?.data) break;
+                            const newItems = Array.isArray(res.data) ? res.data : (res.data.data || []);
+                            if (newItems.length === 0) break;
+
+                            const transformed = newItems.map(item => transformProduct(item, campaignMap, brandName));
+                            mergedTransformed = [...mergedTransformed, ...transformed];
+
+                            if (newItems.length < pageLimit) break;
+                            p += 1;
+                        }
+                        const unique = mergedTransformed.filter((item, index, self) =>
+                            index === self.findIndex((t) => t.id === item.id)
+                        );
+                        setProducts(unique);
+                        setBrandCategoryIdsOnce(unique);
                     }
+                    setIsBackgroundLoading(false);
                 } else {
                     setProducts([]);
                     setLoading(false);
@@ -257,64 +366,26 @@ export default function BrandPage() {
             }
         };
 
-        if (brandId && !selectedSubcategoryId && !selectedChildCategoryId) {
+        if (brandId) {
             setLocalPage(1);
             fetchAllBrandProducts();
         }
-    }, [brandId, filters.attributeValues, selectedSubcategoryId, selectedChildCategoryId]);
-
-    // Handle Subcategory / Child Category Selection (Special Brand Filtering)
-    const handleCategoryFilter = async (id, type) => {
-        if (type === 'sub') {
-            setSelectedSubcategoryId(id);
-            setSelectedChildCategoryId(null);
-        } else {
-            setSelectedChildCategoryId(id);
-        }
-        setLocalPage(1);
-        setLoading(true);
-
-        try {
-            const fetchFn = type === 'sub' ? getProductsBySubcategory : getProductsByChildCategory;
-            const res = await fetchFn(id, 1);
-            if (res.success && res.data) {
-                const dataBatch = Array.isArray(res.data) ? res.data : (res.data.data || []);
-                const brandLower = (brandName || "").toLowerCase();
-                const filtered = dataBatch.filter(p => (p.brand_name || p.brands?.name || "").toLowerCase() === brandLower);
-                
-                const initialTransformed = filtered.map(p => transformProduct(p, {}, brandName));
-                setProducts(initialTransformed);
-                setLoading(false);
-
-                // Background fetch remaining pages for this sub/child category if they exist
-                if (res.pagination?.last_page > 1) {
-                    setIsBackgroundLoading(true);
-                    for (let p = 2; p <= res.pagination.last_page; p++) {
-                        const batchRes = await fetchFn(id, p);
-                        if (batchRes.success && batchRes.data) {
-                            const batchItems = Array.isArray(batchRes.data) ? batchRes.data : (batchRes.data.data || []);
-                            const filteredBatch = batchItems.filter(p => (p.brand_name || p.brands?.name || "").toLowerCase() === brandLower);
-                            const transformedBatch = filteredBatch.map(p => transformProduct(p, {}, brandName));
-                            
-                            setProducts(prev => {
-                                const combined = [...prev, ...transformedBatch];
-                                return combined.filter((item, index, self) =>
-                                    index === self.findIndex(t => t.id === item.id)
-                                );
-                            });
-                        }
-                    }
-                    setIsBackgroundLoading(false);
-                }
-            }
-        } catch (e) {
-            console.error(e);
-            setLoading(false);
-        }
-    };
+    }, [brandId, brandName, filters.attributeValues, filters.categories, childCategoryIdSet]);
 
     const filteredAndSortedProducts = useMemo(() => {
         let result = [...products];
+        const hasAnyCategoryIds = result.some((p) =>
+            p.categoryId != null || p.subcategoryId != null || p.childCategoryId != null
+        );
+
+        if (filters.categories.length > 0 && hasAnyCategoryIds) {
+            const selectedCategoryIds = filters.categories.map(String);
+            result = result.filter((p) =>
+                selectedCategoryIds.includes(String(p.categoryId)) ||
+                selectedCategoryIds.includes(String(p.subcategoryId)) ||
+                selectedCategoryIds.includes(String(p.childCategoryId))
+            );
+        }
         result = result.filter(p => p.rawPrice >= filters.priceRange[0] && p.rawPrice <= filters.priceRange[1]);
         if (filters.colors.length > 0) result = result.filter(p => filters.colors.includes(p.color));
         if (filters.sizes.length > 0) result = result.filter(p => p.sizes.some(size => filters.sizes.includes(size)));
@@ -342,8 +413,6 @@ export default function BrandPage() {
 
     const handleClearAll = () => {
         setFilters({ categories: [], brands: [], priceRange: [0, 1000000], colors: [], sizes: [], discount: 0, attributeValues: [] });
-        setSelectedSubcategoryId(null);
-        setSelectedChildCategoryId(null);
         setLocalPage(1);
     };
 
@@ -361,7 +430,7 @@ export default function BrandPage() {
                             <Link href="/" className="hover:text-[var(--brand-royal-red)]">Home</Link>
                             <span>/</span>
                             <span className="text-gray-900 font-medium">{brandName || "Brand"}</span>
-                            <span className="lg:hidden text-gray-400 ml-1">({loading ? "..." : filteredAndSortedProducts.length})</span>
+                            <span className="text-gray-400 ml-1">- {loading ? "..." : filteredAndSortedProducts.length} items</span>
                         </div>
                         <div className="flex items-center gap-2 lg:hidden">
                             <button onClick={() => setMobileFiltersOpen(true)} className="px-3 py-1.5 border border-gray-200 rounded-full bg-white text-xs font-medium">Filter</button>
@@ -381,10 +450,6 @@ export default function BrandPage() {
                             products={products}
                             hideBrandFilter={true}
                             brandSubcategories={brandSubcategories}
-                            selectedSubcategoryId={selectedSubcategoryId}
-                            onSubcategoryChange={(id) => handleCategoryFilter(id, 'sub')}
-                            selectedChildCategoryId={selectedChildCategoryId}
-                            onChildCategoryChange={(id, subId) => handleCategoryFilter(id, 'child')}
                         />
                     </div>
                     <div className="flex-1">
@@ -466,10 +531,6 @@ export default function BrandPage() {
                             products={products}
                             hideBrandFilter={true}
                             brandSubcategories={brandSubcategories}
-                            selectedSubcategoryId={selectedSubcategoryId}
-                            onSubcategoryChange={(id) => handleCategoryFilter(id, 'sub')}
-                            selectedChildCategoryId={selectedChildCategoryId}
-                            onChildCategoryChange={(id) => handleCategoryFilter(id, 'child')}
                         />
                     </div>
                 </div>

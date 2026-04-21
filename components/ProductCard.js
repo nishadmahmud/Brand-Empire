@@ -21,6 +21,38 @@ const ProductCard = ({ product, tag, categoryId, onClick }) => {
         addToCart(product, 1);
     };
 
+    const handleCardClick = (e) => {
+        try {
+            if (product?.id) {
+                const snapshot = {
+                    id: product.id,
+                    name: product.name,
+                    brand: product.brand,
+                    price: product.price,
+                    originalPrice: product.originalPrice,
+                    discount: product.discount,
+                    images: product.images || [],
+                    sizes: product.sizes || [],
+                    unavailableSizes: product.unavailableSizes || [],
+                    color: product.color || null,
+                    colorCode: product.colorCode || null,
+                    rating: product.rating || 0,
+                    reviews: product.reviews || 0,
+                    reviewCount: product.reviewCount || product.reviews || 0,
+                    product_variants: product.product_variants || [],
+                    specifications: product.specifications || [],
+                    category_id: product.categoryId || product.category_id || null,
+                    category_name: product.category_name || null,
+                };
+                sessionStorage.setItem(`product_snapshot_${product.id}`, JSON.stringify(snapshot));
+            }
+        } catch (error) {
+            console.error("Failed to cache product snapshot:", error);
+        }
+
+        if (onClick) onClick(e);
+    };
+
 
     useEffect(() => {
         let interval;
@@ -58,7 +90,7 @@ const ProductCard = ({ product, tag, categoryId, onClick }) => {
     }
 
     return (
-        <Link href={productUrl} onClick={onClick}>
+        <Link href={productUrl} onClick={handleCardClick}>
             <div
                 className="group relative cursor-pointer w-full" // Removed min-w for better mobile grid
                 onMouseEnter={() => setIsHovered(true)}

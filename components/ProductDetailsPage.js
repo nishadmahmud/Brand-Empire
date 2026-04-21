@@ -60,6 +60,88 @@ const ProductDetailsPage = ({ productId }) => {
     const { toggleWishlist, isInWishlist } = useWishlist();
     const { showToast } = useToast();
 
+    const toNumber = (value) => {
+        if (typeof value === "number") return value;
+        if (typeof value === "string") {
+            const parsed = parseFloat(value.replace(/[^0-9.]/g, ""));
+            return Number.isNaN(parsed) ? 0 : parsed;
+        }
+        return 0;
+    };
+
+    const buildProductFromSnapshot = (snapshot) => {
+        const variantMap = {};
+        const unavailableSizes = [];
+        (snapshot.product_variants || []).forEach((v) => {
+            variantMap[v.name] = { ...v, children: v.child_variants || [] };
+            if ((v.quantity || 0) === 0) unavailableSizes.push(v.name);
+        });
+
+        const specsArray = Array.isArray(snapshot.specifications) ? snapshot.specifications : [];
+        const specsObj = specsArray.reduce((acc, spec) => {
+            if (spec?.name) acc[spec.name] = spec.description || "";
+            return acc;
+        }, {});
+
+        const currentPrice = toNumber(snapshot.price);
+        const currentMrp = snapshot.originalPrice ? toNumber(snapshot.originalPrice) : currentPrice;
+        const fitSpec = specsArray.find((s) => String(s?.name || "").toLowerCase() === "fit")?.description || null;
+        const washSpec = specsArray.find((s) => String(s?.name || "").toLowerCase().includes("wash"))?.description || null;
+        const fabricSpec = specsArray.find((s) => String(s?.name || "").toLowerCase().includes("fabric"))?.description || null;
+
+        return {
+            ...dummyProduct,
+            id: snapshot.id,
+            code: String(snapshot.id),
+            name: snapshot.name || dummyProduct.name,
+            category: snapshot.category_name || "",
+            price: currentPrice,
+            mrp: currentMrp,
+            discount: snapshot.discount || "",
+            rating: snapshot.rating || 0,
+            reviewCount: snapshot.reviewCount || snapshot.reviews || 0,
+            brand: snapshot.brand || "Unknown Brand",
+            images: (snapshot.images || []).filter((img) => typeof img === "string" && img.trim() !== ""),
+            sizes: snapshot.sizes || [],
+            variants: variantMap,
+            unavailableSizes: snapshot.unavailableSizes?.length ? snapshot.unavailableSizes : unavailableSizes,
+            currentStock: 0,
+            stockStatus: "In Stock",
+            isOutOfStock: false,
+            color: snapshot.color || null,
+            colorCode: snapshot.colorCode || null,
+            details: { fit: fitSpec },
+            materialCare: { material: fabricSpec, wash: washSpec },
+            specifications: specsObj,
+            manufacturerDetails: null,
+            packerDetails: null,
+            importerDetails: null,
+            sellerDetails: null,
+            return_delivery_days: null,
+            offers: [],
+            reviews: [],
+            ratings: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+            size_chart_category: null
+        };
+    };
+
+    // Hydrate quickly from listing-card snapshot, then fetch full details in background.
+    useEffect(() => {
+        if (!productId) return;
+        try {
+            const raw = sessionStorage.getItem(`product_snapshot_${productId}`);
+            if (!raw) return;
+            const snapshot = JSON.parse(raw);
+            const quickProduct = buildProductFromSnapshot(snapshot);
+            if (quickProduct?.id) {
+                setProduct(quickProduct);
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error("Failed to hydrate product from snapshot:", error);
+        }
+    }, [productId]);
+
     // Fetch category names for breadcrumb
     useEffect(() => {
         const fetchCategoryNames = async () => {

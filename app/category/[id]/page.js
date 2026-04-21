@@ -233,8 +233,9 @@ export default function CategoryPage() {
             reviews: product.review_summary?.total_reviews || 0,
             rawPrice: finalPrice,
             rawDiscount,
-            subcategoryId: product.sub_category_id,
-            childCategoryId: product.child_category_id,
+            categoryId: product.category_id ?? product.categoryId ?? null,
+            subcategoryId: product.sub_category_id ?? product.subcategory_id ?? product.sub_category?.id ?? product.subcategory?.id ?? null,
+            childCategoryId: product.child_category_id ?? product.childcategory_id ?? product.child_category?.id ?? product.childCategory?.id ?? null,
         };
     };
 
@@ -243,34 +244,81 @@ export default function CategoryPage() {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                let firstPageProducts = [];
+                const campaignMap = await getActiveCampaignsMap();
+                const selectedCategoryIds = filters.categories || [];
 
-                // 1. Fetch First Page
+                // Multi-select category filter should drive API fetching.
+                // If URL has subcategory => selected ids are child categories.
+                const fetchAllPagesForTarget = async (targetId, useChildFetch = false) => {
+                    const firstRes = useChildFetch
+                        ? await getProductsByChildCategory(targetId, 1)
+                        : await getProductsBySubcategory(targetId, 1);
+                    if (!firstRes?.success || !firstRes?.data) return [];
+
+                    const firstItems = Array.isArray(firstRes.data) ? firstRes.data : (firstRes.data.data || []);
+                    let merged = firstItems.map((p) => transformProduct(p, campaignMap));
+
+                    const lastPage = firstRes.pagination?.last_page || 1;
+                    for (let p = 2; p <= lastPage; p++) {
+                        const pageRes = useChildFetch
+                            ? await getProductsByChildCategory(targetId, p)
+                            : await getProductsBySubcategory(targetId, p);
+                        if (pageRes?.success && pageRes?.data) {
+                            const pageItems = Array.isArray(pageRes.data) ? pageRes.data : (pageRes.data.data || []);
+                            merged = [...merged, ...pageItems.map((item) => transformProduct(item, campaignMap))];
+                        }
+                    }
+                    return merged;
+                };
+
+                if (selectedCategoryIds.length > 0) {
+                    const useChildFetch = Boolean(subcategoryId);
+                    const collected = [];
+                    for (const id of selectedCategoryIds) {
+                        const items = await fetchAllPagesForTarget(id, useChildFetch);
+                        collected.push(...items);
+                    }
+                    const unique = collected.filter((item, index, self) =>
+                        index === self.findIndex((t) => t.id === item.id)
+                    );
+                    setApiTotalPages(1);
+                    setProducts(unique);
+                    setIsBackgroundLoading(false);
+                    setLoading(false);
+                    return;
+                }
+
+                // Default route-driven fetching (no sidebar category selection)
                 let response;
                 if (filters.attributeValues.length > 0) {
                     response = await filterProductsByAttributes(filters.attributeValues, 1, { categoryId });
+                } else if (childId) {
+                    response = await getProductsByChildCategory(childId, 1);
                 } else if (subcategoryId) {
                     response = await getProductsBySubcategory(subcategoryId, 1);
                 } else {
                     response = await getCategoryWiseProducts(categoryId, 1);
                 }
 
-                if (response?.success && response?.data) {
-                    const dataBatch = Array.isArray(response.data) ? response.data : (response.data.data || []);
-                    if (response.pagination) {
-                        setApiTotalPages(response.pagination.last_page);
-                    }
+                if (!response?.success || !response?.data) {
+                    setProducts([]);
+                    setLoading(false);
+                    return;
+                }
 
-                    const campaignMap = await getActiveCampaignsMap();
-                    const initialTransformed = dataBatch.map(p => transformProduct(p, campaignMap));
-                    setProducts(initialTransformed);
-                    setLoading(false); // Show first page immediately
+                const dataBatch = Array.isArray(response.data) ? response.data : (response.data.data || []);
+                if (response.pagination) {
+                    setApiTotalPages(response.pagination.last_page);
+                }
 
-                    // 2. Background Fetch remaining pages if any
-                    if (response.pagination?.last_page > 1) {
-                        setIsBackgroundLoading(true);
-                        fetchAllPages(response.pagination.last_page, campaignMap);
-                    }
+                const initialTransformed = dataBatch.map((p) => transformProduct(p, campaignMap));
+                setProducts(initialTransformed);
+                setLoading(false); // Show first page immediately
+
+                // 2. Background Fetch remaining pages if any
+                if (response.pagination?.last_page > 1) {
+                    setIsBackgroundLoading(true);
+                    fetchAllPages(response.pagination.last_page, campaignMap, initialTransformed);
                 }
             } catch (error) {
                 console.error("Error fetching products:", error);
@@ -291,12 +339,15 @@ export default function CategoryPage() {
             return {};
         };
 
-        const fetchAllPages = async (lastPage, campaignMap) => {
+        const fetchAllPages = async (lastPage, campaignMap, baseProducts = []) => {
+            let merged = [...baseProducts];
             for (let p = 2; p <= lastPage; p++) {
                 try {
                     let res;
                     if (filters.attributeValues.length > 0) {
                         res = await filterProductsByAttributes(filters.attributeValues, p, { categoryId });
+                    } else if (childId) {
+                        res = await getProductsByChildCategory(childId, p);
                     } else if (subcategoryId) {
                         res = await getProductsBySubcategory(subcategoryId, p);
                     } else {
@@ -306,18 +357,16 @@ export default function CategoryPage() {
                     if (res?.success && res?.data) {
                         const newItems = Array.isArray(res.data) ? res.data : (res.data.data || []);
                         const transformed = newItems.map(item => transformProduct(item, campaignMap));
-                        
-                        setProducts(prev => {
-                            const combined = [...prev, ...transformed];
-                            return combined.filter((item, index, self) =>
-                                index === self.findIndex(t => t.id === item.id)
-                            );
-                        });
+                        merged = [...merged, ...transformed];
                     }
                 } catch (err) {
                     console.error(`Error fetching page ${p}:`, err);
                 }
             }
+            const unique = merged.filter((item, index, self) =>
+                index === self.findIndex((t) => t.id === item.id)
+            );
+            setProducts(unique);
             setIsBackgroundLoading(false);
         };
 
@@ -325,10 +374,23 @@ export default function CategoryPage() {
             setLocalPage(1);
             fetchProducts();
         }
-    }, [categoryId, subcategoryId, filters.attributeValues]);
+    }, [categoryId, subcategoryId, childId, filters.attributeValues, filters.categories]);
 
     const filteredAndSortedProducts = useMemo(() => {
         let result = [...products];
+
+        const hasAnyCategoryIds = result.some((p) =>
+            p.categoryId != null || p.subcategoryId != null || p.childCategoryId != null
+        );
+
+        if (filters.categories.length > 0 && hasAnyCategoryIds) {
+            const selectedCategoryIds = filters.categories.map(String);
+            result = result.filter((p) =>
+                selectedCategoryIds.includes(String(p.categoryId)) ||
+                selectedCategoryIds.includes(String(p.subcategoryId)) ||
+                selectedCategoryIds.includes(String(p.childCategoryId))
+            );
+        }
 
         if (filters.brands.length > 0) {
             result = result.filter(p => filters.brands.includes(p.brand));
@@ -480,8 +542,8 @@ export default function CategoryPage() {
                                     )}
                                 </>
                             )}
-                            <span className="lg:hidden text-gray-400 ml-1">
-                                ({loading ? "..." : filteredAndSortedProducts.length})
+                            <span className="text-gray-400 ml-1">
+                                - {loading ? "..." : filteredAndSortedProducts.length} items
                             </span>
                         </div>
                         <div className="flex items-center gap-2 lg:hidden">
