@@ -132,7 +132,6 @@ const SizeChartModal = ({ isOpen, onClose, product }) => {
                                     alt={product.name}
                                     fill
                                     className="object-cover"
-                                    unoptimized
                                 />
                             </div>
                         )}

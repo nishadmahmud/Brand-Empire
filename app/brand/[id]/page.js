@@ -3,10 +3,12 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
 import { getBrandwiseProducts, getTopBrands, filterProductsByAttributes, getCategoriesFromServer, getProductsBySubcategory, getProductsByChildCategory, prefetchCategoryTreeProducts, getCampaigns } from "@/lib/api";
+import { readBrandPagesCache, writeBrandPage, trimBrandPages, mergeBrandCachedPages } from "@/utils/brandPrefetchCache";
 
 export default function BrandPage() {
     const params = useParams();
@@ -217,7 +219,21 @@ export default function BrandPage() {
     useEffect(() => {
         const fetchAllBrandProducts = async () => {
             try {
-                setLoading(true);
+                const scope = JSON.stringify({
+                    categories: [...(filters.categories || [])].map(String).sort(),
+                    attributes: [...(filters.attributeValues || [])].map(String).sort(),
+                });
+                const cached = readBrandPagesCache(brandId, scope);
+                if (cached?.pages && Object.keys(cached.pages).length > 0) {
+                    setProducts(mergeBrandCachedPages(cached.pages));
+                    setApiTotalPages(cached.totalPagesKnown || 1);
+                    if (!bannerImage && cached.bannerImage) setBannerImage(cached.bannerImage);
+                    if (!brandName && cached.brandName) setBrandName(cached.brandName);
+                    setLoading(false);
+                } else {
+                    setLoading(true);
+                }
+
                 let campaignMap = {};
                 try {
                     const campaignsRes = await getCampaigns();
@@ -263,10 +279,12 @@ export default function BrandPage() {
                     setProducts(firstPageUnique);
                     setBrandCategoryIdsOnce(firstPageUnique);
                     setApiTotalPages(1);
+                    writeBrandPage(brandId, scope, 1, firstPageUnique, { totalPagesKnown: 1, bannerImage, brandName });
                     setLoading(false);
 
                     // Then fetch remaining pages in background and append.
                     setIsBackgroundLoading(true);
+                    let incrementalPage = 1;
                     for (const target of selectedTargets) {
                         for (let p = 2; p <= target.lastPage; p++) {
                             const pageRes = await target.fetchFn(target.id, p);
@@ -278,7 +296,10 @@ export default function BrandPage() {
                                 .map((item) => transformProduct(item, campaignMap, brandName));
                             if (pageBrandItems.length === 0) continue;
 
+                            incrementalPage += 1;
+                            const nextList = uniqueById([...firstPageUnique, ...pageBrandItems]);
                             setProducts((prev) => uniqueById([...prev, ...pageBrandItems]));
+                            writeBrandPage(brandId, scope, incrementalPage, nextList, { totalPagesKnown: incrementalPage, bannerImage, brandName });
                         }
                     }
                     setIsBackgroundLoading(false);
@@ -298,14 +319,28 @@ export default function BrandPage() {
                     if (response.pagination) setApiTotalPages(response.pagination.last_page);
 
                     // Setup Banner/Brand Name from first batch
+                    let resolvedBannerImage = bannerImage;
+                    let resolvedBrandName = brandName;
                     if (dataBatch.length > 0 && dataBatch[0].brands) {
                         const b = dataBatch[0].brands;
-                        if (b.banner_image) setBannerImage(b.banner_image);
-                        if (!brandName && b.name) setBrandName(b.name);
+                        if (b.banner_image) {
+                            resolvedBannerImage = b.banner_image;
+                            setBannerImage(b.banner_image);
+                        }
+                        if (!brandName && b.name) {
+                            resolvedBrandName = b.name;
+                            setBrandName(b.name);
+                        }
                     }
 
                     const initialTransformed = dataBatch.map(p => transformProduct(p, campaignMap, brandName));
                     setProducts(initialTransformed);
+                    const totalPageFirst = response.pagination?.last_page || 1;
+                    writeBrandPage(brandId, scope, 1, initialTransformed, {
+                        totalPagesKnown: totalPageFirst,
+                        bannerImage: resolvedBannerImage,
+                        brandName: resolvedBrandName,
+                    });
                     
                     // Update Category IDs for Sidebar
                     setBrandCategoryIdsOnce(initialTransformed);
@@ -329,6 +364,12 @@ export default function BrandPage() {
                             index === self.findIndex((t) => t.id === item.id)
                         );
                         setProducts(unique);
+                        if (totalPageFirst > 1) trimBrandPages(brandId, scope, lastPage);
+                        writeBrandPage(brandId, scope, lastPage, unique, {
+                            totalPagesKnown: lastPage,
+                            bannerImage: resolvedBannerImage,
+                            brandName: resolvedBrandName,
+                        });
                         setBrandCategoryIdsOnce(unique);
                     } else {
                         // Brand endpoint can have multiple pages even when pagination metadata is absent.
@@ -353,6 +394,12 @@ export default function BrandPage() {
                             index === self.findIndex((t) => t.id === item.id)
                         );
                         setProducts(unique);
+                        const lastKnown = Math.max(1, Math.ceil(unique.length / 20));
+                        writeBrandPage(brandId, scope, lastKnown, unique, {
+                            totalPagesKnown: lastKnown,
+                            bannerImage: resolvedBannerImage,
+                            brandName: resolvedBrandName,
+                        });
                         setBrandCategoryIdsOnce(unique);
                     }
                     setIsBackgroundLoading(false);
@@ -420,7 +467,7 @@ export default function BrandPage() {
         <div className="min-h-screen bg-gray-50">
             {bannerImage && (
                 <div className="w-full h-[200px] md:h-[300px] relative">
-                    <img src={bannerImage} alt={brandName} className="w-full h-full object-cover" />
+                    <Image src={bannerImage} alt={brandName} fill className="object-cover" />
                 </div>
             )}
             <div className="bg-white border-b border-gray-200">

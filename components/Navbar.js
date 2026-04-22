@@ -6,7 +6,9 @@ import Link from "next/link";
 import { megaMenuData } from "@/data/megaMenuData";
 import { useCart } from "@/context/CartContext";
 import { getCategoriesFromServer, searchProducts, getProducts, getCategoryWiseProducts, getCampaigns } from "@/lib/api";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { writeCategoryMetaList } from "@/utils/categoryMetaCache";
+import { prefetchCategoryFirstPage } from "@/utils/categoryPrefetchCache";
 
 import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -32,6 +34,17 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
     const [expandedCategory, setExpandedCategory] = useState(null);
     const [expandedSubcategory, setExpandedSubcategory] = useState(null);
     const router = useRouter();
+    const pathname = usePathname();
+    const prefetchedCategoryIdsRef = useRef(new Set());
+
+    const prefetchCategoryFromUi = (categoryId) => {
+        const key = String(categoryId);
+        if (!key || prefetchedCategoryIdsRef.current.has(key)) return;
+        prefetchedCategoryIdsRef.current.add(key);
+        prefetchCategoryFirstPage(categoryId).catch(() => {
+            // Ignore prefetch errors to keep interaction smooth.
+        });
+    };
 
     // Handle search submit (Enter key)
     const handleSearchSubmit = (e) => {
@@ -51,6 +64,7 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                 const response = await getCategoriesFromServer();
                 if (response.success && response.data) {
                     setCategories(response.data);
+                    writeCategoryMetaList(response.data);
                 }
             } catch (error) {
                 console.error("Error fetching categories:", error);
@@ -74,6 +88,19 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
         fetchCategories();
         fetchCampaigns();
     }, []);
+
+    // Home-only staggered prefetch for top visible categories.
+    useEffect(() => {
+        if (pathname !== "/" || categories.length === 0) return;
+        const timers = [];
+        categories.slice(0, 4).forEach((category, index) => {
+            const timerId = setTimeout(() => {
+                prefetchCategoryFromUi(category.category_id);
+            }, index * 250);
+            timers.push(timerId);
+        });
+        return () => timers.forEach((id) => clearTimeout(id));
+    }, [pathname, categories]);
 
     // Debounced Search
     useEffect(() => {
@@ -189,7 +216,6 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                     height={50}
                                     className="object-contain h-full w-auto"
                                     priority
-                                    unoptimized
                                 />
                             </div>
                         </Link>
@@ -216,7 +242,12 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                 onMouseEnter={() => setActiveMegaMenu(category.category_id)}
                                 onMouseLeave={() => setActiveMegaMenu(null)}
                             >
-                                <Link href={`/category/${category.category_id}`} onClick={() => setActiveMegaMenu(null)}>
+                                <Link
+                                    href={`/category/${category.category_id}`}
+                                    onMouseEnter={() => prefetchCategoryFromUi(category.category_id)}
+                                    onTouchStart={() => prefetchCategoryFromUi(category.category_id)}
+                                    onClick={() => setActiveMegaMenu(null)}
+                                >
                                     {category.name.toUpperCase()}
                                 </Link>
                             </div>
@@ -282,7 +313,6 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                                             fill
                                                             sizes="40px"
                                                             className="object-cover"
-                                                            unoptimized
                                                         />
                                                     </div>
 
@@ -409,7 +439,6 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                                             alt={campaign.name}
                                                             fill
                                                             className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                                            unoptimized
                                                         />
                                                     ) : (
                                                         <div className="w-full h-full bg-gradient-to-br from-[var(--brand-royal-red)] to-red-700" />
@@ -489,7 +518,6 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                             alt="Style 1"
                                             fill
                                             className="object-cover hover:scale-110 transition-transform duration-700"
-                                            unoptimized
                                         />
                                     </div>
                                     {/* Image 2 */}
@@ -499,7 +527,6 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                             alt="Style 2"
                                             fill
                                             className="object-cover hover:scale-110 transition-transform duration-700"
-                                            unoptimized
                                         />
                                     </div>
                                     {/* Image 3 */}
@@ -509,7 +536,6 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                             alt="Style 3"
                                             fill
                                             className="object-cover hover:scale-110 transition-transform duration-700"
-                                            unoptimized
                                         />
                                     </div>
                                     {/* Image 4 */}
@@ -519,7 +545,6 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                             alt="Style 4"
                                             fill
                                             className="object-cover hover:scale-110 transition-transform duration-700"
-                                            unoptimized
                                         />
                                         {/* Circular Badge on last image */}
                                         <div className="absolute bottom-8 right-8 w-24 h-24 bg-black/80 rounded-full flex flex-col items-center justify-center text-center p-2 border border-yellow-500/50 backdrop-blur-sm shadow-xl">
@@ -608,7 +633,6 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                             width={100}
                             height={30}
                             className="object-contain"
-                            unoptimized
                         />
                     </div>
                     <button onClick={() => setMobileMenuOpen(false)} className="text-gray-500">
@@ -634,7 +658,6 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                         width={48}
                                         height={48}
                                         className="object-cover w-full h-full"
-                                        unoptimized
                                     />
                                 </div>
                             ) : (
@@ -685,6 +708,8 @@ const Navbar = ({ marqueeVisible = true, mobileMenuOpen, setMobileMenuOpen }) =>
                                         <Link
                                             href={`/category/${category.category_id}`}
                                             className="flex-1 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                            onMouseEnter={() => prefetchCategoryFromUi(category.category_id)}
+                                            onTouchStart={() => prefetchCategoryFromUi(category.category_id)}
                                             onClick={() => setMobileMenuOpen(false)}
                                         >
                                             {category.name}

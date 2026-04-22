@@ -220,7 +220,6 @@ function StudioPost({ post }) {
                             alt={post.user.name}
                             fill
                             className="object-cover"
-                            unoptimized
                         />
                     </div>
                     <div>
@@ -249,7 +248,6 @@ function StudioPost({ post }) {
                         alt={post.description}
                         fill
                         className="object-cover"
-                        unoptimized
                     />
                 )}
 
@@ -322,7 +320,6 @@ function StudioPost({ post }) {
                                         alt={product.name}
                                         fill
                                         className="object-cover"
-                                        unoptimized
                                     />
                                 </div>
                                 <div className="min-w-[70px]">

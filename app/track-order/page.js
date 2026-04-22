@@ -386,7 +386,6 @@ export default function TrackOrderPage() {
                                                             src={item.product_info.image_path}
                                                             alt={item.product_info.name || "Product"}
                                                             fill
-                                                            unoptimized
                                                             className="object-cover"
                                                         />
                                                     ) : (

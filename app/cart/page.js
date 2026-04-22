@@ -250,7 +250,6 @@ const CartPage = () => {
                                                 alt={item.name}
                                                 fill
                                                 className="object-cover"
-                                                unoptimized
                                             />
                                         </div>
 
@@ -402,7 +401,6 @@ const CartPage = () => {
                                     alt={openSizeModal.name}
                                     fill
                                     className="object-cover"
-                                    unoptimized
                                 />
                             </div>
                             <div>

@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useSearchParams, useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import FilterSidebar from "@/components/FilterSidebar";
 import ProductCard from "@/components/ProductCard";
 import CategoryTopFilters from "@/components/CategoryTopFilters";
 import { getProducts, getProductsBySubcategory, getProductsByChildCategory, getCategoriesFromServer, getCategoryWiseProducts, filterProductsByAttributes, getAttributes, getCampaigns, prefetchCategoryTreeProducts } from "@/lib/api";
+import { readCategoryMetaBySlug, writeCategoryMetaList } from "@/utils/categoryMetaCache";
+import { readCategoryPagesCache, writeCategoryPage, trimCategoryPages } from "@/utils/categoryPrefetchCache";
 
 export default function CategoryPage() {
     const params = useParams();
@@ -101,9 +104,32 @@ export default function CategoryPage() {
     // Fetch category names and data for filters
     useEffect(() => {
         const fetchCategoryNames = async () => {
+            const cachedMeta = readCategoryMetaBySlug(categoryId);
+            if (cachedMeta) {
+                setCategoryName(cachedMeta.name || "");
+                setCurrentCategoryData(cachedMeta);
+                let cachedBanner = cachedMeta.banner || null;
+                if (subcategoryId && cachedMeta.sub_category) {
+                    const subcat = cachedMeta.sub_category.find((s) => String(s.id) === String(subcategoryId));
+                    if (subcat) {
+                        setSubcategoryName(subcat.name || "");
+                        cachedBanner = subcat.banner || subcat.banners?.[0] || cachedBanner;
+                        if (childId && subcat.child_categories) {
+                            const child = subcat.child_categories.find((c) => String(c.id) === String(childId));
+                            if (child) {
+                                setChildName(child.name || "");
+                                cachedBanner = child.banner || cachedBanner;
+                            }
+                        }
+                    }
+                }
+                setBannerImage(cachedBanner);
+            }
+
             try {
                 const response = await getCategoriesFromServer();
                 if (response.success && response.data) {
+                    writeCategoryMetaList(response.data);
                     const category = response.data.find(c => c.category_id == categoryId);
                     if (category) {
                         setCategoryName(category.name);
@@ -241,9 +267,50 @@ export default function CategoryPage() {
 
     // Background fetch products
     useEffect(() => {
+        const getDataBatch = (res) => {
+            if (Array.isArray(res?.data)) return res.data;
+            if (Array.isArray(res?.data?.data)) return res.data.data;
+            return [];
+        };
+
+        const getLastPage = (res) => {
+            const fromPagination = Number(res?.pagination?.last_page || 0);
+            const fromData = Number(res?.data?.last_page || 0);
+            if (fromPagination > 0) return fromPagination;
+            if (fromData > 0) return fromData;
+            return 1;
+        };
+
         const fetchProducts = async () => {
             try {
-                setLoading(true);
+                const cacheScope = childId
+                    ? `${subcategoryId || "root"}::child:${childId}`
+                    : (subcategoryId || null);
+
+                const mergeCachedPages = (cachedPages) => {
+                    const orderedKeys = Object.keys(cachedPages || {})
+                        .map(Number)
+                        .filter((n) => !Number.isNaN(n))
+                        .sort((a, b) => a - b);
+                    const merged = [];
+                    orderedKeys.forEach((key) => {
+                        const items = cachedPages[String(key)] || [];
+                        merged.push(...items);
+                    });
+                    return merged.filter((item, index, self) =>
+                        index === self.findIndex((t) => t.id === item.id)
+                    );
+                };
+
+                const cached = readCategoryPagesCache(categoryId, cacheScope);
+                if (cached?.pages && Object.keys(cached.pages).length > 0) {
+                    setProducts(mergeCachedPages(cached.pages));
+                    setApiTotalPages(cached.totalPagesKnown || 1);
+                    setLoading(false);
+                } else {
+                    setLoading(true);
+                }
+
                 const campaignMap = await getActiveCampaignsMap();
                 const selectedCategoryIds = filters.categories || [];
 
@@ -255,16 +322,16 @@ export default function CategoryPage() {
                         : await getProductsBySubcategory(targetId, 1);
                     if (!firstRes?.success || !firstRes?.data) return [];
 
-                    const firstItems = Array.isArray(firstRes.data) ? firstRes.data : (firstRes.data.data || []);
+                    const firstItems = getDataBatch(firstRes);
                     let merged = firstItems.map((p) => transformProduct(p, campaignMap));
 
-                    const lastPage = firstRes.pagination?.last_page || 1;
+                    const lastPage = getLastPage(firstRes);
                     for (let p = 2; p <= lastPage; p++) {
                         const pageRes = useChildFetch
                             ? await getProductsByChildCategory(targetId, p)
                             : await getProductsBySubcategory(targetId, p);
                         if (pageRes?.success && pageRes?.data) {
-                            const pageItems = Array.isArray(pageRes.data) ? pageRes.data : (pageRes.data.data || []);
+                            const pageItems = getDataBatch(pageRes);
                             merged = [...merged, ...pageItems.map((item) => transformProduct(item, campaignMap))];
                         }
                     }
@@ -306,19 +373,26 @@ export default function CategoryPage() {
                     return;
                 }
 
-                const dataBatch = Array.isArray(response.data) ? response.data : (response.data.data || []);
-                if (response.pagination) {
-                    setApiTotalPages(response.pagination.last_page);
-                }
+                const dataBatch = getDataBatch(response);
+                setApiTotalPages(getLastPage(response));
 
                 const initialTransformed = dataBatch.map((p) => transformProduct(p, campaignMap));
                 setProducts(initialTransformed);
+                writeCategoryPage(categoryId, cacheScope, 1, initialTransformed, null, getLastPage(response));
                 setLoading(false); // Show first page immediately
 
                 // 2. Background Fetch remaining pages if any
-                if (response.pagination?.last_page > 1) {
+                const totalPages = getLastPage(response);
+                if (totalPages > 1) {
                     setIsBackgroundLoading(true);
-                    fetchAllPages(response.pagination.last_page, campaignMap, initialTransformed);
+                    await fetchAllPages(totalPages, campaignMap, initialTransformed, cacheScope);
+                } else {
+                    setIsBackgroundLoading(false);
+                }
+
+                // If API now reports fewer pages than cache, trim stale pages.
+                if (cached?.totalPagesKnown && cached.totalPagesKnown > totalPages) {
+                    trimCategoryPages(categoryId, cacheScope, totalPages);
                 }
             } catch (error) {
                 console.error("Error fetching products:", error);
@@ -339,7 +413,7 @@ export default function CategoryPage() {
             return {};
         };
 
-        const fetchAllPages = async (lastPage, campaignMap, baseProducts = []) => {
+        const fetchAllPages = async (lastPage, campaignMap, baseProducts = [], cacheScope = null) => {
             let merged = [...baseProducts];
             for (let p = 2; p <= lastPage; p++) {
                 try {
@@ -355,9 +429,14 @@ export default function CategoryPage() {
                     }
 
                     if (res?.success && res?.data) {
-                        const newItems = Array.isArray(res.data) ? res.data : (res.data.data || []);
+                        const newItems = getDataBatch(res);
                         const transformed = newItems.map(item => transformProduct(item, campaignMap));
                         merged = [...merged, ...transformed];
+                        const uniqueProgressive = merged.filter((item, index, self) =>
+                            index === self.findIndex((t) => t.id === item.id)
+                        );
+                        setProducts(uniqueProgressive);
+                        writeCategoryPage(categoryId, cacheScope, p, transformed, null, lastPage);
                     }
                 } catch (err) {
                     console.error(`Error fetching page ${p}:`, err);
@@ -510,11 +589,17 @@ export default function CategoryPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 pt-0 md:pt-4">
-            {bannerImage && (
-                <div className="w-full h-[200px] md:h-[300px] relative">
-                    <img src={bannerImage} alt={categoryName} className="w-full h-full object-cover" />
-                </div>
-            )}
+            <div className="w-full h-[200px] md:h-[300px] relative bg-gray-100 overflow-hidden">
+                {bannerImage ? (
+                    <Image src={bannerImage} alt={categoryName || "Category Banner"} fill className="object-cover" />
+                ) : loading ? (
+                    <div className="w-full h-full animate-pulse bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100" />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-r from-gray-50 to-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500 text-sm md:text-lg font-semibold">{categoryName || "Category"}</span>
+                    </div>
+                )}
+            </div>
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-2 md:py-3">
                     <div className="flex items-center justify-between">

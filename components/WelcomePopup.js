@@ -104,7 +104,6 @@ const WelcomePopup = () => {
                             alt={popupData.title || "Welcome"}
                             fill
                             className="object-cover"
-                            unoptimized
                             priority
                         />
                     </div>

@@ -33,9 +33,11 @@ export default function FullWidthBanner() {
     return (
         <section className="w-full">
             <div className="relative w-full h-auto">
-                <img
+                <Image
                     src={banner.image_path}
                     alt={banner.title || "Promotional Banner"}
+                    width={1920}
+                    height={700}
                     className="w-full h-auto object-contain"
                 />
             </div>

@@ -112,7 +112,6 @@ function BrandsContent() {
                                             alt={brand.name}
                                             fill
                                             className="object-cover transition-transform duration-500 group-hover:scale-110"
-                                            unoptimized
                                         />
                                     </div>
                                     <h3 className="font-bold text-gray-900 text-sm md:text-base group-hover:text-[var(--brand-royal-red)] transition-colors uppercase tracking-wide">

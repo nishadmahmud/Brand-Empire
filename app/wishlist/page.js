@@ -95,7 +95,6 @@ const WishlistPage = () => {
                                                             alt={product.name || "Product"}
                                                             fill
                                                             className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                                            unoptimized
                                                         />
                                                     ) : (
                                                         <div className="flex h-full w-full items-center justify-center text-gray-300">
@@ -188,7 +187,6 @@ const WishlistPage = () => {
                                                         alt={post.user?.name || "Brand"}
                                                         fill
                                                         className="object-cover"
-                                                        unoptimized
                                                     />
                                                 </div>
                                                 <div>
@@ -217,7 +215,6 @@ const WishlistPage = () => {
                                                                     alt={product.name}
                                                                     fill
                                                                     className="object-cover"
-                                                                    unoptimized
                                                                 />
                                                             </div>
                                                         </Link>

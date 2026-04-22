@@ -1118,7 +1118,7 @@ export default function ProfileDashboard() {
                                                 title={productName}
                                             >
                                                 {imageUrl ? (
-                                                    <img src={imageUrl} alt={productName} className="h-full w-full object-cover" />
+                                                    <Image src={imageUrl} alt={productName} width={48} height={48} className="h-full w-full object-cover" />
                                                 ) : (
                                                     <div className="h-full w-full flex items-center justify-center text-gray-400">
                                                         <Package className="w-4 h-4" />
@@ -1132,7 +1132,7 @@ export default function ProfileDashboard() {
                                                 title={productName}
                                             >
                                                 {imageUrl ? (
-                                                    <img src={imageUrl} alt={productName} className="h-full w-full object-cover" />
+                                                    <Image src={imageUrl} alt={productName} width={48} height={48} className="h-full w-full object-cover" />
                                                 ) : (
                                                     <div className="h-full w-full flex items-center justify-center text-gray-400">
                                                         <Package className="w-4 h-4" />
@@ -1214,7 +1214,7 @@ export default function ProfileDashboard() {
                                                                     className="w-10 h-10 bg-white rounded-lg border border-gray-200 overflow-hidden flex items-center justify-center text-gray-400 flex-shrink-0"
                                                                 >
                                                                     {imageUrl ? (
-                                                                        <img src={imageUrl} alt={productName} className="w-full h-full object-cover" />
+                                                                        <Image src={imageUrl} alt={productName} width={40} height={40} className="w-full h-full object-cover" />
                                                                     ) : (
                                                                         <Package className="w-5 h-5" />
                                                                     )}
@@ -1222,7 +1222,7 @@ export default function ProfileDashboard() {
                                                             ) : (
                                                                 <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 overflow-hidden flex items-center justify-center text-gray-400 flex-shrink-0">
                                                                     {imageUrl ? (
-                                                                        <img src={imageUrl} alt={productName} className="w-full h-full object-cover" />
+                                                                        <Image src={imageUrl} alt={productName} width={40} height={40} className="w-full h-full object-cover" />
                                                                     ) : (
                                                                         <Package className="w-5 h-5" />
                                                                     )}
@@ -1267,7 +1267,7 @@ export default function ProfileDashboard() {
                                         <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">Attachment Provided</h4>
                                         <a href={refund.attachment} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 p-2 pr-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all group/attach">
                                             <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 overflow-hidden relative">
-                                                <img src={refund.attachment} alt="Attachment" className="w-full h-full object-cover group-hover/attach:scale-110 transition-transform duration-300" />
+                                                <Image src={refund.attachment} alt="Attachment" fill className="object-cover group-hover/attach:scale-110 transition-transform duration-300" />
                                             </div>
                                             <span className="text-sm font-medium text-gray-700 group-hover/attach:text-[var(--brand-royal-red)]">View Attachment</span>
                                         </a>
@@ -1349,7 +1349,7 @@ export default function ProfileDashboard() {
                             <div className="p-5 bg-gradient-to-r from-gray-900 to-gray-800 hidden lg:block">
                                 <Link href="/" className="flex items-center">
                                     <div className="relative h-10 w-36">
-                                        <Image src="/logo.png" alt="Brand Empire" fill className="object-contain" unoptimized />
+                                        <Image src="/logo.png" alt="Brand Empire" fill className="object-contain" />
                                     </div>
                                 </Link>
                             </div>
@@ -1519,7 +1519,6 @@ export default function ProfileDashboard() {
                                                     width={80}
                                                     height={80}
                                                     className="w-full h-full object-cover"
-                                                    unoptimized
                                                 />
                                             ) : (
                                                 <svg className="w-7 h-7 md:w-10 md:h-10 text-white/70" fill="currentColor" viewBox="0 0 24 24">
@@ -1674,7 +1673,6 @@ export default function ProfileDashboard() {
                                                                         alt={name}
                                                                         fill
                                                                         className="object-cover"
-                                                                        unoptimized
                                                                     />
                                                                 ) : (
                                                                     <div className="h-full w-full flex items-center justify-center text-gray-400">
@@ -1821,7 +1819,6 @@ export default function ProfileDashboard() {
                                                                                                 alt={itemName}
                                                                                                 fill
                                                                                                 className="object-cover"
-                                                                                                unoptimized
                                                                                             />
                                                                                         ) : (
                                                                                             <div className="w-full h-full flex items-center justify-center text-gray-300">
@@ -2011,7 +2008,6 @@ export default function ProfileDashboard() {
                                                                             alt={item.product_info?.name || "Product"}
                                                                             fill
                                                                             className="object-cover group-hover:scale-105 transition-transform"
-                                                                            unoptimized
                                                                         />
                                                                     ) : (
                                                                         <div className="flex h-full w-full items-center justify-center text-gray-400">
@@ -2306,7 +2302,6 @@ export default function ProfileDashboard() {
                                                                             src={item.product_info.image_path}
                                                                             alt={item.product_info.name || "Product"}
                                                                             fill
-                                                                            unoptimized
                                                                             className="object-cover"
                                                                         />
                                                                     ) : (
@@ -2733,7 +2728,6 @@ export default function ProfileDashboard() {
                                                                         alt={product.name || "Product"}
                                                                         fill
                                                                         className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                                                        unoptimized
                                                                     />
                                                                 ) : (
                                                                     <div className="flex h-full w-full items-center justify-center text-gray-300">
@@ -2816,7 +2810,6 @@ export default function ProfileDashboard() {
                                                                 width={96}
                                                                 height={96}
                                                                 className="w-full h-full object-cover"
-                                                                unoptimized
                                                             />
                                                         ) : (
                                                             <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
@@ -3019,7 +3012,6 @@ export default function ProfileDashboard() {
                                                             width={80}
                                                             height={80}
                                                             className="w-full h-full object-cover"
-                                                            unoptimized
                                                         />
                                                     ) : (
                                                         <svg className="w-10 h-10 text-gray-400" fill="currentColor" viewBox="0 0 24 24">

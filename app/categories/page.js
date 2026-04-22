@@ -54,7 +54,6 @@ export default function CategoriesPage() {
                                             alt={category.name}
                                             fill
                                             className="object-contain p-4 group-hover:scale-110 transition-transform duration-300"
-                                            unoptimized
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-full">

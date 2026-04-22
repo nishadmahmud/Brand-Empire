@@ -73,7 +73,6 @@ export default function OffersPage() {
                                             alt={campaign.name}
                                             fill
                                             className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                            unoptimized
                                         />
                                     ) : (
                                         <div className="w-full h-full bg-gradient-to-br from-[var(--brand-royal-red)] to-red-600 flex items-center justify-center">

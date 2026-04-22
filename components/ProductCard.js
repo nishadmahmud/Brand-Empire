@@ -118,7 +118,6 @@ const ProductCard = ({ product, tag, categoryId, onClick }) => {
                                     alt={`${product.name} view ${index + 1}`}
                                     fill
                                     className="object-cover"
-                                    unoptimized
                                 />
                             </div>
                         ))}

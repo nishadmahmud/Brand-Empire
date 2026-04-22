@@ -108,7 +108,6 @@ const CartModal = () => {
                                             alt={item.name}
                                             fill
                                             className="object-cover rounded"
-                                            unoptimized
                                         />
                                     </div>
 

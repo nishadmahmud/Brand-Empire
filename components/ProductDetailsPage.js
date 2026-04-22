@@ -711,7 +711,7 @@ const ProductDetailsPage = ({ productId }) => {
                         <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full" onScroll={(e) => setSelectedImage(Math.round(e.currentTarget.scrollLeft / e.currentTarget.offsetWidth))}>
                             {product.images.map((img, index) => (
                                 <div key={index} className="w-full h-full flex-shrink-0 snap-center relative bg-gray-100" onClick={() => { setSelectedImage(index); setShowLightbox(true); }}>
-                                    <Image src={img} alt={`${product.name} view ${index + 1}`} fill className="object-cover" unoptimized draggable={false} />
+                                    <Image src={img} alt={`${product.name} view ${index + 1}`} fill className="object-cover" draggable={false} />
                                 </div>
                             ))}
                         </div>
@@ -724,7 +724,7 @@ const ProductDetailsPage = ({ productId }) => {
                     <div className="hidden md:grid grid-cols-2 gap-0.5 h-fit">
                         {product.images.map((img, index) => (
                             <div key={index} className="relative w-full h-[500px] bg-gray-100 cursor-zoom-in overflow-hidden group" onClick={() => { setSelectedImage(index); setShowLightbox(true); }}>
-                                <Image src={img} alt={`${product.name} view ${index + 1}`} fill className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105" unoptimized draggable={false} />
+                                <Image src={img} alt={`${product.name} view ${index + 1}`} fill className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105" draggable={false} />
                             </div>
                         ))}
                     </div>
@@ -1043,9 +1043,11 @@ const ProductDetailsPage = ({ productId }) => {
                                         : 'opacity-70 hover:opacity-100'
                                         }`}
                                 >
-                                    <img
+                                    <Image
                                         src={img}
                                         alt={`Thumbnail ${index + 1}`}
+                                        width={56}
+                                        height={64}
                                         className="w-full h-full object-cover"
                                     />
                                 </button>
@@ -1054,9 +1056,11 @@ const ProductDetailsPage = ({ productId }) => {
 
                         {/* Main Image */}
                         <div className="relative w-full h-full md:w-auto md:h-auto flex items-center justify-center">
-                            <img
+                            <Image
                                 src={product.images[selectedImage]}
                                 alt={product.name}
+                                width={1400}
+                                height={1800}
                                 className="w-full h-auto max-h-full md:h-[95vh] md:w-auto md:max-w-[90vw] object-contain md:rounded md:shadow-2xl"
                             />
                         </div>

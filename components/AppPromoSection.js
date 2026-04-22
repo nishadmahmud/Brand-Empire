@@ -77,7 +77,6 @@ const AppPromoSection = () => {
                                 alt="QR Code"
                                 width={120}
                                 height={120}
-                                unoptimized
                             />
                             <p className="text-center text-[10px] text-gray-600 mt-2">Scan to Download</p>
                         </div>
@@ -98,7 +97,6 @@ const AppPromoSection = () => {
                                             width={60}
                                             height={60}
                                             className="object-contain"
-                                            unoptimized
                                         />
                                     </div>
                                 </div>

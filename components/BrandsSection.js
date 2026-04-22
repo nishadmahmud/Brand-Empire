@@ -20,7 +20,6 @@ const BrandRow = ({ title, brands, type }) => (
                             alt={brand.name}
                             fill
                             className="object-cover transition-transform duration-700 group-hover:scale-110"
-                            unoptimized
                         />
                         {/* Dark overlay on hover */}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />

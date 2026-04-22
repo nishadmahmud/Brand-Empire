@@ -14,7 +14,6 @@ const CategoryCard = ({ image, title, link }) => {
                     alt={title}
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    unoptimized
                 />
             </div>
             <h3 className="text-xs md:text-sm font-bold uppercase tracking-wider text-center text-gray-900">

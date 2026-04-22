@@ -27,7 +27,6 @@ const CollectionCard = ({ image, video, title, alt, subtitle, buttonText, button
                     alt={alt}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    unoptimized
                 />
             )}
 

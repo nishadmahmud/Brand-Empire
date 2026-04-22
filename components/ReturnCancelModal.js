@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { uploadReviewMedia, submitRefundRequest, updateEcommerceStatus } from "@/lib/api";
@@ -387,9 +388,9 @@ const ReturnCancelModal = ({ open, onClose, order, mode = "return", refundedItem
                                                     onChange={(e) => toggleRefundItem(key, e.target.checked)}
                                                     className="h-4 w-4 accent-[var(--brand-royal-red)] flex-shrink-0 disabled:opacity-50"
                                                 />
-                                                <div className="h-12 w-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0">
+                                                <div className="h-12 w-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0 relative">
                                                     {itemImage ? (
-                                                        <img src={itemImage} alt={productName} className="h-full w-full object-cover" />
+                                                        <Image src={itemImage} alt={productName} fill className="object-cover" />
                                                     ) : (
                                                         <div className="h-full w-full flex items-center justify-center text-gray-400">
                                                             <Package size={16} />

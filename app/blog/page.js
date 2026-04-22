@@ -103,7 +103,6 @@ export default function BlogListPage() {
                                             alt={blog.title}
                                             fill
                                             className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                            unoptimized
                                         />
                                     ) : (
                                         <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">

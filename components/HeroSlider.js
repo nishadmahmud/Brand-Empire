@@ -127,7 +127,6 @@ const HeroSlider = () => {
                             fill
                             className="object-cover"
                             priority={index === 0}
-                            unoptimized
                         />
                         {/* Overlay Gradient - Removed for clean image display */}
                         {/* <div className="absolute inset-0 bg-black/20" /> */}

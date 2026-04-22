@@ -36,7 +36,6 @@ const Footer = () => {
                                 alt="Brand Empire"
                                 width={140}
                                 height={45}
-                                unoptimized
                             />
                         </Link>
                         <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
