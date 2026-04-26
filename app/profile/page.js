@@ -21,6 +21,8 @@ const timelineStages = [
     { id: 3, label: "Delivery Processing", icon: Truck },
     { id: 4, label: "Order Delivered", icon: Home },
 ];
+const TAKA_SYMBOL = "৳";
+const formatTaka = (amount) => `${TAKA_SYMBOL} ${Number(amount || 0).toLocaleString("en-US")}`;
 
 const OrderTimeline = ({ currentStatus }) => {
     const status = Number(currentStatus);
@@ -989,7 +991,6 @@ export default function ProfileDashboard() {
 
 
     const roundAmount = (amount) => Math.round(Number(amount || 0));
-    const formatTaka = (amount) => `${TAKA_SYMBOL} ${Number(amount || 0).toLocaleString("en-US")}`;
     const getDonationAmount = (order) => Math.max(0, Number(order?.donation_amount ?? order?.donation ?? 0));
     const walletBalance = Number(user?.wallet_balance || 0);
     const loyaltyPoints = Math.round(walletBalance);
@@ -3270,8 +3271,8 @@ export default function ProfileDashboard() {
                                         </div>
                                     ) : invoiceSettings?.terms_condition ? (
                                         <div
-                                            className="policy-html prose prose-sm max-w-none text-gray-700"
-                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(invoiceSettings.terms_condition) }}
+                                            className="html-content max-w-none text-gray-700"
+                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((invoiceSettings.terms_condition || "").replace(/&nbsp;/g, " ")) }}
                                         />
                                     ) : (
                                         <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">Terms content is not available right now.</div>
@@ -3294,8 +3295,8 @@ export default function ProfileDashboard() {
                                         </div>
                                     ) : invoiceSettings?.privacy_policy ? (
                                         <div
-                                            className="policy-html prose prose-sm max-w-none text-gray-700"
-                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(invoiceSettings.privacy_policy) }}
+                                            className="html-content max-w-none text-gray-700"
+                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((invoiceSettings.privacy_policy || "").replace(/&nbsp;/g, " ")) }}
                                         />
                                     ) : (
                                         <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">Privacy content is not available right now.</div>

@@ -59,16 +59,9 @@ export const AuthProvider = ({ children }) => {
         try {
             const data = await customerRegister(userData);
             if (data.success) {
-                if (data.token) {
-                    setToken(data.token);
-                    setUser(data.customer);
-                    localStorage.setItem("token", data.token);
-                    localStorage.setItem("customer", JSON.stringify(data.customer));
-                    closeAuthModal(); // Close modal on success
-                    return { success: true };
-                }
-
-                return { success: true, message: "Registration successful! Please login." };
+                // Keep registration and login as two separate steps.
+                // Even if backend returns a token, UI should route user to login flow.
+                return { success: true, message: data.message || "Registration complete! Please log in." };
             } else {
                 return { success: false, message: data.message || "Registration failed" };
             }

@@ -23,17 +23,23 @@ const FilterSidebar = ({
     selectedAttributeValues = [],
     onAttributeChange
 }) => {
+    const MAX_VISIBLE_FILTER_ITEMS = 5;
     const [brandSearch, setBrandSearch] = useState("");
     const [priceRange, setPriceRange] = useState(filters.priceRange || [0, 10000]);
     const [showAllCategories, setShowAllCategories] = useState(false);
     const [showAllBrands, setShowAllBrands] = useState(false);
+    const [showAllColors, setShowAllColors] = useState(false);
+    const [showAllRootlessCategories, setShowAllRootlessCategories] = useState(false);
     const [expandedCategoryId, setExpandedCategoryId] = useState(null);
     const [expandedSubcategories, setExpandedSubcategories] = useState({});
+    const [showAllNestedSubcategories, setShowAllNestedSubcategories] = useState({});
 
     useEffect(() => {
         if (!brandSubcategories || brandSubcategories.length === 0) {
             setExpandedCategoryId(null);
             setExpandedSubcategories({});
+            setShowAllNestedSubcategories({});
+            setShowAllRootlessCategories(false);
         }
     }, [brandSubcategories]);
 
@@ -103,8 +109,9 @@ const FilterSidebar = ({
         { value: 50, label: "50% and above" },
     ];
 
-    const visibleCategories = showAllCategories ? categories : categories.slice(0, 5);
-    const visibleBrands = showAllBrands ? filteredBrands : filteredBrands.slice(0, 5);
+    const visibleCategories = showAllCategories ? categories : categories.slice(0, MAX_VISIBLE_FILTER_ITEMS);
+    const visibleBrands = showAllBrands ? filteredBrands : filteredBrands.slice(0, MAX_VISIBLE_FILTER_ITEMS);
+    const visibleColors = showAllColors ? availableColors : availableColors.slice(0, MAX_VISIBLE_FILTER_ITEMS);
 
     return (
         <div className="w-full bg-white border-r border-gray-200 p-6 pb-20 h-full">
@@ -125,9 +132,16 @@ const FilterSidebar = ({
                 <div className="mb-6 pb-6 border-b border-gray-200">
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Categories</h4>
                     <div className="space-y-1">
-                        {(hideCategoryRoot && brandSubcategories.length === 1
-                            ? brandSubcategories[0].sub_category || []
-                            : brandSubcategories
+                        {(
+                            (hideCategoryRoot && brandSubcategories.length === 1
+                                ? brandSubcategories[0].sub_category || []
+                                : brandSubcategories
+                            ).slice(
+                                0,
+                                hideCategoryRoot && brandSubcategories.length === 1 && !showAllRootlessCategories
+                                    ? MAX_VISIBLE_FILTER_ITEMS
+                                    : undefined
+                            )
                         ).map((category) => (
                             <div key={category.id}>
                                 {!hideCategoryRoot && (
@@ -147,7 +161,10 @@ const FilterSidebar = ({
                                 )}
                                 {(hideCategoryRoot || expandedCategoryId === category.id) && ((hideCategoryRoot ? [category] : category.sub_category || []).length > 0) && (
                                     <div className="pl-3 pb-2 space-y-2 animate-fade-in border-l-2 border-gray-100 ml-1">
-                                        {(hideCategoryRoot ? [category] : category.sub_category || []).map((sub) => {
+                                        {(showAllNestedSubcategories[category.id]
+                                            ? (hideCategoryRoot ? [category] : category.sub_category || [])
+                                            : (hideCategoryRoot ? [category] : category.sub_category || []).slice(0, MAX_VISIBLE_FILTER_ITEMS)
+                                        ).map((sub) => {
                                             const isSelected = selectedSubcategoryId != null
                                                 ? selectedSubcategoryId == sub.id
                                                 : (filters?.categories || []).includes(sub.id);
@@ -237,11 +254,38 @@ const FilterSidebar = ({
                                                 </div>
                                             );
                                         })}
+                                        {!hideCategoryRoot && (category.sub_category || []).length > MAX_VISIBLE_FILTER_ITEMS && (
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setShowAllNestedSubcategories((prev) => ({
+                                                        ...prev,
+                                                        [category.id]: !prev[category.id],
+                                                    }))
+                                                }
+                                                className="text-sm text-[var(--brand-royal-red)] mt-1 hover:underline font-medium"
+                                            >
+                                                {showAllNestedSubcategories[category.id]
+                                                    ? "Show less"
+                                                    : `+ ${(category.sub_category || []).length - MAX_VISIBLE_FILTER_ITEMS} more`}
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
                         ))}
                     </div>
+                    {hideCategoryRoot && brandSubcategories.length === 1 && (brandSubcategories[0].sub_category || []).length > MAX_VISIBLE_FILTER_ITEMS && (
+                        <button
+                            type="button"
+                            onClick={() => setShowAllRootlessCategories((prev) => !prev)}
+                            className="text-sm text-[var(--brand-royal-red)] mt-3 hover:underline font-medium"
+                        >
+                            {showAllRootlessCategories
+                                ? "Show less"
+                                : `+ ${(brandSubcategories[0].sub_category || []).length - MAX_VISIBLE_FILTER_ITEMS} more`}
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -285,12 +329,12 @@ const FilterSidebar = ({
                             );
                         })}
                     </div>
-                    {categories.length > 5 && (
+                    {categories.length > MAX_VISIBLE_FILTER_ITEMS && (
                         <button
                             onClick={() => setShowAllCategories(!showAllCategories)}
                             className="text-sm text-[var(--brand-royal-red)] mt-3 hover:underline font-medium"
                         >
-                            {showAllCategories ? "Show Less" : `+ ${categories.length - 5} more`}
+                            {showAllCategories ? "Show less" : `+ ${categories.length - MAX_VISIBLE_FILTER_ITEMS} more`}
                         </button>
                     )}
                 </div>
@@ -303,7 +347,7 @@ const FilterSidebar = ({
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Brand</h4>
 
                     {/* Search Input */}
-                    {availableBrands.length > 5 && (
+                    {availableBrands.length > MAX_VISIBLE_FILTER_ITEMS && (
                         <div className="mb-3">
                             <input
                                 type="text"
@@ -333,12 +377,12 @@ const FilterSidebar = ({
                             </label>
                         ))}
                     </div>
-                    {filteredBrands.length > 5 && (
+                    {filteredBrands.length > MAX_VISIBLE_FILTER_ITEMS && (
                         <button
                             onClick={() => setShowAllBrands(!showAllBrands)}
                             className="text-sm text-[var(--brand-royal-red)] mt-3 hover:underline font-medium"
                         >
-                            {showAllBrands ? "Show Less" : `+ ${filteredBrands.length - 5} more`}
+                            {showAllBrands ? "Show less" : `+ ${filteredBrands.length - MAX_VISIBLE_FILTER_ITEMS} more`}
                         </button>
                     )}
                 </div>
@@ -383,7 +427,7 @@ const FilterSidebar = ({
                 <div className="mb-6 pb-6 border-b border-gray-200">
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-4">Color</h4>
                     <div className="space-y-3">
-                        {availableColors.map(({ name, code }) => (
+                        {visibleColors.map(({ name, code }) => (
                             <label key={name} className="flex items-center cursor-pointer group">
                                 <input
                                     type="checkbox"
@@ -406,6 +450,15 @@ const FilterSidebar = ({
                             </label>
                         ))}
                     </div>
+                    {availableColors.length > MAX_VISIBLE_FILTER_ITEMS && (
+                        <button
+                            type="button"
+                            onClick={() => setShowAllColors((prev) => !prev)}
+                            className="text-sm text-[var(--brand-royal-red)] mt-3 hover:underline font-medium"
+                        >
+                            {showAllColors ? "Show less" : `+ ${availableColors.length - MAX_VISIBLE_FILTER_ITEMS} more`}
+                        </button>
+                    )}
                 </div>
             )}
 

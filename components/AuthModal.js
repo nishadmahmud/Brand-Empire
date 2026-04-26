@@ -111,7 +111,12 @@ const AuthModal = () => {
         if (!result.success) {
             setError(result.message);
         } else {
-            showToast({ message: "Registration successful!", type: "success" });
+            setAuthModalMode("login");
+            setLoginData({
+                identifier: registerData.email || registerData.phone || "",
+                password: "",
+            });
+            showToast({ message: "Registration complete. Please log in.", type: "success" });
         }
     };
 
